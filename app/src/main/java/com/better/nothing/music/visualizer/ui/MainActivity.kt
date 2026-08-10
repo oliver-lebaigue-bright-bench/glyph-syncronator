@@ -224,6 +224,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
+            val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
             val musicThemeColor by viewModel.musicThemeColor.collectAsStateWithLifecycle()
             val isRunning by viewModel.runningState.collectAsStateWithLifecycle()
 
@@ -257,6 +258,7 @@ class MainActivity : ComponentActivity() {
             GlyphSyncronatorTheme(
                 themeName = selectedTheme,
                 fontName = selectedFont,
+                bananaMode = bananaMode,
                 musicPrimaryColor = musicThemeColor,
             ) {
                 // Ensure a solid black root background to prevent "white bits" showing through from window
@@ -606,6 +608,7 @@ internal fun GlyphSyncronatorApp(
                         val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
                         val shizukuUnlocked by viewModel.shizukuSourceUnlocked.collectAsStateWithLifecycle()
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
+                        val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
 
                         AudioScreen(
                             isRunning = isRunning,
@@ -625,6 +628,7 @@ internal fun GlyphSyncronatorApp(
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
+                            bananaMode = bananaMode,
                             padding = padding
                         )
                     }

@@ -129,6 +129,7 @@ fun AudioScreen(
     onRunLatencyWizard: () -> Unit = {},
     onResetLatencyWizard: () -> Unit = {},
     developerModeEnabled: Boolean = false,
+    bananaMode: Boolean = false,
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
     val context = LocalContext.current
@@ -238,7 +239,7 @@ fun AudioScreen(
         }
 
         AnimatedVisibility(visible = isRunning) {
-            FFTSpectrumCard(fftData = fftData)
+            FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode)
         }
 
         if (isRunning) {
@@ -631,7 +632,7 @@ fun LatencyCard(
 }
 
 @Composable
-fun FFTSpectrumCard(fftData: FloatArray) {
+fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false) {
     val haptics = LocalHapticFeedback.current
     var isExpanded by remember { mutableStateOf(false) }
     var touchX by remember { mutableStateOf<Float?>(null) }
@@ -774,6 +775,16 @@ fun FFTSpectrumCard(fftData: FloatArray) {
                                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 10f))
                             )
                         }
+                    }
+
+                    if (bananaMode) {
+                        Text(
+                            text = "🍌",
+                            fontSize = 48.sp,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
+                        )
                     }
 
                     touchX?.let { tx ->

@@ -35,7 +35,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import kotlin.math.roundToInt
+import kotlin.math.*
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -292,6 +292,7 @@ fun DashboardTile(
 ) {
     val haptics = LocalHapticFeedback.current
     val isGlass = LocalIsGlassTheme.current
+    val bananaMode = LocalBananaMode.current
     
     val backgroundColor by animateColorAsState(
         if (active) {
@@ -349,12 +350,16 @@ fun DashboardTile(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(32.dp)
-                )
+                if (bananaMode) {
+                    Text("🍌", fontSize = 32.sp)
+                } else {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
                 Column {
                     Text(
                         text = title,
@@ -693,7 +698,12 @@ fun FlowRowScope.OptionTile(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(25.dp))
+                val bananaMode = LocalBananaMode.current
+                if (bananaMode && isSelected) {
+                    Text("🍌", fontSize = 20.sp)
+                } else {
+                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(25.dp))
+                }
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
@@ -742,6 +752,35 @@ fun GlyphSyncronatorBackground(modifier: Modifier = Modifier) {
     Box(modifier = modifier
         .fillMaxSize()
         .background(background)) {
+
+        if (LocalBananaMode.current) {
+            val infiniteTransition = rememberInfiniteTransition(label = "banana_pulse")
+            val scale by infiniteTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = 1.3f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = EaseInOutCubic),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulse"
+            )
+
+            // Static bananas in corners + pulsing center banana
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.TopStart).graphicsLayer { rotationZ = -45f })
+                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.TopEnd).graphicsLayer { rotationZ = 45f })
+                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.BottomStart).graphicsLayer { rotationZ = -135f })
+                
+                Text("🍌", fontSize = 60.sp, modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 0.15f // Very subtle
+                    }
+                )
+            }
+        }
         
         if (isGlass) {
             val infiniteTransition = rememberInfiniteTransition(label = "glass_bg")
@@ -968,8 +1007,9 @@ fun SectionHeader(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val bananaMode = LocalBananaMode.current
     Text(
-        text = text,
+        text = if (bananaMode) "🍌 $text 🍌" else text,
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onBackground,
         modifier = modifier.padding(vertical = 8.dp)
@@ -1010,6 +1050,7 @@ fun StartStopButton(
     val haptics           = LocalHapticFeedback.current
     val uiAmp             = LocalUIAmplitude.current
     val isGlass           = LocalIsGlassTheme.current
+    val bananaMode        = LocalBananaMode.current
 
     val scale by animateFloatAsState(
         targetValue   = if (isPressed) 0.92f else 1.0f,
@@ -1079,11 +1120,15 @@ fun StartStopButton(
                         transitionSpec = { (scaleIn() + fadeIn()).togetherWith(scaleOut() + fadeOut()) },
                         label        = "iconTransition"
                     ) { isRunning ->
-                        Icon(
-                            imageVector     = if (isRunning) Icons.Filled.Stop else Icons.Filled.PlayArrow,
-                            contentDescription = null,
-                            modifier        = Modifier.size(24.dp)
-                        )
+                        if (bananaMode) {
+                            Text("🍌", fontSize = 24.sp)
+                        } else {
+                            Icon(
+                                imageVector     = if (isRunning) Icons.Filled.Stop else Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier        = Modifier.size(24.dp)
+                            )
+                        }
                     }
                     Spacer(Modifier.width(16.dp))
                     Text(
@@ -1107,6 +1152,7 @@ fun NativeBottomBar(
 ) {
     val haptics = LocalHapticFeedback.current
     val isGlass = LocalIsGlassTheme.current
+    val bananaMode = LocalBananaMode.current
     val uiAmp = LocalUIAmplitude.current
 
     if (isGlass) {
@@ -1193,13 +1239,17 @@ fun NativeBottomBar(
                             }
                             
                             val iconModifier = Modifier.size(26.dp)
-                            when (tab) {
-                                Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier, tint = contentColor)
-                                Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
-                                Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier, tint = contentColor)
-                                Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier, tint = contentColor)
-                                Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier, tint = contentColor)
-                                Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier, tint = contentColor)
+                            if (bananaMode && isSelected) {
+                                Text("🍌", fontSize = 20.sp)
+                            } else {
+                                when (tab) {
+                                    Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier, tint = contentColor)
+                                    Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
+                                    Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier, tint = contentColor)
+                                    Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier, tint = contentColor)
+                                    Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier, tint = contentColor)
+                                    Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier, tint = contentColor)
+                                }
                             }
                         }
                         
@@ -1245,13 +1295,17 @@ fun NativeBottomBar(
                     },
                     icon = {
                         val iconModifier = Modifier.size(24.dp)
-                        when (tab) {
-                            Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier)
-                            Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
-                            Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier)
-                            Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier)
-                            Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier)
-                            Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier)
+                        if (bananaMode && isSelected) {
+                            Text("🍌", fontSize = 18.sp)
+                        } else {
+                            when (tab) {
+                                Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier)
+                                Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
+                                Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier)
+                                Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier)
+                                Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier)
+                                Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier)
+                            }
                         }
                     },
                     colors = NavigationBarItemDefaults.colors(
@@ -1441,8 +1495,9 @@ fun <T> ExpressiveSplitButton(
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val bananaMode = LocalBananaMode.current
                             Text(
-                                text = resolvedLabels[item] ?: "",
+                                text = if (bananaMode && isSelected) "🍌 ${resolvedLabels[item]}" else resolvedLabels[item] ?: "",
                                 style = MaterialTheme.typography.labelLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1524,18 +1579,25 @@ fun ExpressiveSlider(
                 false
             },
         thumb = {
-            // THUMB: Gets THINNER as animationFactor increases
-            // Width: 4dp -> 2dp | Height: 44dp -> 48dp
-            val thumbWidth = 4.dp / animationFactor
+            val bananaMode = LocalBananaMode.current
+            if (bananaMode) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
+                    Text("🍌", fontSize = 24.sp)
+                }
+            } else {
+                // THUMB: Gets THINNER as animationFactor increases
+                // Width: 4dp -> 2dp | Height: 44dp -> 48dp
+                val thumbWidth = 4.dp / animationFactor
 
-            Box(
-                modifier = Modifier
-                    .size(width = thumbWidth, height = 44.dp * (animationFactor * 0.8f).coerceAtLeast(1f))
-                    .background(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(2.dp) // Keeps same corner radius
-                    )
-            )
+                Box(
+                    modifier = Modifier
+                        .size(width = thumbWidth, height = 44.dp * (animationFactor * 0.8f).coerceAtLeast(1f))
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(2.dp) // Keeps same corner radius
+                        )
+                )
+            }
         },
         track = { sliderState ->
             // TRACK: Gets THICKER
@@ -1644,18 +1706,25 @@ fun ExpressiveRangeSlider(
 
 @Composable
 private fun ExpressiveThumb(factor: Float) {
-    // The thumb gets thinner and taller when grabbed
-    val thumbWidth = 4.dp / factor
-    val thumbHeight = 40.dp * (factor * 0.8f).coerceAtLeast(1f)
+    val bananaMode = LocalBananaMode.current
+    if (bananaMode) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
+            Text("🍌", fontSize = 24.sp)
+        }
+    } else {
+        // The thumb gets thinner and taller when grabbed
+        val thumbWidth = 4.dp / factor
+        val thumbHeight = 40.dp * (factor * 0.8f).coerceAtLeast(1f)
 
-    Box(
-        modifier = Modifier
-            .size(width = thumbWidth, height = thumbHeight)
-            .background(
-                color = MaterialTheme.colorScheme.primary,
-                shape = RoundedCornerShape(2.dp)
-            )
-    )
+        Box(
+            modifier = Modifier
+                .size(width = thumbWidth, height = thumbHeight)
+                .background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(2.dp)
+                )
+        )
+    }
 }
 
 @SuppressLint("ConfigurationScreenWidthHeight")

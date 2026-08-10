@@ -52,6 +52,7 @@ fun GlyphSyncronatorTheme(
     themeName: String = "Default",
     fontName: String = "NDot",
     m3eEnabled: Boolean = true,
+    bananaMode: Boolean = false,
     musicPrimaryColor: Color? = null,
     content: @Composable () -> Unit
 ) {
@@ -59,8 +60,25 @@ fun GlyphSyncronatorTheme(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    val targetColorScheme = remember(themeName, isDark, musicPrimaryColor) {
-        when (themeName) {
+    val targetColorScheme = remember(themeName, isDark, musicPrimaryColor, bananaMode) {
+        if (bananaMode) {
+            androidx.compose.material3.darkColorScheme(
+                background = Color.Black,
+                surface = Color(0xFF0D0D00),
+                primary = Color(0xFFFFE135), // Banana Yellow
+                secondary = Color(0xFFFFF600),
+                error = Color(0xFFD71921),
+                onBackground = Color.White,
+                onSurface = Color.White,
+                onPrimary = Color.Black,
+                onSecondary = Color.Black,
+                onError = Color.White,
+                surfaceVariant = Color(0xFF1A1A00),
+                onSurfaceVariant = Color(0xFFFFF600),
+                outline = Color(0xFF333300)
+            )
+        } else {
+            when (themeName) {
             "Music" -> {
                 val baseColor = musicPrimaryColor ?: Color(0xFFD71921)
                 
@@ -295,6 +313,7 @@ fun GlyphSyncronatorTheme(
             }
         }
     }
+}
 
     val colorScheme = targetColorScheme.copy(
         primary = animateColorAsState(targetColorScheme.primary, tween(500), label = "primary").value,
@@ -395,6 +414,7 @@ fun GlyphSyncronatorTheme(
         CompositionLocalProvider(
             LocalAppSpacing provides appSpacing,
             LocalM3EEnabled provides m3eEnabled,
+            LocalBananaMode provides bananaMode,
             LocalUIAmplitude provides uiAmplitude,
             LocalIsGlassTheme provides (themeName == "Glass")
         ) {
@@ -511,5 +531,6 @@ class AppSpacing(
 
 val LocalAppSpacing = staticCompositionLocalOf { AppSpacing() }
 val LocalM3EEnabled = compositionLocalOf { true }
+val LocalBananaMode = compositionLocalOf { false }
 val LocalUIAmplitude = compositionLocalOf { 1.0f }
 val LocalIsGlassTheme = compositionLocalOf { false }

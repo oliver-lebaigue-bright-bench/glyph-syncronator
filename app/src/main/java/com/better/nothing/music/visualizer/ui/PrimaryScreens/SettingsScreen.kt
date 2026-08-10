@@ -83,6 +83,7 @@ internal fun SettingsScreen(
 ) {
     val uiAmplitudeSyncEnabled by viewModel.uiAmplitudeSyncEnabled.collectAsStateWithLifecycle()
     val flashlightMultiIntensityForced by viewModel.flashlightMultiIntensityForced.collectAsStateWithLifecycle()
+    val bananaModeEnabled by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
     val isAnonymous by viewModel.isAnonymous.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -264,6 +265,54 @@ internal fun SettingsScreen(
                         }
                     }
                 }
+            }
+        }
+
+        // ── Banana Mode ──────────────────────────────────────────────────
+        ExpressiveCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (bananaModeEnabled) {
+                        Text("🍌", fontSize = 24.sp)
+                    } else {
+                        Icon(
+                            Icons.Default.Celebration,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.banana_mode),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.banana_mode_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+                Switch(
+                    checked = bananaModeEnabled,
+                    onCheckedChange = { viewModel.setBananaModeEnabled(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.size(height = 24.dp, width = 48.dp)
+                )
             }
         }
 
