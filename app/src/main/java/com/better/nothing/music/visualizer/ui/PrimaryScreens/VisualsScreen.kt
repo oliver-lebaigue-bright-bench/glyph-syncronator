@@ -84,7 +84,8 @@ fun VisualsScreen(
                     Icon(
                         FontAwesomeIcons.Solid.LayerGroup,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -320,9 +321,10 @@ fun VisualsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        FontAwesomeIcons.Solid.LayerGroup,
+                        FontAwesomeIcons.Solid.BorderAll,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -535,9 +537,10 @@ fun VisualsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        FontAwesomeIcons.Solid.LayerGroup,
+                        FontAwesomeIcons.Solid.Bullseye,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(

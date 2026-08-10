@@ -45,6 +45,8 @@ internal fun StatsScreen(
     val hapticTime by viewModel.totalHapticTime.collectAsStateWithLifecycle()
     val flashlightTime by viewModel.totalFlashlightTime.collectAsStateWithLifecycle()
 
+    val globalStats by viewModel.globalStats.collectAsStateWithLifecycle()
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -138,6 +140,42 @@ internal fun StatsScreen(
                             label = "Flashlight Sync",
                             value = formatTime(flashlightTime),
                             color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+            }
+
+            // Global Statistics Section
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SectionHeader(text = "Global Community Stats")
+                
+                ExpressiveCard(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        GlobalStatRow(
+                            label = "Total Community Time",
+                            value = formatTime(globalStats.totalVisualizedTimeMs),
+                            icon = FontAwesomeIcons.Solid.GlobeEurope
+                        )
+                        GlobalStatRow(
+                            label = "Active Users",
+                            value = "${globalStats.userCount}",
+                            icon = FontAwesomeIcons.Solid.Users
+                        )
+                        GlobalStatRow(
+                            label = "Total Visualizer Sessions",
+                            value = "${globalStats.totalSessions}",
+                            icon = FontAwesomeIcons.Solid.Play
+                        )
+                        
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+                        
+                        Text(
+                            text = "Across the globe, users have spent ${formatTime(globalStats.totalActiveTimeMs)} in active synchronization. Keep the rhythm going!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -277,6 +315,38 @@ private fun DetailedFeatureRow(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.ExtraBold,
             color = color
+        )
+    }
+}
+
+@Composable
+private fun GlobalStatRow(
+    label: String,
+    value: String,
+    icon: ImageVector
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
