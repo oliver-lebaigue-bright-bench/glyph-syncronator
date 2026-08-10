@@ -759,140 +759,159 @@ fun GlyphSyncronatorBackground(modifier: Modifier = Modifier) {
     Box(modifier = modifier
         .fillMaxSize()
         .background(background)) {
-
-        if (LocalBananaMode.current) {
-            val infiniteTransition = rememberInfiniteTransition(label = "banana_pulse")
-            val scale by infiniteTransition.animateFloat(
-                initialValue = 1f,
-                targetValue = 1.3f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(2000, easing = EaseInOutCubic),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "pulse"
-            )
-
-            // Static bananas in corners + pulsing center banana
-            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.TopStart).graphicsLayer { rotationZ = -45f })
-                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.TopEnd).graphicsLayer { rotationZ = 45f })
-                Text("🍌", fontSize = 24.sp, modifier = Modifier.align(Alignment.BottomStart).graphicsLayer { rotationZ = -135f })
-                
-                Text("🍌", fontSize = 60.sp, modifier = Modifier
-                    .align(Alignment.Center)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = 0.15f // Very subtle
-                    }
-                )
-            }
-        }
         
         if (isGlass) {
             val infiniteTransition = rememberInfiniteTransition(label = "glass_bg")
             
-    // Speed significantly increased for a highly dynamic liquid look
-    val phase1 by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(3500, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
-        label = "p1"
-    )
-    val phase2 by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(5500, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
-        label = "p2"
-    )
-    val phase3 by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
-        label = "p3"
-    )
+            // Speed significantly increased for a highly dynamic liquid look
+            val phase1 by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(3500, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
+                label = "p1"
+            )
+            val phase2 by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(5500, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
+                label = "p2"
+            )
+            val phase3 by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(4200, easing = LinearEasing), repeatMode = RepeatMode.Reverse), 
+                label = "p3"
+            )
 
-    // Extremely heavy smoothing for the background reaction
-    val smoothedAmp by animateFloatAsState(
-        targetValue = uiAmp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessVeryLow),
-        label = "smoothedBackgroundAmp"
-    )
+            // Extremely heavy smoothing for the background reaction
+            val smoothedAmp by animateFloatAsState(
+                targetValue = uiAmp,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessVeryLow),
+                label = "smoothedBackgroundAmp"
+            )
 
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val baseAmp = (1.0f + (smoothedAmp - 1.0f) * 1.1f).coerceAtMost(1.25f)
-        
-        val t1 = phase1 * Math.PI.toFloat() * 2
-        val t2 = phase2 * Math.PI.toFloat() * 2
-        val t3 = phase3 * Math.PI.toFloat() * 2
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val baseAmp = (1.0f + (smoothedAmp - 1.0f) * 1.1f).coerceAtMost(1.25f)
+                
+                val t1 = phase1 * Math.PI.toFloat() * 2
+                val t2 = phase2 * Math.PI.toFloat() * 2
+                val t3 = phase3 * Math.PI.toFloat() * 2
 
-        val orbAlphaMultiplier = if (isDark) 1.0f else 0.35f
+                val orbAlphaMultiplier = if (isDark) 1.0f else 0.35f
 
-        // Cyan Orb
-        val x1 = size.width * (0.35f + 0.25f * kotlin.math.sin(t1.toDouble()).toFloat())
-        val y1 = size.height * (0.3f + 0.2f * kotlin.math.cos(t2.toDouble() * 0.5).toFloat())
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFF00FBFF).copy(alpha = 0.5f * baseAmp * orbAlphaMultiplier),
-                    Color(0xFF00FBFF).copy(alpha = 0.15f * baseAmp * orbAlphaMultiplier),
-                    Color.Transparent
-                ),
-                center = Offset(x1, y1),
-                radius = size.width * 1.1f * baseAmp
-            ),
-            radius = size.width * 1.1f * baseAmp,
-            center = Offset(x1, y1)
-        )
+                // Cyan Orb
+                val x1 = size.width * (0.35f + 0.25f * kotlin.math.sin(t1.toDouble()).toFloat())
+                val y1 = size.height * (0.3f + 0.2f * kotlin.math.cos(t2.toDouble() * 0.5).toFloat())
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF00FBFF).copy(alpha = 0.5f * baseAmp * orbAlphaMultiplier),
+                            Color(0xFF00FBFF).copy(alpha = 0.15f * baseAmp * orbAlphaMultiplier),
+                            Color.Transparent
+                        ),
+                        center = Offset(x1, y1),
+                        radius = size.width * 1.1f * baseAmp
+                    ),
+                    radius = size.width * 1.1f * baseAmp,
+                    center = Offset(x1, y1)
+                )
 
-        // Magenta Orb
-        val x2 = size.width * (0.65f + 0.2f * kotlin.math.cos(t2.toDouble()).toFloat())
-        val y2 = size.height * (0.7f + 0.2f * kotlin.math.sin(t3.toDouble() * 0.5).toFloat())
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFFFF00C8).copy(alpha = 0.45f * baseAmp * orbAlphaMultiplier),
-                    Color(0xFFFF00C8).copy(alpha = 0.12f * baseAmp * orbAlphaMultiplier),
-                    Color.Transparent
-                ),
-                center = Offset(x2, y2),
-                radius = size.width * 1.0f * baseAmp
-            ),
-            radius = size.width * 1.0f * baseAmp,
-            center = Offset(x2, y2)
-        )
-        
-        // Purple Orb
-        val x3 = size.width * (0.25f + 0.3f * kotlin.math.sin(t3.toDouble()).toFloat())
-        val y3 = size.height * (0.8f + 0.15f * kotlin.math.cos(t1.toDouble() * 0.5).toFloat())
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFF6200EE).copy(alpha = 0.4f * baseAmp * orbAlphaMultiplier),
-                    Color(0xFF6200EE).copy(alpha = 0.1f * baseAmp * orbAlphaMultiplier),
-                    Color.Transparent
-                ),
-                center = Offset(x3, y3),
-                radius = size.width * 0.9f * baseAmp
-            ),
-            radius = size.width * 0.9f * baseAmp,
-            center = Offset(x3, y3)
-        )
+                // Magenta Orb
+                val x2 = size.width * (0.65f + 0.2f * kotlin.math.cos(t2.toDouble()).toFloat())
+                val y2 = size.height * (0.7f + 0.2f * kotlin.math.sin(t3.toDouble() * 0.5).toFloat())
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFFF00C8).copy(alpha = 0.45f * baseAmp * orbAlphaMultiplier),
+                            Color(0xFFFF00C8).copy(alpha = 0.12f * baseAmp * orbAlphaMultiplier),
+                            Color.Transparent
+                        ),
+                        center = Offset(x2, y2),
+                        radius = size.width * 1.0f * baseAmp
+                    ),
+                    radius = size.width * 1.0f * baseAmp,
+                    center = Offset(x2, y2)
+                )
+                
+                // Purple Orb
+                val x3 = size.width * (0.25f + 0.3f * kotlin.math.sin(t3.toDouble()).toFloat())
+                val y3 = size.height * (0.8f + 0.15f * kotlin.math.cos(t1.toDouble() * 0.5).toFloat())
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFF6200EE).copy(alpha = 0.4f * baseAmp * orbAlphaMultiplier),
+                            Color(0xFF6200EE).copy(alpha = 0.1f * baseAmp * orbAlphaMultiplier),
+                            Color.Transparent
+                        ),
+                        center = Offset(x3, y3),
+                        radius = size.width * 0.9f * baseAmp
+                    ),
+                    radius = size.width * 0.9f * baseAmp,
+                    center = Offset(x3, y3)
+                )
 
-        // Yellow Orb
-        val x4 = size.width * (0.75f + 0.15f * kotlin.math.sin(t1.toDouble() * 0.7).toFloat())
-        val y4 = size.height * (0.25f + 0.25f * kotlin.math.cos(t2.toDouble() * 0.4).toFloat())
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    Color(0xFFFFD600).copy(alpha = 0.35f * baseAmp * orbAlphaMultiplier),
-                    Color(0xFFFFD600).copy(alpha = 0.08f * baseAmp * orbAlphaMultiplier),
-                    Color.Transparent
-                ),
-                center = Offset(x4, y4),
-                radius = size.width * 0.8f * baseAmp
-            ),
-            radius = size.width * 0.8f * baseAmp,
-            center = Offset(x4, y4)
-        )
-    }
+                // Yellow Orb
+                val x4 = size.width * (0.75f + 0.15f * kotlin.math.sin(t1.toDouble() * 0.7).toFloat())
+                val y4 = size.height * (0.25f + 0.25f * kotlin.math.cos(t2.toDouble() * 0.4).toFloat())
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFFFD600).copy(alpha = 0.35f * baseAmp * orbAlphaMultiplier),
+                            Color(0xFFFFD600).copy(alpha = 0.08f * baseAmp * orbAlphaMultiplier),
+                            Color.Transparent
+                        ),
+                        center = Offset(x4, y4),
+                        radius = size.width * 0.8f * baseAmp
+                    ),
+                    radius = size.width * 0.8f * baseAmp,
+                    center = Offset(x4, y4)
+                )
+            }
+        }
+
+        if (LocalBananaMode.current) {
+            val infiniteTransition = rememberInfiniteTransition(label = "banana_party")
+            
+            for (i in 0 until 20) {
+                val duration = remember(i) { (3000..8000).random() }
+                val delay = remember(i) { (0..5000).random() }
+                val startX = remember(i) { (0..100).random() / 100f }
+                val sizeMult = remember(i) { 1.2f + (0..100).random() / 40f }
+
+                val yOffset by infiniteTransition.animateFloat(
+                    initialValue = -0.4f,
+                    targetValue = 1.4f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(duration, delayMillis = delay, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "banana_y_$i"
+                )
+
+                val rot by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(duration * 2, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "banana_rot_$i"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            // Using the size of the fillMaxSize Box to calculate screen-relative translation
+                            translationX = (startX * size.width) - (size.width / 2)
+                            translationY = (yOffset * size.height) - (size.height / 2)
+                            rotationZ = rot
+                            alpha = 0.6f // High alpha for debugging
+                            scaleX = sizeMult * (1f + (uiAmp - 1f) * 0.8f)
+                            scaleY = sizeMult * (1f + (uiAmp - 1f) * 0.8f)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🍌", fontSize = 60.sp)
+                }
+            }
         }
     }
 }

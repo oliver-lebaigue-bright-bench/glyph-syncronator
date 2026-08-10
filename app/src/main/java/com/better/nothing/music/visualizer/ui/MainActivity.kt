@@ -556,6 +556,7 @@ internal fun GlyphSyncronatorApp(
     }
 
     val isGlass = LocalIsGlassTheme.current
+    val bananaMode = LocalBananaMode.current
 
     Scaffold(
         bottomBar = {
@@ -568,7 +569,7 @@ internal fun GlyphSyncronatorApp(
         floatingActionButton = {
             StartStopButton(running = isRunning, onClick = onToggleVisualizer)
         },
-        containerColor = if (isGlass) Color.Transparent else MaterialTheme.colorScheme.background,
+        containerColor = if (isGlass || bananaMode) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = Modifier.fillMaxSize()
     ) { padding ->
