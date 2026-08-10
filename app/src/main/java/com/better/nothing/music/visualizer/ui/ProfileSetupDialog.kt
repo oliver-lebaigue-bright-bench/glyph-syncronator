@@ -8,10 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,7 +81,7 @@ fun ProfileSetupDialog(
                         )
                     } else {
                         Icon(
-                            Icons.Default.Person,
+                            FontAwesomeIcons.Solid.User,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -95,7 +95,7 @@ fun ProfileSetupDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.PhotoCamera,
+                            FontAwesomeIcons.Solid.Camera,
                             null,
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)

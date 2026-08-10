@@ -121,6 +121,13 @@ import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.star
 import androidx.graphics.shapes.toPath
 import com.better.nothing.music.visualizer.R
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.Bolt
+import compose.icons.fontawesomeicons.solid.Cog
+import compose.icons.fontawesomeicons.solid.LayerGroup
+import compose.icons.fontawesomeicons.solid.MobileAlt
+import compose.icons.fontawesomeicons.solid.Music
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -702,7 +709,7 @@ fun FlowRowScope.OptionTile(
                 if (bananaMode && isSelected) {
                     Text("🍌", fontSize = 20.sp)
                 } else {
-                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(25.dp))
+                    Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
                 }
                 Text(
                     text = label,
@@ -1243,12 +1250,12 @@ fun NativeBottomBar(
                                 Text("🍌", fontSize = 20.sp)
                             } else {
                                 when (tab) {
-                                    Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier, tint = contentColor)
+                                    Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
                                     Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
-                                    Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier, tint = contentColor)
-                                    Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier, tint = contentColor)
-                                    Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier, tint = contentColor)
-                                    Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier, tint = contentColor)
+                                    Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier, tint = contentColor)
+                                    Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier, tint = contentColor)
+                                    Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier, tint = contentColor)
+                                    Tab.Settings -> Icon(FontAwesomeIcons.Solid.Cog, null, iconModifier, tint = contentColor)
                                 }
                             }
                         }
@@ -1299,12 +1306,12 @@ fun NativeBottomBar(
                             Text("🍌", fontSize = 18.sp)
                         } else {
                             when (tab) {
-                                Tab.Audio -> Icon(painterResource(R.drawable.ic_notif_monochrome), null, iconModifier)
+                                Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
                                 Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
-                                Tab.Visuals -> Icon(Icons.Default.Layers, null, iconModifier)
-                                Tab.Haptics -> Icon(Icons.Filled.Vibration, null, iconModifier)
-                                Tab.Flashlight -> Icon(Icons.Filled.FlashlightOn, null, iconModifier)
-                                Tab.Settings -> Icon(Icons.Filled.Settings, null, iconModifier)
+                                Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier)
+                                Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier)
+                                Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier)
+                                Tab.Settings -> Icon(FontAwesomeIcons.Solid.Cog, null, iconModifier)
                             }
                         }
                     },

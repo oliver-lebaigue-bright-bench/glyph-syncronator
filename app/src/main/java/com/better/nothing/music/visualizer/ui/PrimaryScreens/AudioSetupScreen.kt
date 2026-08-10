@@ -36,26 +36,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Cast
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.FlashlightOn
-import androidx.compose.material.icons.filled.Flare
-import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Leaderboard
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Terminal
-import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -92,6 +78,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Brands
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.brands.Android
+import compose.icons.fontawesomeicons.solid.*
 import androidx.core.content.ContextCompat
 import com.better.nothing.music.visualizer.R
 import com.better.nothing.music.visualizer.logic.LatencyWizard
@@ -318,17 +309,17 @@ fun CaptureSourceCard(
             Triple(
                 AudioCaptureService.CaptureSource.INTERNAL,
                 stringResource(R.string.capture_media_projection),
-                Icons.Default.Cast
+                FontAwesomeIcons.Solid.Tv
             ),
             Triple(
                 AudioCaptureService.CaptureSource.MIC,
                 stringResource(R.string.capture_microphone),
-                Icons.Default.Mic
+                FontAwesomeIcons.Solid.Microphone
             ),
             Triple(
                 AudioCaptureService.CaptureSource.VIZUALIZER,
                 stringResource(R.string.capture_vizualizer),
-                Icons.Default.Android
+                FontAwesomeIcons.Brands.Android
             )
         )
 
@@ -358,7 +349,7 @@ fun CaptureSourceCard(
             // Placeholder button
             OptionTile(
                 label = "Coming Soon...",
-                icon = Icons.Default.Add,
+                icon = FontAwesomeIcons.Solid.Plus,
                 isSelected = false,
                 enabled = false,
                 onClick = { },
@@ -373,7 +364,7 @@ fun CaptureSourceCard(
                 OptionTile(
                     label = if (!shizukuUnlocked) stringResource(R.string.capture_shizuku) + " (Locked)" 
                             else stringResource(R.string.capture_shizuku),
-                    icon = Icons.Default.Terminal,
+                    icon = FontAwesomeIcons.Solid.Terminal,
                     isSelected = isSelected,
                     enabled = isEnabled,
                     onClick = { onSourceSelected(AudioCaptureService.CaptureSource.SHIZUKU) },
@@ -653,8 +644,9 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false) {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Icon(
-                    Icons.Default.Leaderboard,
+                    FontAwesomeIcons.Solid.Trophy,
                     contentDescription = null,
+                    modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
@@ -664,8 +656,9 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false) {
                 )
             }
             Icon(
-                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                imageVector = if (isExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
                 contentDescription = null,
+                modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             )
         }

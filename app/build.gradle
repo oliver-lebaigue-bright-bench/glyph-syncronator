@@ -99,8 +99,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0'
     implementation 'androidx.savedstate:savedstate-ktx:1.5.0'
 
-    // 6. Standard Icons only
+    // 6. Icons
     implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'br.com.devsrsouza.compose.icons:font-awesome:1.1.1'
 
     // 7. Legacy Support
     implementation 'androidx.appcompat:appcompat:1.7.1'

@@ -7,14 +7,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +20,9 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.better.nothing.music.visualizer.R
 import com.better.nothing.music.visualizer.ui.ExpressiveCard
@@ -74,7 +69,7 @@ internal fun StatsScreen(
                     modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
                         contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -87,7 +82,7 @@ internal fun StatsScreen(
             HeroStatCard(
                 label = "Total Visualization Time",
                 value = formatTime(totalTime),
-                icon = Icons.Default.Timer,
+                icon = FontAwesomeIcons.Solid.Clock,
                 color = MaterialTheme.colorScheme.primary
             )
 
@@ -133,13 +128,13 @@ internal fun StatsScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                         DetailedFeatureRow(
-                            icon = Icons.Default.Vibration,
+                            icon = FontAwesomeIcons.Solid.MobileAlt,
                             label = "Haptic Feedback",
                             value = formatTime(hapticTime),
                             color = MaterialTheme.colorScheme.secondary
                         )
                         DetailedFeatureRow(
-                            icon = Icons.Default.FlashOn,
+                            icon = FontAwesomeIcons.Solid.Bolt,
                             label = "Flashlight Sync",
                             value = formatTime(flashlightTime),
                             color = MaterialTheme.colorScheme.tertiary
@@ -160,7 +155,7 @@ internal fun StatsScreen(
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
-                Icon(Icons.Default.EmojiEvents, null, modifier = Modifier.size(24.dp))
+                Icon(FontAwesomeIcons.Solid.Trophy, null, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(12.dp))
                 Text("Check Global Rankings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
             }

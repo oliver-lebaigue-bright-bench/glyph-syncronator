@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -107,7 +105,7 @@ fun AnnouncementModal(
                         onClick = { handleOpenLink(announcement.link) },
                         colors = ButtonDefaults.textButtonColors(contentColor = styleConfig.color)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.ExternalLinkAlt, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(announcement.linkText ?: "Open Link", fontWeight = FontWeight.Bold)
                     }
@@ -150,7 +148,7 @@ fun AnnouncementEditorScreen(
                 title = { Text("Create Announcement", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, "Close")
+                        Icon(FontAwesomeIcons.Solid.Times, "Close")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -284,7 +282,7 @@ fun AnnouncementEditorScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, null)
+                Icon(FontAwesomeIcons.Solid.PaperPlane, null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Post Announcement", fontWeight = FontWeight.Bold)
             }
@@ -320,7 +318,7 @@ fun AnnouncementHistoryScreen(
                 title = { Text(stringResource(R.string.app_news), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        Icon(FontAwesomeIcons.Solid.ArrowLeft, stringResource(R.string.back), modifier = Modifier.size(20.dp))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
@@ -331,7 +329,7 @@ fun AnnouncementHistoryScreen(
         if (announcements.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Inbox, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                    Icon(FontAwesomeIcons.Solid.Inbox, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("No announcements yet", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
                 }
@@ -390,7 +388,7 @@ fun AnnouncementHistoryScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = config.color.copy(alpha = 0.1f), contentColor = config.color)
                                 ) {
-                                    Icon(Icons.AutoMirrored.Filled.OpenInNew, null, modifier = Modifier.size(16.dp))
+                                    Icon(FontAwesomeIcons.Solid.ExternalLinkAlt, null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(announcement.linkText ?: "View More", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                                 }
@@ -411,8 +409,8 @@ private data class AnnouncementStyleConfig(
 @Composable
 private fun getStyleConfig(style: String): AnnouncementStyleConfig {
     return when (style) {
-        "URGENT" -> AnnouncementStyleConfig(Icons.Default.Warning, Color(0xFFE91E63))
-        "FEATURE" -> AnnouncementStyleConfig(Icons.Default.AutoAwesome, Color(0xFF4CAF50))
-        else -> AnnouncementStyleConfig(Icons.Default.Info, MaterialTheme.colorScheme.primary)
+        "URGENT" -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.ExclamationTriangle, Color(0xFFE91E63))
+        "FEATURE" -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.Magic, Color(0xFF4CAF50))
+        else -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.InfoCircle, MaterialTheme.colorScheme.primary)
     }
 }

@@ -33,13 +33,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Sync
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -251,8 +247,9 @@ internal fun GlyphsScreen(
                                         modifier = Modifier.padding(start = 8.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.Delete,
+                                            FontAwesomeIcons.Solid.Trash,
                                             contentDescription = "Delete Local Preset",
+                                            modifier = Modifier.size(18.dp),
                                             tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                         )
                                     }
@@ -294,10 +291,10 @@ internal fun GlyphsScreen(
                                 .fillMaxWidth()
                                 .padding(top = 16.dp),
                             primaryText = "Explore Community",
-                            primaryIcon = Icons.Default.Public,
+                            primaryIcon = FontAwesomeIcons.Solid.Globe,
                             onPrimaryClick = { viewModel.showCommunity() },
                             secondaryText = "Create",
-                            secondaryIcon = Icons.Default.Add,
+                            secondaryIcon = FontAwesomeIcons.Solid.Plus,
                             onSecondaryClick = { viewModel.showEditor() }
                         )
                     }
@@ -440,10 +437,10 @@ internal fun GlyphsScreen(
 
                     ExpressiveSplitButton(
                         primaryText = if (isUpdateAvailable) "Update Now" else "Check GitHub",
-                        primaryIcon = if (configStatus is MainViewModel.ConfigUpdateStatus.Updating) Icons.Default.Sync else Icons.Default.CloudDownload,
+                        primaryIcon = if (configStatus is MainViewModel.ConfigUpdateStatus.Updating) FontAwesomeIcons.Solid.Sync else FontAwesomeIcons.Solid.CloudDownloadAlt,
                         onPrimaryClick = { viewModel.updateZonesConfig() },
                         secondaryText = "Local",
-                        secondaryIcon = Icons.Default.FolderOpen,
+                        secondaryIcon = FontAwesomeIcons.Solid.FolderOpen,
                         onSecondaryClick = { filePickerLauncher.launch("*/*") },
                         enabled = configStatus is MainViewModel.ConfigUpdateStatus.Idle,
                         modifier = Modifier.fillMaxWidth()

@@ -22,19 +22,6 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,6 +50,15 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Brands
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.brands.Github
+import compose.icons.fontawesomeicons.solid.Bullhorn
+import compose.icons.fontawesomeicons.solid.ChartBar
+import compose.icons.fontawesomeicons.solid.ChevronRight
+import compose.icons.fontawesomeicons.solid.Gavel
+import compose.icons.fontawesomeicons.solid.SyncAlt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.better.nothing.music.visualizer.BuildConfig
 import com.better.nothing.music.visualizer.R
@@ -172,7 +168,7 @@ internal fun AboutScreen(
 
             // App News Action
             InfoRow(
-                icon = Icons.Default.Campaign,
+                icon = FontAwesomeIcons.Solid.Bullhorn,
                 title = stringResource(R.string.app_news),
                 subtitle = "Latest updates and announcements",
                 onClick = { viewModel.showAnnouncementHistory() }
@@ -180,7 +176,7 @@ internal fun AboutScreen(
 
             // GitHub Action
             InfoRow(
-                icon = Icons.Default.Code,
+                icon = FontAwesomeIcons.Brands.Github,
                 title = "GitHub Repository",
                 subtitle = "View source and contributions",
                 onClick = { uriHandler.openUri("https://github.com/oliver-lebaigue-bright-bench/better-nothing-music-visualizer-PLUS") }
@@ -188,7 +184,7 @@ internal fun AboutScreen(
 
             // License Action
             InfoRow(
-                icon = Icons.Default.Gavel,
+                icon = FontAwesomeIcons.Solid.Gavel,
                 title = stringResource(R.string.license_agreement),
                 subtitle = stringResource(R.string.read_license),
                 onClick = { viewModel.showLicense() }
@@ -196,7 +192,7 @@ internal fun AboutScreen(
 
             // Analytics Disclaimer
             InfoRow(
-                icon = Icons.Default.BarChart,
+                icon = FontAwesomeIcons.Solid.ChartBar,
                 title = stringResource(R.string.analytics_disclaimer_title),
                 subtitle = stringResource(R.string.analytics_disclaimer_text)
             )
@@ -212,7 +208,7 @@ internal fun AboutScreen(
             }
 
             InfoRow(
-                icon = Icons.Default.Sync,
+                icon = FontAwesomeIcons.Solid.SyncAlt,
                 title = "Software Update",
                 subtitle = statusText,
                 onClick = {
@@ -255,7 +251,7 @@ internal fun AboutScreen(
                         }
                     } else {
                         Icon(
-                            Icons.Default.ChevronRight,
+                            FontAwesomeIcons.Solid.ChevronRight,
                             null,
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
@@ -319,7 +315,7 @@ internal fun AboutScreen(
                             }
                             if (credit.githubUsername != null) {
                                 Icon(
-                                    Icons.Default.ChevronRight,
+                                    FontAwesomeIcons.Solid.ChevronRight,
                                     null,
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                                 )
@@ -412,7 +408,7 @@ private fun InfoRow(
         if (trailingContent != null) {
             trailingContent()
         } else if (onClick != null) {
-            Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+            Icon(FontAwesomeIcons.Solid.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
         }
     }
 }

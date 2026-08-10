@@ -33,11 +33,10 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.*
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Brands
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -144,8 +143,9 @@ internal fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        Icons.Default.Palette,
+                        FontAwesomeIcons.Solid.Palette,
                         contentDescription = null,
+                        modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -155,8 +155,9 @@ internal fun SettingsScreen(
                     )
                 }
                 Icon(
-                    imageVector = if (themeExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = if (themeExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
                     contentDescription = null,
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             }
@@ -197,32 +198,32 @@ internal fun SettingsScreen(
                         Triple(
                             "Default",
                             stringResource(R.string.theme_normal),
-                            Icons.Default.BrightnessAuto
+                            FontAwesomeIcons.Solid.Adjust
                         ),
                         Triple(
                             "Glass",
                             "Liquid Glass",
-                            Icons.Default.AutoMode
+                            FontAwesomeIcons.Solid.Magic
                         ),
                         Triple(
                             "Liquorice Black",
                             stringResource(R.string.theme_liquorice),
-                            Icons.Default.DarkMode
+                            FontAwesomeIcons.Solid.Moon
                         ),
                         Triple(
                             "Nothing",
                             stringResource(R.string.theme_nothing),
-                            Icons.Default.Settings
+                            FontAwesomeIcons.Solid.Cog
                         ),
                         Triple(
                             "Material You",
                             stringResource(R.string.theme_material_you),
-                            Icons.Default.Palette
+                            FontAwesomeIcons.Solid.Palette
                         ),
                         Triple(
                             "Music",
                             stringResource(R.string.theme_music),
-                            Icons.Default.MusicNote
+                            FontAwesomeIcons.Solid.Music
                         )
                     )
 
@@ -286,8 +287,9 @@ internal fun SettingsScreen(
                         Text("🍌", fontSize = 24.sp)
                     } else {
                         Icon(
-                            Icons.Default.Celebration,
+                            FontAwesomeIcons.Solid.BirthdayCake,
                             contentDescription = null,
+                            modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -332,8 +334,9 @@ internal fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
-                            Icons.Default.Air,
+                            FontAwesomeIcons.Solid.Wind,
                             contentDescription = null,
+                            modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -467,8 +470,9 @@ internal fun SettingsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(
-                            Icons.Default.Code,
+                            FontAwesomeIcons.Solid.Code,
                             contentDescription = null,
+                            modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -517,8 +521,9 @@ internal fun SettingsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.Campaign,
+                                    FontAwesomeIcons.Solid.Bullhorn,
                                     null,
+                                    modifier = Modifier.size(20.dp),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Column(modifier = Modifier.weight(1f)) {
@@ -579,8 +584,9 @@ internal fun SettingsScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Icon(
-                                        Icons.Default.Terminal,
+                                        FontAwesomeIcons.Solid.Terminal,
                                         null,
+                                        modifier = Modifier.size(20.dp),
                                         tint = if (shizukuUnlocked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(
                                             alpha = 0.6f
                                         )
@@ -626,7 +632,7 @@ internal fun SettingsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Dns,
+                                        FontAwesomeIcons.Solid.Server,
                                         null,
                                         modifier = Modifier.size(18.dp),
                                         tint = MaterialTheme.colorScheme.primary
@@ -638,8 +644,9 @@ internal fun SettingsScreen(
                                     )
                                 }
                                 Icon(
-                                    if (showSpoofing) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                                    null,
+                                    imageVector = if (showSpoofing) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                 )
                             }
@@ -699,7 +706,7 @@ internal fun SettingsScreen(
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Language,
+                                        FontAwesomeIcons.Solid.Globe,
                                         null,
                                         modifier = Modifier.size(18.dp),
                                         tint = MaterialTheme.colorScheme.primary
@@ -768,8 +775,9 @@ internal fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        Icons.Default.GraphicEq,
+                        FontAwesomeIcons.Solid.WaveSquare,
                         contentDescription = null,
+                        modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -779,8 +787,9 @@ internal fun SettingsScreen(
                     )
                 }
                 Icon(
-                    imageVector = if (processingExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = if (processingExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
                     contentDescription = null,
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             }
@@ -831,8 +840,9 @@ internal fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        Icons.Default.Tune,
+                        FontAwesomeIcons.Solid.SlidersH,
                         contentDescription = null,
+                        modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
@@ -842,8 +852,9 @@ internal fun SettingsScreen(
                     )
                 }
                 Icon(
-                    imageVector = if (experimentalExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = if (experimentalExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
                     contentDescription = null,
+                    modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 )
             }
@@ -861,14 +872,14 @@ internal fun SettingsScreen(
                     ) {
                         OptionTile(
                             label = stringResource(R.string.sync_ui_to_beat),
-                            icon = Icons.Default.SyncAlt,
+                            icon = FontAwesomeIcons.Solid.SyncAlt,
                             isSelected = uiAmplitudeSyncEnabled,
                             onClick = { viewModel.setUiAmplitudeSyncEnabled(!uiAmplitudeSyncEnabled) }
                         )
                         if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
                             OptionTile(
                                 label = stringResource(R.string.disable_glyphs_when_silent_title),
-                                icon = Icons.AutoMirrored.Filled.VolumeOff,
+                                icon = FontAwesomeIcons.Solid.VolumeMute,
                                 isSelected = disableGlyphsWhenSilent,
                                 onClick = { onDisableGlyphsWhenSilentChanged(!disableGlyphsWhenSilent) }
                             )
@@ -876,7 +887,7 @@ internal fun SettingsScreen(
                         if (viewModel.hasFlashlight) {
                             OptionTile(
                                 label = stringResource(R.string.flashlight_multi_intensity_forced_title),
-                                icon = Icons.Default.FlashlightOn,
+                                icon = FontAwesomeIcons.Solid.Bolt,
                                 isSelected = flashlightMultiIntensityForced,
                                 onClick = { viewModel.setFlashlightMultiIntensityForced(!flashlightMultiIntensityForced) }
                             )
@@ -884,7 +895,7 @@ internal fun SettingsScreen(
                         if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
                             OptionTile(
                                 label = stringResource(R.string.strobe_mode),
-                                icon = Icons.Default.Vibration,
+                                icon = FontAwesomeIcons.Solid.MobileAlt,
                                 isSelected = strobeEnabled,
                                 onClick = { onStrobeEnabledChanged(!strobeEnabled) }
                             )
@@ -953,10 +964,10 @@ internal fun SettingsScreen(
                             )
                         } else {
                             Icon(
-                                if (isAnonymous) Icons.Default.CloudOff else Icons.Default.CloudDone,
+                                if (isAnonymous) FontAwesomeIcons.Solid.Cloud else FontAwesomeIcons.Solid.CloudUploadAlt,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(28.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                         
@@ -968,10 +979,10 @@ internal fun SettingsScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    Icons.Default.PhotoCamera,
+                                    FontAwesomeIcons.Solid.Camera,
                                     null,
                                     tint = Color.White.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
@@ -995,9 +1006,9 @@ internal fun SettingsScreen(
                             if (!isAnonymous) {
                                 Spacer(Modifier.width(8.dp))
                                 Icon(
-                                    Icons.Default.Edit,
+                                    FontAwesomeIcons.Solid.Edit,
                                     null,
-                                    modifier = Modifier.size(14.dp),
+                                    modifier = Modifier.size(12.dp),
                                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                                 )
                             }
@@ -1017,7 +1028,7 @@ internal fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Login, null, modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.SignInAlt, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.sign_in_with_google))
                     }
@@ -1032,7 +1043,7 @@ internal fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, null, modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.SignOutAlt, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.sign_out))
                     }
@@ -1049,19 +1060,19 @@ internal fun SettingsScreen(
         ) {
             LinkCard(
                 title = stringResource(R.string.discord_server),
-                icon = Icons.Default.Public,
+                icon = FontAwesomeIcons.Solid.Users,
                 onClick = { uriHandler.openUri("https://discord.gg/DBGX7evmy6") },
                 modifier = Modifier.weight(1f)
             )
             LinkCard(
                 title = "Vizualizer Stats",
-                icon = Icons.Default.BarChart,
+                icon = FontAwesomeIcons.Solid.ChartBar,
                 onClick = { viewModel.showStats() },
                 modifier = Modifier.weight(1f)
             )
             LinkCard(
                 title = stringResource(R.string.about_title),
-                icon = Icons.Default.Info,
+                icon = FontAwesomeIcons.Solid.InfoCircle,
                 onClick = { viewModel.showAbout() },
                 modifier = Modifier.weight(1f)
             )
@@ -1179,7 +1190,7 @@ fun LinkCard(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(23.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -1205,10 +1216,10 @@ fun LinkCard(
             }
 
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = FontAwesomeIcons.Solid.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
     }

@@ -6,18 +6,8 @@ import android.graphics.RectF
 import android.graphics.Region
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Redo
-import androidx.compose.material.icons.filled.Undo
-import androidx.compose.material.icons.filled.CompareArrows
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.VerticalAlignBottom
-import androidx.compose.material.icons.filled.VerticalAlignTop
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.interaction.*
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Flip
-import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.text.font.FontWeight
@@ -26,20 +16,17 @@ import com.better.nothing.music.visualizer.logic.AudioProcessor
 import com.better.nothing.music.visualizer.model.DeviceProfile
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Save
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.*
@@ -285,15 +272,15 @@ fun CustomPresetEditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(AppR.string.back))
+                        Icon(FontAwesomeIcons.Solid.ArrowLeft, contentDescription = stringResource(AppR.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = ::undo, enabled = undoStack.isNotEmpty()) {
-                        Icon(Icons.Default.Undo, contentDescription = "Undo")
+                        Icon(FontAwesomeIcons.Solid.Undo, contentDescription = "Undo")
                     }
                     IconButton(onClick = ::redo, enabled = redoStack.isNotEmpty()) {
-                        Icon(Icons.Default.Redo, contentDescription = "Redo")
+                        Icon(FontAwesomeIcons.Solid.Redo, contentDescription = "Redo")
                     }
                     Spacer(Modifier.width(8.dp))
                     Button(
@@ -304,7 +291,7 @@ fun CustomPresetEditorScreen(
                         ),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Icon(Icons.Default.Public, contentDescription = "Share", modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.Globe, contentDescription = "Share", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(AppR.string.share))
                     }
@@ -316,7 +303,7 @@ fun CustomPresetEditorScreen(
                         },
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Icon(Icons.Default.Save, contentDescription = "Save", modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.Save, contentDescription = "Save", modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(AppR.string.save))
                     }
@@ -459,7 +446,7 @@ fun CustomPresetEditorScreen(
                         colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primary)
                     )
                     IconButton(onClick = { selectedIndices.clear() }) {
-                        Icon(Icons.Default.Clear, contentDescription = stringResource(AppR.string.clear), tint = Color.Gray)
+                        Icon(FontAwesomeIcons.Solid.Eraser, contentDescription = stringResource(AppR.string.clear), tint = Color.Gray)
                     }
                 }
             }
@@ -510,7 +497,7 @@ fun CustomPresetEditorScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(FontAwesomeIcons.Solid.Magic, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Column(Modifier.weight(1f)) {
                                 Text(stringResource(AppR.string.bulk_actions), style = MaterialTheme.typography.titleSmall)
                                 Text(stringResource(AppR.string.bulk_actions_desc), fontSize = 12.sp, color = Color.Gray)
@@ -525,32 +512,32 @@ fun CustomPresetEditorScreen(
                             SuggestionChip(
                                 onClick = { distributeLogarithmically() },
                                 label = { Text(stringResource(AppR.string.auto_distribute)) },
-                                icon = { Icon(Icons.Default.ViewModule, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.Th, null, Modifier.size(18.dp)) }
                             )
                             SuggestionChip(
                                 onClick = { distributeIntensityProgress() },
                                 label = { Text("Progress") },
-                                icon = { Icon(Icons.Default.History, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.History, null, Modifier.size(18.dp)) }
                             )
                             SuggestionChip(
                                 onClick = { mirrorHorizontally() },
                                 label = { Text("Mirror") },
-                                icon = { Icon(Icons.Default.Flip, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.ExchangeAlt, null, Modifier.size(18.dp)) }
                             )
                             SuggestionChip(
                                 onClick = { invertFrequencies() },
                                 label = { Text("Invert") },
-                                icon = { Icon(Icons.Default.SwapHoriz, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.ExchangeAlt, null, Modifier.size(18.dp)) }
                             )
                             SuggestionChip(
                                 onClick = { shiftFrequencies(1f) },
                                 label = { Text("+1 Octave") },
-                                icon = { Icon(Icons.Default.VerticalAlignTop, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.ArrowUp, null, Modifier.size(18.dp)) }
                             )
                             SuggestionChip(
                                 onClick = { shiftFrequencies(-1f) },
                                 label = { Text("-1 Octave") },
-                                icon = { Icon(Icons.Default.VerticalAlignBottom, null, Modifier.size(18.dp)) }
+                                icon = { Icon(FontAwesomeIcons.Solid.ArrowDown, null, Modifier.size(18.dp)) }
                             )
                         }
                     }

@@ -21,6 +21,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="../Docs/app-icon.png">
 </head>
@@ -59,8 +60,8 @@
 
                 <div class="nav-right">
                     <button class="theme-toggle" id="themeToggle" aria-label="Toggle Dark Mode">
-                        <span class="icon-sun">☀</span>
-                        <span class="icon-moon">☾</span>
+                        <i class="fas fa-sun icon-sun"></i>
+                        <i class="fas fa-moon icon-moon"></i>
                     </button>
 
                     <div class="nav-links">
@@ -108,7 +109,7 @@
                 <article class="project-card">
                     <div class="card-content">
                         <div class="card-tags">Precision</div>
-                        <h3 class="card-title">FFT Analysis</h3>
+                        <h3 class="card-title"><i class="fas fa-wave-square"></i> FFT Analysis</h3>
                         <p class="card-desc">Unlike stock implementations that can feel semi-random, Glyph Syncronator uses direct mathematical analysis (Fast Fourier Transform) to ensure every light corresponds exactly to a frequency range.</p>
                         <a href="https://github.com/Aleks-Levet/better-nothing-music-visualizer#technical-excellence" target="_blank" class="card-link">Technical Docs <span>&rarr;</span></a>
                     </div>
@@ -117,7 +118,7 @@
                 <article class="project-card">
                     <div class="card-content">
                         <div class="card-tags">Smoothness</div>
-                        <h3 class="card-title">60 FPS & 12-Bit</h3>
+                        <h3 class="card-title"><i class="fas fa-tachometer-alt"></i> 60 FPS & 12-Bit</h3>
                         <p class="card-desc">We analyze frequencies at 60 FPS with 4096 light levels (12-bit depth). Stock implementations are often limited to 20 FPS and 3 light levels (~2-bit).</p>
                         <a href="#compatibility" class="card-link">See Devices <span>&rarr;</span></a>
                     </div>
@@ -126,7 +127,7 @@
                 <article class="project-card">
                     <div class="card-content">
                         <div class="card-tags">Versatility</div>
-                        <h3 class="card-title">Multi-Source</h3>
+                        <h3 class="card-title"><i class="fas fa-microphone-alt"></i> Multi-Source</h3>
                         <p class="card-desc">Capture audio via Media Projection, Microphone, or Shizuku. Works with Spotify, YouTube Music, and even games with low latency (down to 20ms).</p>
                         <a href="https://discord.gg/h7DYNttc8K" target="_blank" class="card-link">Join Discord <span>&rarr;</span></a>
                     </div>
@@ -235,17 +236,17 @@
                 <h2 class="section-title">The Philosophy</h2>
                 <div class="manifesto-grid">
                     <div class="value-card">
-                        <span class="value-icon">◉</span>
+                        <i class="fas fa-sync-alt value-icon"></i>
                         <h3 class="value-title">Deterministic Sync</h3>
                         <p class="value-text">No randomness. No "guessing" the beat. Every flash is a direct result of mathematical audio analysis.</p>
                     </div>
                     <div class="value-card">
-                        <span class="value-icon">◈</span>
+                        <i class="fas fa-cogs value-icon"></i>
                         <h3 class="value-title">Open & Customizable</h3>
                         <p class="value-text">Controlled by `zones.config`. Tweak existing presets or create your own to support new devices or styles.</p>
                     </div>
                     <div class="value-card">
-                        <span class="value-icon">❖</span>
+                        <i class="fas fa-user-shield value-icon"></i>
                         <h3 class="value-title">Privacy First</h3>
                         <p class="value-text">Audio is processed locally on-device. No audio data is stored or transmitted. Total transparency.</p>
                     </div>

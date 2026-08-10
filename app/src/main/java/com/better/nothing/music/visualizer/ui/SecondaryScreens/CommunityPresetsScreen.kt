@@ -7,10 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Download
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,7 +36,7 @@ fun CommunityPresetsScreen(
                 title = { Text(stringResource(R.string.community_presets), color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
+                        Icon(FontAwesomeIcons.Solid.ArrowLeft, contentDescription = stringResource(R.string.back), tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
@@ -138,7 +137,7 @@ fun PresetCard(
                     onClick = { showConfirm = true },
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray)
+                    Icon(FontAwesomeIcons.Solid.Trash, contentDescription = "Delete", tint = Color.Gray)
                 }
             }
 
@@ -149,7 +148,7 @@ fun PresetCard(
                     contentColor = Color.Black
                 )
             ) {
-                Icon(Icons.Default.Download, contentDescription = stringResource(R.string.download))
+                Icon(FontAwesomeIcons.Solid.Download, contentDescription = stringResource(R.string.download))
             }
         }
     }

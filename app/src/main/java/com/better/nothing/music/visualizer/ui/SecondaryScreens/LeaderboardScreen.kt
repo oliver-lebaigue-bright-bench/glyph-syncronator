@@ -6,11 +6,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +16,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.clickable
@@ -83,7 +81,7 @@ internal fun LeaderboardScreen(
                     modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
                         contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -207,7 +205,7 @@ private fun LeaderboardItem(rank: Int, entry: LeaderboardEntry, onImageClick: ()
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Timer,
+                        imageVector = FontAwesomeIcons.Solid.Clock,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -223,14 +221,14 @@ private fun LeaderboardItem(rank: Int, entry: LeaderboardEntry, onImageClick: ()
 
             if (rank <= 3) {
                 Icon(
-                    imageVector = Icons.Default.EmojiEvents,
+                    imageVector = FontAwesomeIcons.Solid.Trophy,
                     contentDescription = null,
                     tint = iconColor,
                     modifier = Modifier.size(24.dp)
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Default.ChevronRight,
+                    imageVector = FontAwesomeIcons.Solid.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                     modifier = Modifier.size(16.dp)

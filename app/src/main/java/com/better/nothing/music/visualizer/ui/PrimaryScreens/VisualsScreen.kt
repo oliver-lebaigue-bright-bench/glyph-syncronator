@@ -5,8 +5,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Layers
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -81,7 +82,7 @@ fun VisualsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        Icons.Default.Layers,
+                        FontAwesomeIcons.Solid.LayerGroup,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -319,7 +320,7 @@ fun VisualsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        Icons.Default.Layers,
+                        FontAwesomeIcons.Solid.LayerGroup,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -534,7 +535,7 @@ fun VisualsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        Icons.Default.Layers,
+                        FontAwesomeIcons.Solid.LayerGroup,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
