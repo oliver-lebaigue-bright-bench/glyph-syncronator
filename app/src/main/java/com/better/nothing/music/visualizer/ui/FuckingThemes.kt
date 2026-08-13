@@ -53,6 +53,7 @@ fun GlyphSyncronatorTheme(
     fontName: String = "NDot",
     m3eEnabled: Boolean = true,
     bananaMode: Boolean = false,
+    penisMode: Boolean = false,
     musicPrimaryColor: Color? = null,
     content: @Composable () -> Unit
 ) {
@@ -60,7 +61,7 @@ fun GlyphSyncronatorTheme(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    val targetColorScheme = remember(themeName, isDark, musicPrimaryColor, bananaMode) {
+    val targetColorScheme = remember(themeName, isDark, musicPrimaryColor, bananaMode, penisMode) {
         if (bananaMode) {
             androidx.compose.material3.darkColorScheme(
                 background = Color.Black,
@@ -76,6 +77,26 @@ fun GlyphSyncronatorTheme(
                 surfaceVariant = Color(0xFF1A1A00),
                 onSurfaceVariant = Color(0xFFFFF600),
                 outline = Color(0xFF333300)
+            )
+        } else if (penisMode) {
+            androidx.compose.material3.darkColorScheme(
+                background = Color.Black,
+                surface = Color(0xFF0A0E14),
+                onSurface = Color.White,
+                primary = Color(0xFFFEACA4), // Pink Tip / Titles (Active)
+                onPrimary = Color.Black,
+                primaryContainer = Color(0xFFFEACA4).copy(alpha = 0.15f),
+                onPrimaryContainer = Color(0xFFFEACA4),
+                secondary = Color(0xFFD68751), // Brown Shaft
+                onSecondary = Color.Black,
+                secondaryContainer = Color(0xFFD68751).copy(alpha = 0.15f),
+                onSecondaryContainer = Color(0xFFD68751),
+                error = Color(0xFFD71921),
+                onError = Color.White,
+                onBackground = Color.White,
+                surfaceVariant = Color(0xFF1E2B36),
+                onSurfaceVariant = Color(0xFFFEACA4),
+                outline = Color(0xFF2D4356) // Border and intents
             )
         } else {
             when (themeName) {
@@ -415,6 +436,7 @@ fun GlyphSyncronatorTheme(
             LocalAppSpacing provides appSpacing,
             LocalM3EEnabled provides m3eEnabled,
             LocalBananaMode provides bananaMode,
+            LocalPenisMode provides penisMode,
             LocalUIAmplitude provides uiAmplitude,
             LocalIsGlassTheme provides (themeName == "Glass")
         ) {
@@ -532,5 +554,6 @@ class AppSpacing(
 val LocalAppSpacing = staticCompositionLocalOf { AppSpacing() }
 val LocalM3EEnabled = compositionLocalOf { true }
 val LocalBananaMode = compositionLocalOf { false }
+val LocalPenisMode = compositionLocalOf { false }
 val LocalUIAmplitude = compositionLocalOf { 1.0f }
 val LocalIsGlassTheme = compositionLocalOf { false }

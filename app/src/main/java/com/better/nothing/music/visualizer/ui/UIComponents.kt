@@ -90,6 +90,7 @@ import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,6 +99,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -300,6 +304,7 @@ fun DashboardTile(
     val haptics = LocalHapticFeedback.current
     val isGlass = LocalIsGlassTheme.current
     val bananaMode = LocalBananaMode.current
+    val penisMode = LocalPenisMode.current
     
     val backgroundColor by animateColorAsState(
         if (active) {
@@ -358,7 +363,19 @@ fun DashboardTile(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 if (bananaMode) {
-                    Text("🍌", fontSize = 32.sp)
+                    Icon(
+                        painter = painterResource(R.drawable.banana),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(32.dp)
+                    )
+                } else if (penisMode) {
+                    Icon(
+                        painter = painterResource(R.drawable.penis),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(32.dp)
+                    )
                 } else {
                     Icon(
                         imageVector = icon,
@@ -706,8 +723,21 @@ fun FlowRowScope.OptionTile(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 val bananaMode = LocalBananaMode.current
+                val penisMode = LocalPenisMode.current
                 if (bananaMode && isSelected) {
-                    Text("🍌", fontSize = 20.sp)
+                    Icon(
+                        painter = painterResource(R.drawable.banana),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else if (penisMode && isSelected) {
+                    Icon(
+                        painter = painterResource(R.drawable.penis),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(20.dp)
+                    )
                 } else {
                     Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(20.dp))
                 }
@@ -909,7 +939,64 @@ fun GlyphSyncronatorBackground(modifier: Modifier = Modifier) {
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🍌", fontSize = 60.sp)
+                    Icon(
+                        painter = painterResource(R.drawable.banana),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
+        }
+
+        if (LocalPenisMode.current) {
+            val infiniteTransition = rememberInfiniteTransition(label = "penis_party")
+            
+            for (i in 0 until 20) {
+                val duration = remember(i) { (2500..7000).random() }
+                val delay = remember(i) { (0..4000).random() }
+                val startX = remember(i) { (0..100).random() / 100f }
+                val sizeMult = remember(i) { 1.3f + (0..100).random() / 30f }
+
+                val yOffset by infiniteTransition.animateFloat(
+                    initialValue = -0.4f,
+                    targetValue = 1.4f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(duration, delayMillis = delay, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "penis_y_$i"
+                )
+
+                val rot by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(duration * 2, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "penis_rot_$i"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX = (startX * size.width) - (size.width / 2)
+                            translationY = (yOffset * size.height) - (size.height / 2)
+                            rotationZ = rot
+                            alpha = 0.7f
+                            scaleX = sizeMult * (1f + (uiAmp - 1f) * 0.9f)
+                            scaleY = sizeMult * (1f + (uiAmp - 1f) * 0.9f)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.penis),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(65.dp)
+                    )
                 }
             }
         }
@@ -985,17 +1072,20 @@ fun ExpressiveCard(
             }
 
             // Content Layer
-            Column(
-                modifier = Modifier
-                    .animateContentSize(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessLow
+            val contentColor = if (isGlass) Color.White else MaterialTheme.colorScheme.onSurface
+            CompositionLocalProvider(LocalContentColor provides contentColor) {
+                Column(
+                    modifier = Modifier
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
                         )
-                    )
-                    .padding(16.dp)
-            ) {
-                content()
+                        .padding(16.dp)
+                ) {
+                    content()
+                }
             }
         }
     }
@@ -1034,12 +1124,48 @@ fun SectionHeader(
     modifier: Modifier = Modifier
 ) {
     val bananaMode = LocalBananaMode.current
-    Text(
-        text = if (bananaMode) "🍌 $text 🍌" else text,
-        style = MaterialTheme.typography.headlineMedium,
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.padding(vertical = 8.dp)
-    )
+    val penisMode = LocalPenisMode.current
+    Row(
+        modifier = modifier.padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (bananaMode) {
+            Icon(
+                painter = painterResource(R.drawable.banana),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(28.dp)
+            )
+        } else if (penisMode) {
+            Icon(
+                painter = painterResource(R.drawable.penis),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        if (bananaMode) {
+            Icon(
+                painter = painterResource(R.drawable.banana),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(28.dp)
+            )
+        } else if (penisMode) {
+            Icon(
+                painter = painterResource(R.drawable.penis),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+    }
 }
 
 @Composable
@@ -1077,6 +1203,7 @@ fun StartStopButton(
     val uiAmp             = LocalUIAmplitude.current
     val isGlass           = LocalIsGlassTheme.current
     val bananaMode        = LocalBananaMode.current
+    val penisMode         = LocalPenisMode.current
 
     val scale by animateFloatAsState(
         targetValue   = if (isPressed) 0.92f else 1.0f,
@@ -1147,7 +1274,19 @@ fun StartStopButton(
                         label        = "iconTransition"
                     ) { isRunning ->
                         if (bananaMode) {
-                            Text("🍌", fontSize = 24.sp)
+                            Icon(
+                                painter = painterResource(R.drawable.banana),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else if (penisMode) {
+                            Icon(
+                                painter = painterResource(R.drawable.penis),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(24.dp)
+                            )
                         } else {
                             Icon(
                                 imageVector     = if (isRunning) Icons.Filled.Stop else Icons.Filled.PlayArrow,
@@ -1179,6 +1318,7 @@ fun NativeBottomBar(
     val haptics = LocalHapticFeedback.current
     val isGlass = LocalIsGlassTheme.current
     val bananaMode = LocalBananaMode.current
+    val penisMode = LocalPenisMode.current
     val uiAmp = LocalUIAmplitude.current
 
     if (isGlass) {
@@ -1266,7 +1406,19 @@ fun NativeBottomBar(
                             
                             val iconModifier = Modifier.size(26.dp)
                             if (bananaMode && isSelected) {
-                                Text("🍌", fontSize = 20.sp)
+                                Icon(
+                                    painter = painterResource(R.drawable.banana),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = iconModifier
+                                )
+                            } else if (penisMode && isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.penis),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = iconModifier
+                                )
                             } else {
                                 when (tab) {
                                     Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
@@ -1322,7 +1474,19 @@ fun NativeBottomBar(
                     icon = {
                         val iconModifier = Modifier.size(24.dp)
                         if (bananaMode && isSelected) {
-                            Text("🍌", fontSize = 18.sp)
+                            Icon(
+                                painter = painterResource(R.drawable.banana),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = iconModifier
+                            )
+                        } else if (penisMode && isSelected) {
+                            Icon(
+                                painter = painterResource(R.drawable.penis),
+                                contentDescription = null,
+                                tint = Color.Unspecified,
+                                modifier = iconModifier
+                            )
                         } else {
                             when (tab) {
                                 Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
@@ -1522,8 +1686,26 @@ fun <T> ExpressiveSplitButton(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val bananaMode = LocalBananaMode.current
+                            val penisMode = LocalPenisMode.current
+                            if (bananaMode && isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.banana),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            } else if (penisMode && isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.penis),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
                             Text(
-                                text = if (bananaMode && isSelected) "🍌 ${resolvedLabels[item]}" else resolvedLabels[item] ?: "",
+                                text = resolvedLabels[item] ?: "",
                                 style = MaterialTheme.typography.labelLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -1606,10 +1788,23 @@ fun ExpressiveSlider(
             },
         thumb = {
             val bananaMode = LocalBananaMode.current
+            val penisMode = LocalPenisMode.current
             if (bananaMode) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
-                    Text("🍌", fontSize = 24.sp)
-                }
+                Icon(
+                    painter = painterResource(R.drawable.banana),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(28.dp)
+                )
+            } else if (penisMode) {
+                Icon(
+                    painter = painterResource(R.drawable.penis_tip),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .rotate(90f)
+                )
             } else {
                 // THUMB: Gets THINNER as animationFactor increases
                 // Width: 4dp -> 2dp | Height: 44dp -> 48dp
@@ -1626,21 +1821,49 @@ fun ExpressiveSlider(
             }
         },
         track = { sliderState ->
+            val penisMode = LocalPenisMode.current
+            val shaftColor = if (penisMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
             // TRACK: Gets THICKER
             // Radius: We want it to look like a pill when thin, but less rounded when thick
             val trackHeight = 16.dp * animationFactor * uiAmp
 
-            SliderDefaults.Track(
-                sliderState = sliderState,
-                modifier = Modifier
-                    .height(trackHeight),
-                thumbTrackGapSize = 4.dp,
-                trackInsideCornerSize = 2.dp,
-                colors = SliderDefaults.colors(
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            Box(contentAlignment = Alignment.CenterStart) {
+                if (penisMode) {
+                    val ballSize = trackHeight * 1.6f
+                    // Two balls stacked vertically at the start of the track
+                    Box(
+                        modifier = Modifier
+                            .offset(x = -ballSize * 0.8f)
+                            .height(ballSize * 1.8f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset(y = -ballSize * 0.35f)
+                                .size(ballSize)
+                                .background(shaftColor, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .offset(y = ballSize * 0.35f)
+                                .size(ballSize)
+                                .background(shaftColor, CircleShape)
+                        )
+                    }
+                }
+
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier
+                        .height(trackHeight),
+                    thumbTrackGapSize = 4.dp,
+                    trackInsideCornerSize = 2.dp,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = shaftColor,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
-            )
+            }
         }
     )
 }
@@ -1715,17 +1938,44 @@ fun ExpressiveRangeSlider(
         startThumb = { ExpressiveThumb(factor = startThumbFactor) },
         endThumb = { ExpressiveThumb(factor = endThumbFactor) },
         track = { rangeSliderState ->
+            val penisMode = LocalPenisMode.current
+            val shaftColor = if (penisMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
             val trackHeight = 12.dp * animationFactor * uiAmp
-            SliderDefaults.Track(
-                rangeSliderState = rangeSliderState,
-                modifier = Modifier.height(trackHeight),
-                thumbTrackGapSize = 4.dp,
-                drawStopIndicator = null,
-                colors = SliderDefaults.colors(
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            Box(contentAlignment = Alignment.CenterStart) {
+                if (penisMode) {
+                    val ballSize = trackHeight * 1.6f
+                    // Two balls stacked vertically at the start of the track
+                    Box(
+                        modifier = Modifier
+                            .offset(x = -ballSize * 0.8f)
+                            .height(ballSize * 1.8f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .offset(y = -ballSize * 0.35f)
+                                .size(ballSize)
+                                .background(shaftColor, CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .offset(y = ballSize * 0.35f)
+                                .size(ballSize)
+                                .background(shaftColor, CircleShape)
+                        )
+                    }
+                }
+                SliderDefaults.Track(
+                    rangeSliderState = rangeSliderState,
+                    modifier = Modifier.height(trackHeight),
+                    thumbTrackGapSize = 4.dp,
+                    drawStopIndicator = null,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = shaftColor,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
-            )
+            }
         }
     )
 }
@@ -1733,10 +1983,23 @@ fun ExpressiveRangeSlider(
 @Composable
 private fun ExpressiveThumb(factor: Float) {
     val bananaMode = LocalBananaMode.current
+    val penisMode = LocalPenisMode.current
     if (bananaMode) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
-            Text("🍌", fontSize = 24.sp)
-        }
+        Icon(
+            painter = painterResource(R.drawable.banana),
+            contentDescription = null,
+            tint = Color.Unspecified,
+            modifier = Modifier.size(28.dp)
+        )
+    } else if (penisMode) {
+        Icon(
+            painter = painterResource(R.drawable.penis_tip),
+            contentDescription = null,
+            tint = Color.Unspecified,
+            modifier = Modifier
+                .size(32.dp)
+                .rotate(90f)
+        )
     } else {
         // The thumb gets thinner and taller when grabbed
         val thumbWidth = 4.dp / factor

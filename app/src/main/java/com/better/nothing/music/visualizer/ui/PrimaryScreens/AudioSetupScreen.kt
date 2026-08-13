@@ -72,6 +72,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
@@ -121,6 +122,7 @@ fun AudioScreen(
     onResetLatencyWizard: () -> Unit = {},
     developerModeEnabled: Boolean = false,
     bananaMode: Boolean = false,
+    penisMode: Boolean = false,
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
     val context = LocalContext.current
@@ -230,7 +232,7 @@ fun AudioScreen(
         }
 
         AnimatedVisibility(visible = isRunning) {
-            FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode)
+            FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
         }
 
         if (isRunning) {
@@ -623,7 +625,7 @@ fun LatencyCard(
 }
 
 @Composable
-fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false) {
+fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode: Boolean = false) {
     val haptics = LocalHapticFeedback.current
     var isExpanded by remember { mutableStateOf(false) }
     var touchX by remember { mutableStateOf<Float?>(null) }
@@ -771,12 +773,24 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false) {
                     }
 
                     if (bananaMode) {
-                        Text(
-                            text = "🍌",
-                            fontSize = 48.sp,
+                        Icon(
+                            painter = painterResource(R.drawable.banana),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
                                 .padding(16.dp)
+                                .size(48.dp)
+                        )
+                    } else if (penisMode) {
+                        Icon(
+                            painter = painterResource(R.drawable.penis),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(16.dp)
+                                .size(48.dp)
                         )
                     }
 

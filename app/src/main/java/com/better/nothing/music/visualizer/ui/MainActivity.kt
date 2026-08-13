@@ -225,6 +225,7 @@ class MainActivity : ComponentActivity() {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
             val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
+            val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
             val musicThemeColor by viewModel.musicThemeColor.collectAsStateWithLifecycle()
             val isRunning by viewModel.runningState.collectAsStateWithLifecycle()
 
@@ -259,6 +260,7 @@ class MainActivity : ComponentActivity() {
                 themeName = selectedTheme,
                 fontName = selectedFont,
                 bananaMode = bananaMode,
+                penisMode = penisMode,
                 musicPrimaryColor = musicThemeColor,
             ) {
                 // Ensure a solid black root background to prevent "white bits" showing through from window
@@ -557,6 +559,7 @@ internal fun GlyphSyncronatorApp(
 
     val isGlass = LocalIsGlassTheme.current
     val bananaMode = LocalBananaMode.current
+    val penisMode = LocalPenisMode.current
 
     Scaffold(
         bottomBar = {
@@ -569,7 +572,7 @@ internal fun GlyphSyncronatorApp(
         floatingActionButton = {
             StartStopButton(running = isRunning, onClick = onToggleVisualizer)
         },
-        containerColor = if (isGlass || bananaMode) Color.Transparent else MaterialTheme.colorScheme.background,
+        containerColor = if (isGlass || bananaMode || penisMode) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = Modifier.fillMaxSize()
     ) { padding ->
@@ -610,6 +613,7 @@ internal fun GlyphSyncronatorApp(
                         val shizukuUnlocked by viewModel.shizukuSourceUnlocked.collectAsStateWithLifecycle()
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
+                        val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
 
                         AudioScreen(
                             isRunning = isRunning,
@@ -630,6 +634,7 @@ internal fun GlyphSyncronatorApp(
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
+                            penisMode = penisMode,
                             padding = padding
                         )
                     }

@@ -207,6 +207,9 @@
     <string name="banana_mode">Banana Mode</string>
     <string name="banana_mode_description">The most a-peeling theme in the world. 🍌</string>
 
+    <string name="penis_mode">Penis Mode</string>
+    <string name="penis_mode_description">The most ballsy theme in the world. 🍆</string>
+
     <string name="notification_controls_title">Notification Controls</string>
     <string name="notification_controls_desc">Choose which buttons appear in the persistent notification.</string>
     <string name="notification_button_set_presets">Presets</string>

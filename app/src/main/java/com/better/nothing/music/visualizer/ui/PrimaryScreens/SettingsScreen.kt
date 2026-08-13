@@ -32,6 +32,7 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Brands
@@ -83,6 +84,7 @@ internal fun SettingsScreen(
     val uiAmplitudeSyncEnabled by viewModel.uiAmplitudeSyncEnabled.collectAsStateWithLifecycle()
     val flashlightMultiIntensityForced by viewModel.flashlightMultiIntensityForced.collectAsStateWithLifecycle()
     val bananaModeEnabled by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
+    val penisModeEnabled by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
     val isAnonymous by viewModel.isAnonymous.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
@@ -151,6 +153,7 @@ internal fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.app_theme),
                         style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -284,7 +287,12 @@ internal fun SettingsScreen(
                     modifier = Modifier.weight(1f)
                 ) {
                     if (bananaModeEnabled) {
-                        Text("🍌", fontSize = 24.sp)
+                        Icon(
+                            painter = painterResource(R.drawable.banana),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = Color.Unspecified
+                        )
                     } else {
                         Icon(
                             FontAwesomeIcons.Solid.BirthdayCake,
@@ -297,6 +305,7 @@ internal fun SettingsScreen(
                         Text(
                             text = stringResource(R.string.banana_mode),
                             style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFFFEACA4),
                             fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -309,6 +318,61 @@ internal fun SettingsScreen(
                 Switch(
                     checked = bananaModeEnabled,
                     onCheckedChange = { viewModel.setBananaModeEnabled(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier.size(height = 24.dp, width = 48.dp)
+                )
+            }
+        }
+
+        // ── Penis Mode ────────────────────────────────────────────────────
+        ExpressiveCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (penisModeEnabled) {
+                        Icon(
+                            painter = painterResource(R.drawable.penis),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = Color.Unspecified
+                        )
+                    } else {
+                        Icon(
+                            FontAwesomeIcons.Solid.PepperHot,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.penis_mode),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = stringResource(R.string.penis_mode_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+                Switch(
+                    checked = penisModeEnabled,
+                    onCheckedChange = { viewModel.setPenisModeEnabled(it) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = MaterialTheme.colorScheme.primary
@@ -343,6 +407,7 @@ internal fun SettingsScreen(
                             Text(
                                 text = stringResource(R.string.idle_breathing_title),
                                 style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
@@ -783,6 +848,7 @@ internal fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.audio_pipeline_title),
                         style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -848,6 +914,7 @@ internal fun SettingsScreen(
                     Text(
                         text = stringResource(R.string.experimental_features),
                         style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }

@@ -247,6 +247,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val _penisModeEnabled = MutableStateFlow(false)
+    val penisModeEnabled = _penisModeEnabled.asStateFlow()
+    fun setPenisModeEnabled(enabled: Boolean) {
+        _penisModeEnabled.value = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit { putBoolean("penis_mode_enabled", enabled) }
+        }
+    }
+
     private val _overlayWidth = MutableStateFlow(120)
     val overlayWidth = _overlayWidth.asStateFlow()
     fun setOverlayWidth(width: Int) {
@@ -1222,6 +1232,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _shizukuSourceUnlocked.value = prefs.getBoolean("shizuku_source_unlocked", false)
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
+        _penisModeEnabled.value = prefs.getBoolean("penis_mode_enabled", false)
 
         _totalVisualizedTime.value = prefs.getLong("total_visualized_time", 0L)
         _totalIdleTime.value = prefs.getLong("total_idle_time", 0L)
