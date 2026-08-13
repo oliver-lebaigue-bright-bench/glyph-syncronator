@@ -4,6 +4,7 @@ package com.better.nothing.music.visualizer.ui
 
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.widget.Toast
 import android.annotation.SuppressLint
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.animation.animateColorAsState
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -1736,6 +1738,8 @@ fun ExpressiveSlider(
     val isActive = isPressed || isDragged
 
     val wasActive = remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val penisMode = LocalPenisMode.current
 
     // Trigger haptic on Press/Release (skip initial state)
     LaunchedEffect(isActive) {
@@ -1745,6 +1749,16 @@ fun ExpressiveSlider(
         } else if (wasActive.value && !isActive) {
             // Trigger on release (transition from true to false)
             haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+
+            if (penisMode) {
+                val normalized = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+                val joke = when {
+                    normalized < 0.3f -> listOf("It's not about the size, it's how you use it.", "A grower, not a shower.", "Small but mighty.", "Personal-sized for convenience.").random()
+                    normalized < 0.7f -> listOf("Perfectly average.", "Respectably mid-sized.", "The standard model.", "Symmetry is key.").random()
+                    else -> listOf("You must have a very fast car.", "Compensating for something?", "Is that a visualizer in your pocket?", "Absolute unit detected.", "Taking up a lot of bandwidth.").random()
+                }
+                Toast.makeText(context, joke, Toast.LENGTH_SHORT).show()
+            }
         }
         wasActive.value = isActive
     }
@@ -1887,6 +1901,8 @@ fun ExpressiveRangeSlider(
 
     val isAnyActive = startActive || startDragged || endActive || endDragged
     val wasActive = remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val penisMode = LocalPenisMode.current
 
     // Trigger haptic on Press/Release (skip initial state)
     LaunchedEffect(isAnyActive) {
@@ -1896,6 +1912,17 @@ fun ExpressiveRangeSlider(
         } else if (wasActive.value && !isAnyActive) {
             // Trigger on release (transition from true to false)
             haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+
+            if (penisMode) {
+                // Use the upper end of the range for the joke
+                val normalized = ((value.endInclusive - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+                val joke = when {
+                    normalized < 0.3f -> listOf("Small but mighty.", "Personal-sized for convenience.", "Efficiency at its finest.", "A grower, not a shower.").random()
+                    normalized < 0.7f -> listOf("Perfectly average.", "Respectably mid-sized.", "The standard model.", "Excellent proportions.").random()
+                    else -> listOf("You must have a very fast car.", "Taking up a lot of bandwidth.", "Absolute unit detected.", "Is that a visualizer in your pocket?", "Compensating for something?").random()
+                }
+                Toast.makeText(context, joke, Toast.LENGTH_SHORT).show()
+            }
         }
         wasActive.value = isAnyActive
     }
