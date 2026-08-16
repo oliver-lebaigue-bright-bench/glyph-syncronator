@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Icon
@@ -279,6 +280,11 @@ fun CaptureSourceCard(
     ExpressiveCard(modifier = Modifier.fillMaxWidth()) {
         CardHeader(title = "Capture Source")
         val sources = listOf(
+            Triple(
+                AudioCaptureService.CaptureSource.MEDIA_NOTIFICATION,
+                "Media Notification Sync (Rec)",
+                Icons.Default.MusicNote
+            ),
             Triple(
                 AudioCaptureService.CaptureSource.INTERNAL,
                 stringResource(R.string.capture_media_projection),

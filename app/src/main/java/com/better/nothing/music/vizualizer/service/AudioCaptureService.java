@@ -105,8 +105,9 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SHIZUKU }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SHIZUKU, MEDIA_NOTIFICATION }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
+    private com.better.nothing.music.vizualizer.logic.MediaSyncPlaybackEngine mMediaSyncEngine;
 
     public static final String ACTION_STOP = "com.better.nothing.music.vizualizer.action.STOP";
     public static final String ACTION_START = "com.better.nothing.music.vizualizer.action.START";
@@ -668,6 +669,7 @@ public class AudioCaptureService extends Service {
         } catch (Exception ignored) {}
         resetVisualizerState();
         if (mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN && Build.VERSION.SDK_INT >= 31) ensureGlyphManagerInitialized();
+        mMediaSyncEngine = new com.better.nothing.music.vizualizer.logic.MediaSyncPlaybackEngine(this, mGlyphRenderer);
         mMainHandler.post(mIdlePulseRunnable);
     }
 
@@ -739,6 +741,7 @@ public class AudioCaptureService extends Service {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
         else if (mCaptureSource == CaptureSource.SHIZUKU) startShizukuCapture();
+        else if (mCaptureSource == CaptureSource.MEDIA_NOTIFICATION) startMediaNotificationCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -752,7 +755,19 @@ public class AudioCaptureService extends Service {
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
             else if (mCaptureSource == CaptureSource.SHIZUKU) startShizukuCapture();
+            else if (mCaptureSource == CaptureSource.MEDIA_NOTIFICATION) startMediaNotificationCapture();
         });
+    }
+
+    public void startMediaNotificationCapture() {
+        mCaptureSource = CaptureSource.MEDIA_NOTIFICATION;
+        synchronized (mCaptureLock) {
+            stopCaptureLocked();
+            mCapturing = true;
+            setRunning(true);
+            showNotification();
+            if (mMediaSyncEngine != null) mMediaSyncEngine.start();
+        }
     }
 
     public void startShizukuCapture() { startCaptureInternal(CaptureSource.SHIZUKU, 0, null); }
@@ -920,6 +935,7 @@ public class AudioCaptureService extends Service {
     public void stopCapture() { synchronized (mCaptureLock) { stopCaptureLocked(); } }
     private void stopCaptureLocked() {
         mCapturing = false; setRunning(false); updateOverlayVisibility();
+        if (mMediaSyncEngine != null) mMediaSyncEngine.stop();
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseShizukuProcess(); releaseVisualizer(); releaseProjection();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }

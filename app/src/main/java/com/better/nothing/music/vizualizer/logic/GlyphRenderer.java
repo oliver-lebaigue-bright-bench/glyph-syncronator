@@ -94,6 +94,23 @@ public class GlyphRenderer {
         mBreathingEnvelope = 0f;
     }
 
+    public int[] renderFrameFromIntensities(float[] intensities) {
+        if (intensities == null || intensities.length == 0) {
+            return new int[0];
+        }
+        int hardwareCount = DeviceProfile.getLedCount(mDeviceType);
+        int targetLength = Math.max(intensities.length, hardwareCount);
+        int[] frameColors = new int[targetLength];
+        int count = Math.min(intensities.length, targetLength);
+        float multiplier = (float) mMaxBrightness;
+        for (int i = 0; i < count; i++) {
+            int val = Math.round(applyGamma(intensities[i]) * multiplier);
+            frameColors[i] = Math.max(0, Math.min(4095, val));
+        }
+        return frameColors;
+    }
+
+
     public int[] processFrame(float[] uniqueMagnitudes, AudioProcessor.VisualizerConfig config, long nowMs) {
         if (config == null || uniqueMagnitudes == null) {
             return new int[0];

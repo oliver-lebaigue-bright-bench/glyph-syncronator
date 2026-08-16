@@ -324,6 +324,22 @@ class MainActivity : ComponentActivity() {
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.SHIZUKU -> startShizukuVisualizer()
+                AudioCaptureService.CaptureSource.MEDIA_NOTIFICATION -> startMediaNotificationVisualizer()
+            }
+        }
+    }
+
+    private fun startMediaNotificationVisualizer() {
+        val s = service ?: return
+        val enabledListeners = androidx.core.app.NotificationManagerCompat.getEnabledListenerPackages(this)
+        if (enabledListeners.contains(packageName)) {
+            s.startVisualizer()
+        } else {
+            Toast.makeText(this, "Notification access permission required for media sync.", Toast.LENGTH_LONG).show()
+            try {
+                startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to launch Notification Listener settings", e)
             }
         }
     }
