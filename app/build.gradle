@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'com.better.nothing.music.visualizer'
+    namespace 'com.better.nothing.music.vizualizer'
     compileSdk 37
 
     defaultConfig {
-        applicationId "com.better.nothing.music.visualizer"
+        applicationId "com.better.nothing.music.vizualizer"
         minSdk 26
         targetSdk 37
         versionCode 11
@@ -60,6 +60,7 @@ dependencies {
 
     // FFT Library for better accuracy
     implementation 'com.github.wendykierp:JTransforms:3.2'
+    implementation 'com.google.code.gson:gson:2.11.0'
 
     // 2. Compose BOM - Manages versions for all compose libs below
     implementation platform('androidx.compose:compose-bom:2026.06.00')

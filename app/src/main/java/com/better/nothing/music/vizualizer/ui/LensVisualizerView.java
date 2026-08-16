@@ -30,10 +30,15 @@ public class LensVisualizerView extends View {
     public void setRadius(float radius) { this.mRadius = radius; }
     public void setXPosition(float x) { this.mXPos = x; }
     public void setYPosition(float y) { this.mYPos = y; }
+    public void setCenterPosition(float x, float y) { setXPosition(x); setYPosition(y); }
     public void setBarWidth(float width) { this.mBarWidth = width; }
     public void setMaxHeight(float height) { this.mMaxHeight = height; }
     public void setBarCount(int count) { this.mBarCount = count; }
     public void setSensitivity(float sensitivity) { this.mSensitivity = sensitivity; }
+
+    public void updateMagnitudes(float[] magnitudes, int sampleRate) {
+        updateMagnitudes(magnitudes);
+    }
 
     public void updateMagnitudes(float[] magnitudes) {
         if (magnitudes == null || magnitudes.length == 0) return;

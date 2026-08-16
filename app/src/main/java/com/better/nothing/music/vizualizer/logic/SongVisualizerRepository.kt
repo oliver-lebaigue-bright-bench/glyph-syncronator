@@ -13,18 +13,21 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Manages fetching, caching, generating, and uploading song visualizer timelines.
+ * Manages fetching, caching, generating, and uploading song visualizer timelines
+ * using PocketBase (Homeserver) as Primary, Firebase as Backup, and local generation as Fallback.
  */
 class SongVisualizerRepository(private val context: Context) {
 
     private val gson = Gson()
     private val memoryCache = LruCache<String, SongVisualSequence>(20)
+    private val pocketBaseRepo = PocketBaseRepository(context)
+
     private val firebaseRef by lazy {
         try {
             FirebaseDatabase.getInstance("https://bnmv-67120-default-rtdb.europe-west1.firebasedatabase.app")
                 .getReference("song_visuals")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize Firebase Database", e)
+            Log.e(TAG, "Failed to initialize Firebase Database backup", e)
             null
         }
     }
@@ -51,23 +54,32 @@ class SongVisualizerRepository(private val context: Context) {
             return@withContext it
         }
 
-        // 3. Query Firebase Cloud
-        val cloudSeq = fetchFromFirebase(key)
-        if (cloudSeq != null) {
-            Log.d(TAG, "Fetched sequence from Firebase for $key")
-            saveToDisk(cloudSeq, persistent = false)
-            memoryCache.put(key, cloudSeq)
-            return@withContext cloudSeq
+        // 3. Primary Cloud: PocketBase Homeserver
+        val pbSeq = fetchFromPocketBase(key)
+        if (pbSeq != null) {
+            Log.d(TAG, "Fetched sequence from PocketBase Homeserver for $key")
+            saveToDisk(pbSeq, persistent = false)
+            memoryCache.put(key, pbSeq)
+            return@withContext pbSeq
         }
 
-        // 4. Fallback: Generate locally using Procedural Engine
-        Log.d(TAG, "Generating procedural sequence for $key")
+        // 4. Backup Cloud: Firebase Database (Power Outage / Homeserver Offline Fallback)
+        val fbSeq = fetchFromFirebaseBackup(key)
+        if (fbSeq != null) {
+            Log.d(TAG, "Fetched sequence from Firebase Backup for $key")
+            saveToDisk(fbSeq, persistent = false)
+            memoryCache.put(key, fbSeq)
+            return@withContext fbSeq
+        }
+
+        // 5. Offline Fallback: Generate locally using Procedural Engine
+        Log.d(TAG, "All cloud servers offline or song missing; generating procedural sequence for $key")
         val generatedSeq = ProceduralLightshowEngine.generateSequence(metadata)
         saveToDisk(generatedSeq, persistent = false)
         memoryCache.put(key, generatedSeq)
 
-        // 5. Asynchronously upload generated sequence to Firebase for other devices to use
-        uploadToFirebase(generatedSeq)
+        // 6. Non-blocking upload to Homeserver
+        uploadToPocketBase(generatedSeq)
 
         return@withContext generatedSeq
     }
@@ -75,11 +87,11 @@ class SongVisualizerRepository(private val context: Context) {
     private fun loadFromDisk(key: String): SongVisualSequence? {
         val persistentFile = File(persistentDir, "$key.json")
         if (persistentFile.exists()) {
-            return runCatching { gson.fromJson(persistentFile.readText(), SongVisualSequence::class.java) }.getOrNull()
+            return try { gson.fromJson(persistentFile.readText(), SongVisualSequence::class.java) } catch (e: Exception) { null }
         }
         val tempFile = File(tempCacheDir, "$key.json")
         if (tempFile.exists()) {
-            return runCatching { gson.fromJson(tempFile.readText(), SongVisualSequence::class.java) }.getOrNull()
+            return try { gson.fromJson(tempFile.readText(), SongVisualSequence::class.java) } catch (e: Exception) { null }
         }
         return null
     }
@@ -94,7 +106,16 @@ class SongVisualizerRepository(private val context: Context) {
         }
     }
 
-    private suspend fun fetchFromFirebase(key: String): SongVisualSequence? {
+    private suspend fun fetchFromPocketBase(key: String): SongVisualSequence? {
+        return try {
+            pocketBaseRepo.getSongVisualSequence(key)
+        } catch (e: Exception) {
+            Log.w(TAG, "PocketBase fetch exception: ${e.message}")
+            null
+        }
+    }
+
+    private suspend fun fetchFromFirebaseBackup(key: String): SongVisualSequence? {
         val ref = firebaseRef ?: return null
         return try {
             val snapshot = ref.child(key).get().await()
@@ -104,16 +125,17 @@ class SongVisualizerRepository(private val context: Context) {
                 null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Firebase fetch failed for key: $key", e)
+            Log.w(TAG, "Firebase backup fetch exception: ${e.message}")
             null
         }
     }
 
-    private fun uploadToFirebase(sequence: SongVisualSequence) {
-        val ref = firebaseRef ?: return
-        ref.child(sequence.songKey).setValue(sequence)
-            .addOnSuccessListener { Log.d(TAG, "Uploaded sequence to Firebase: ${sequence.songKey}") }
-            .addOnFailureListener { e -> Log.e(TAG, "Failed to upload sequence to Firebase: ${sequence.songKey}", e) }
+    private suspend fun uploadToPocketBase(sequence: SongVisualSequence) {
+        try {
+            pocketBaseRepo.uploadSongVisualSequence(sequence)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to upload to PocketBase: ${e.message}")
+        }
     }
 
     /**
