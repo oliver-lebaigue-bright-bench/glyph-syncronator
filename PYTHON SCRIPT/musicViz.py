@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 musicViz.py - a tool that brings better music visualization to Nothing Phones!
-https://github.com/Aleks-Levet/better-nothing-music-visualizer
+https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator
 
-Copyright (C) 2024  Aleks Levet and SebiAi.
+Copyright (C) 2024  Oliver Lebaigue and SebiAi.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -767,7 +767,7 @@ def download_zones_config_to_cwd(overwrite: bool = False, attempts: int = 2, bac
         # No need to print "already present" here as it's checked frequently
         return True
 
-    url = "https://raw.githubusercontent.com/Aleks-Levet/better-nothing-music-visualizer/main/zones.config"
+    url = "https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/zones.config"
     last_err = None
     for attempt in range(1, attempts + 1):
         try:

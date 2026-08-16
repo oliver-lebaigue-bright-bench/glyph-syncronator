@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">المصور المرئي للصوت نشط الآن. هاتفك يرقص الآن على الإيقاع! لا يتم حفظ أي محتوى صوتي.</string>
-    <string name="audio_description_idle">تم تطوير هذا التطبيق بواسطة Aleks Levet وrKyzen وOliver lebaigue.\n\nملاحظة الخصوصية: نحن نستخدم فقط بث الصوت. لا يتم تسجيل أي محتوى للشاشة.</string>
+    <string name="audio_description_idle">تم تطوير هذا التطبيق بواسطة Oliver Lebaigue وrKyzen وOliver lebaigue.\n\nملاحظة الخصوصية: نحن نستخدم فقط بث الصوت. لا يتم تسجيل أي محتوى للشاشة.</string>
     <string name="audio_warning_vizualizer">تنويه: يستخدم هذا المصدر بث الصوت المرئي القياسي الخاص بنظام Android. جودته منخفضة وقد يؤدي إلى نتائج غير مرضية.</string>
     <string name="auto_memorize_device">حفظ الجهاز تلقائيًا</string>
     <string name="saving_latency_for">جارٍ حفظ زمن التأخير لـ: %s</string>
@@ -97,7 +97,7 @@
 
     <!-- About Screen -->
     <string name="about_title">معلومات التطبيق والتحديثات</string>
-    <string name="about_intro">يُطلق تطبيق VibeSync الإمكانات الكاملة لواجهة Glyph من خلال تحليل ترددي فوري وعالي الدقة.</string>
+    <string name="about_intro">يُطلق تطبيق glyph-syncronator الإمكانات الكاملة لواجهة Glyph من خلال تحليل ترددي فوري وعالي الدقة.</string>
     <string name="about_section_why">لماذا نحن أفضل من مصور Nothing الأصلي:</string>
     <string name="analytics_disclaimer_title">التحليلات</string>
     <string name="analytics_disclaimer_text">يستخدم هذا التطبيق خدمة Google Analytics (Firebase) لجمع إحصاءات استخدام مجهولة الهوية وتقارير الأعطال للمساعدة في تحسين تجربة التطبيق. لا يتم جمع أي بيانات شخصية أو محتوى صوتي.</string>
@@ -125,7 +125,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">تحديث متاح: %s</string>
     <string name="update_now">التحديث الآن</string>
-    <string name="credit_alekslevet_role">المؤسس والمنسّق وصاحب الفكرة الرئيسية والمالك</string>
+    <string name="credit_owner_role">المؤسس والمنسّق وصاحب الفكرة الرئيسية والمالك</string>
     <string name="credit_rkyzen_role">مطوّر تطبيق Android (بث الموسيقى الفوري)</string>
     <string name="credit_oliver_role">مطوّر مشارك لهذا التطبيق الرائع</string>
     <string name="credit_nicouschulas_role">تحسينات ملف Readme والـwiki</string>
@@ -238,7 +238,7 @@
     <string name="not_now">ليس الآن</string>
     <string name="downloading_update">جارٍ تنزيل التحديث...</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">نُقدّر دعمكم.</string>
     <string name="youre_welcome">على الرحب والسعة!</string>
 
@@ -273,20 +273,20 @@
     <string name="license_title">الترخيص</string>
     <string name="license_agreement">اتفاقية الترخيص</string>
     <string name="read_license">قراءة ترخيص البرنامج</string>
-    <string name="license_agreement_title">اتفاقية ترخيص BETTER-NOTHING-MUSIC-VISUALIZER</string>
+    <string name="license_agreement_title">اتفاقية ترخيص GLYPH-SYNCRONATOR</string>
     <string name="license_version">الإصدار: 1.1</string>
     <string name="license_date">التاريخ: 29 يونيو 2026</string>
     <string name="license_licensor">المرخِّص</string>
     <string name="license_licensor_name">Oliver Lebaigue</string>
     <string name="license_founder">المؤسس</string>
-    <string name="license_founder_name">Aleks Levet</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
     <string name="license_organization">المؤسسة</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. تمهيد</string>
-    <string name="license_preamble_1">تُعدّ اتفاقية الترخيص هذه (\"الاتفاقية\") اتفاقًا قانونيًا بينك (\"المرخَّص له\") وبين Oliver Lebaigue (\"المرخِّص\") بشأن استخدام ومراجعة وتعديل تطبيق المصور الموسيقي المرئي المعروف باسم \"better-nothing-music-visualizer\" (\"البرنامج\")، وهو مشروع أسّسه Aleks Levet تحت مظلة مؤسسة Luminus Labs.</string>
-    <string name="license_preamble_2">المصدر للبرنامج مستضاف علنًا على الرابط https://github.com/aleks-levet/better-nothing-music-visualizer. وبمجرد الوصول إلى البرنامج أو مصدره أو تنزيله أو نسخه أو استخدامه بأي شكل آخر، يوافق المرخَّص له على الالتزام بأحكام هذه الاتفاقية.</string>
+    <string name="license_preamble_1">تُعدّ اتفاقية الترخيص هذه (\"الاتفاقية\") اتفاقًا قانونيًا بينك (\"المرخَّص له\") وبين Oliver Lebaigue (\"المرخِّص\") بشأن استخدام ومراجعة وتعديل تطبيق المصور الموسيقي المرئي المعروف باسم \"glyph-syncronator\" (\"البرنامج\")، وهو مشروع أسّسه Oliver Lebaigue تحت مظلة مؤسسة Luminus Labs.</string>
+    <string name="license_preamble_2">المصدر للبرنامج مستضاف علنًا على الرابط https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. وبمجرد الوصول إلى البرنامج أو مصدره أو تنزيله أو نسخه أو استخدامه بأي شكل آخر، يوافق المرخَّص له على الالتزام بأحكام هذه الاتفاقية.</string>
     <string name="license_section_2">2. التعريفات</string>
-    <string name="license_def_1">2.1 يُقصد بـ\"البرنامج\" تطبيق better-nothing-music-visualizer، بما يشمل على سبيل المثال لا الحصر المصدر، ووحدات معالجة الصوت، ومحركات العرض، والأصول المرئية، ومكتبات الرسوميات، ونصوص الإعداد، والوثائق، وملفات الكائنات، والملفات القابلة للتشغيل، وأي وسائط أو أصول ذات صلة.</string>
+    <string name="license_def_1">2.1 يُقصد بـ\"البرنامج\" تطبيق glyph-syncronator، بما يشمل على سبيل المثال لا الحصر المصدر، ووحدات معالجة الصوت، ومحركات العرض، والأصول المرئية، ومكتبات الرسوميات، ونصوص الإعداد، والوثائق، وملفات الكائنات، والملفات القابلة للتشغيل، وأي وسائط أو أصول ذات صلة.</string>
     <string name="license_def_2">2.2 يُقصد بـ\"المصدر\" الملفات المُفصَح عنها علنًا للبرنامج، بما يشمل جميع ملفات نصوص الأوامر، ونصوص أوامر الرسوميات، والأصول، وإعدادات البناء.</string>
     <string name="license_section_3">3. منح الترخيص وإمكانية الوصول</string>
     <string name="license_section_3_1">3.1 التوفر العام</string>
@@ -295,19 +295,19 @@
     <string name="license_grant_3_2">لا يجوز للمرخَّص له:</string>
     <string name="license_restriction_a">* (أ) إعادة توزيع البرنامج أو نسخ معدّلة منه على أطراف ثالثة، إلا عبر النسخ الفرعية (forks) المعتادة على GitHub، شريطة أن تظل تلك النسخ الفرعية ملتزمة بأحكام هذا الترخيص ذاته.</string>
     <string name="license_restriction_b">* (ب) استخدام البرنامج أو أي أعمال مشتقة منه لأغراض تجارية، أو عروض علنية، أو بث تجاري، أو أي أنشطة مُدرّة للدخل دون إذن كتابي منفصل.</string>
-    <string name="license_restriction_c">* (ج) إزالة أو تعديل أو إخفاء أي إشعارات حقوق نشر أو علامات تجارية أو براءات اختراع أو حقوق ملكية موضوعة على البرنامج أو داخله، بما في ذلك أي إشارة إلى Aleks Levet أو Luminus Labs أو المرخِّص.</string>
+    <string name="license_restriction_c">* (ج) إزالة أو تعديل أو إخفاء أي إشعارات حقوق نشر أو علامات تجارية أو براءات اختراع أو حقوق ملكية موضوعة على البرنامج أو داخله، بما في ذلك أي إشارة إلى Oliver Lebaigue أو Luminus Labs أو المرخِّص.</string>
     <string name="license_restriction_d">* (د) استخدام البرنامج لتطوير أي برنامج أو منصة تجارية منافسة للمصورات الموسيقية المرئية.</string>
     <string name="license_section_4">4. حقوق الملكية الفكرية</string>
     <string name="license_section_4_1">4.1 الملكية</string>
-    <string name="license_ownership">يحتفظ المرخِّص وAleks Levet وLuminus Labs بجميع الحقوق والملكية والمصالح الخاصة بكل منهم في البرنامج، بما في ذلك جميع حقوق الملكية الفكرية المتعلقة به. ولا يُشكّل الإفصاح العلني عن المصدر تنازلًا عن حقوق النشر أو الملكية.</string>
+    <string name="license_ownership">يحتفظ المرخِّص وOliver Lebaigue وLuminus Labs بجميع الحقوق والملكية والمصالح الخاصة بكل منهم في البرنامج، بما في ذلك جميع حقوق الملكية الفكرية المتعلقة به. ولا يُشكّل الإفصاح العلني عن المصدر تنازلًا عن حقوق النشر أو الملكية.</string>
     <string name="license_section_5">5. إخلاء المسؤولية عن الضمان</string>
     <string name="license_section_5_1">5.1 إخلاء المسؤولية</string>
     <string name="license_warranty_disclaimer">يُقدَّم البرنامج \"كما هو\" و\"بجميع عيوبه.\" وإلى أقصى حد يسمح به القانون المعمول به، يُخلي المرخِّص مسؤوليته عن جميع الضمانات والشروط الأخرى، سواء كانت صريحة أو ضمنية أو قانونية، بما في ذلك على سبيل المثال لا الحصر أي ضمانات ضمنية للتسويق، أو الملاءمة لغرض معين، أو الملكية، أو عدم التعدي على حقوق الغير.</string>
     <string name="license_section_5_2">5.2 عدم توفر الدعم الفني</string>
-    <string name="license_technical_support">لا يقع على عاتق المرخِّص أو Aleks Levet أو Luminus Labs أي التزام بتقديم دعم فني أو تحديثات أو ترقيات أو تعديلات للبرنامج.</string>
+    <string name="license_technical_support">لا يقع على عاتق المرخِّص أو Oliver Lebaigue أو Luminus Labs أي التزام بتقديم دعم فني أو تحديثات أو ترقيات أو تعديلات للبرنامج.</string>
     <string name="license_section_6">6. تحديد المسؤولية</string>
     <string name="license_section_6_1">6.1 سقف المسؤولية</string>
-    <string name="license_liability_cap">إلى أقصى حد يسمح به القانون المعمول به، لا يتحمّل المرخِّص ولا Aleks Levet ولا Luminus Labs بأي حال من الأحوال المسؤولية عن أي أضرار غير مباشرة أو عرضية أو خاصة أو تبعية أو تأديبية أيًّا كان نوعها (بما في ذلك على سبيل المثال لا الحصر خسارة الأرباح، أو انقطاع الأعمال، أو أي خسارة مالية أخرى) ناتجة عن استخدام البرنامج أو عدم القدرة على استخدامه، حتى في حال إخطارهم باحتمال حدوث مثل هذه الأضرار.</string>
+    <string name="license_liability_cap">إلى أقصى حد يسمح به القانون المعمول به، لا يتحمّل المرخِّص ولا Oliver Lebaigue ولا Luminus Labs بأي حال من الأحوال المسؤولية عن أي أضرار غير مباشرة أو عرضية أو خاصة أو تبعية أو تأديبية أيًّا كان نوعها (بما في ذلك على سبيل المثال لا الحصر خسارة الأرباح، أو انقطاع الأعمال، أو أي خسارة مالية أخرى) ناتجة عن استخدام البرنامج أو عدم القدرة على استخدامه، حتى في حال إخطارهم باحتمال حدوث مثل هذه الأضرار.</string>
     <string name="license_section_7">7. الإنهاء</string>
     <string name="license_section_7_1">7.1 الإنهاء التلقائي</string>
     <string name="license_termination">تنتهي حقوق المرخَّص له بموجب هذه الاتفاقية تلقائيًا ودون إشعار من المرخِّص إذا أخفق المرخَّص له في الالتزام بأي بند من بنود هذه الاتفاقية. وعند الإنهاء، يجب على المرخَّص له التوقف عن أي استخدام للبرنامج وإتلاف جميع النسخ المحلية منه.</string>

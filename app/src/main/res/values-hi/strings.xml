@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">रीयल-टाइम ऑडियो विज़ुअलाइज़र सक्रिय है। आपका फोन अब ताल पर नाच रहा है! कोई भी सामग्री सहेजी नहीं जाती है, और गोपनीयता का सम्मान किया जाता है।</string>
     <string name="audio_description_idle">यह ऐप एलेक्स लेवेट, rKyzen और ओलिवर लेबैग द्वारा बनाया गया था।\n\nग्लिफ इंटरफ़ेस को अपने संगीत के साथ सिंक्रनाइज़ करने के लिए, यह ऐप डिवाइस ऑडियो कैप्चर करता है। हम हाई-फिडेलिटी विज़ुअलाइज़ेशन के लिए मीडिया प्रोजेक्शन का उपयोग करते हैं।\n\nगोपनीयता नोट: हम केवल ऑडियो स्ट्रीम का उपयोग करते हैं। कोई स्क्रीन सामग्री रिकॉर्ड नहीं की जाती है।</string>
     <string name="audio_warning_vizualizer">चेतावनी: यह स्रोत मानक एंड्रॉइड विज़ुअलाइज़र-शैली ऑडियो स्ट्रीम का उपयोग करता है। यह कम निष्ठा वाला है और खराब हो सकता है।</string>
@@ -114,7 +114,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">अपडेट उपलब्ध: %s</string>
     <string name="update_now">अभी अपडेट करें</string>
-    <string name="credit_alekslevet_role">संस्थापक, समन्वयक, मुख्य विचार, मालिक</string>
+    <string name="credit_owner_role">संस्थापक, समन्वयक, मुख्य विचार, मालिक</string>
     <string name="credit_rkyzen_role">एंड्रॉइड ऐप डेवलपर (रीयल-टाइम म्यूजिक स्ट्रीम)</string>
     <string name="credit_oliver_role">इस अद्भुत ऐप के सह-डेवलपर</string>
     <string name="credit_nicouschulas_role">Readme और Wiki सुधार</string>
@@ -169,7 +169,7 @@
     <string name="not_now">अभी नहीं</string>
     <string name="downloading_update">अपडेट डाउनलोड किया जा रहा है…</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">हम आपके समर्थन की सराहना करते हैं।</string>
     <string name="youre_welcome">आपका स्वागत है!</string>
 
@@ -215,7 +215,7 @@
     <string name="license_organization_name">ल्यूमिनस लैब्स</string>
     <string name="license_section_1">1. प्रस्तावना</string>
     <string name="license_preamble_1">यह लाइसेंस समझौता (\"समझौता\") आपके (\"लाइसेंसधारी\") और ओलिवर लेबैग (\"लाइसेंसदाता\") के बीच \"बेटर-नथिंग-म्यूजिक-विज़ुअलाइज़र\" (\"सॉफ्टवेयर\") के रूप में जाने जाने वाले म्यूजिक विज़ुअलाइज़र सॉफ्टवेयर एप्लिकेशन के उपयोग, समीक्षा और संशोधन के लिए एक कानूनी समझौता है, जो ल्यूमिनस लैब्स संगठन के तहत एलेक्स लेवेट द्वारा स्थापित एक परियोजना है।</string>
-    <string name="license_preamble_2">सॉफ्टवेयर का सोर्स कोड सार्वजनिक रूप से https://github.com/aleks-levet/better-nothing-music-visualizer पर होस्ट किया गया है। सॉफ्टवेयर या इसके सोर्स कोड को एक्सेस करने, डाउनलोड करने, कॉपी करने या अन्यथा उपयोग करने से, लाइसेंसधारी इस समझौते की शर्तों से बाध्य होने के लिए सहमत है।</string>
+    <string name="license_preamble_2">सॉफ्टवेयर का सोर्स कोड सार्वजनिक रूप से https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator पर होस्ट किया गया है। सॉफ्टवेयर या इसके सोर्स कोड को एक्सेस करने, डाउनलोड करने, कॉपी करने या अन्यथा उपयोग करने से, लाइसेंसधारी इस समझौते की शर्तों से बाध्य होने के लिए सहमत है।</string>
     <string name="license_section_2">2. परिभाषाएं</string>
     <string name="license_def_1">2.1 \"सॉफ्टवेयर\" का अर्थ होगा बेटर-नथिंग-म्यूजिक-विज़ुअलाइज़र सॉफ्टवेयर एप्लिकेशन, जिसमें सोर्स कोड, ऑडियो प्रोसेसिंग मॉड्यूल, रेंडरिंग इंजन, विजुअल एसेट्स, ग्राफिक्स लाइब्रेरी, कॉन्फ़िगरेशन स्क्रिप्ट, दस्तावेज़ीकरण, ऑब्जेक्ट फाइलें, बाइनरी एक्जीक्यूटेबल और कोई भी संबद्ध मीडिया या एसेट्स शामिल हैं, लेकिन इन्हीं तक सीमित नहीं हैं।</string>
     <string name="license_def_2">2.2 \"सोर्स कोड\" का अर्थ होगा सॉफ्टवेयर की सार्वजनिक रूप से प्रकट फाइलें, जिसमें सभी स्क्रिप्ट फाइलें, शेडर कोड, एसेट्स और बिल्ड कॉन्फ़िगरेशन शामिल हैं।</string>

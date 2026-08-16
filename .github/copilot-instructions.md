@@ -1,4 +1,4 @@
-# VibeSync - AI Coding Instructions
+# glyph-syncronator - AI Coding Instructions
 
 ## Project Overview
 This is an Android music visualizer app for Nothing phones that enhances the stock Glyph music visualization using FFT analysis. The app captures live audio via Media Projection API and drives the phone's glyph LEDs with 60 FPS, 12-bit depth precision. A companion Python script provides offline audio file processing.
@@ -132,4 +132,4 @@ Audio File → FFT Analysis → .nglyph Generation → GlyphModder.py → Glyphe
 - `zones.config`: Glyph frequency zone definitions
 - `PYTHON SCRIPT/`: Offline processing tools
 - `glyph-matrix-sdk-2_0.aar`: Hardware control library</content>
-<parameter name="filePath">/home/aleks/Documents/USEFUL-TOOLS/Glyph tools/better-nothing-music-visualizer/.github/copilot-instructions.md
+<parameter name="filePath">/home/oliver/Projects/glyph-syncronator/.github/copilot-instructions.md

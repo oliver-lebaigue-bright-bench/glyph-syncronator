@@ -17,4 +17,4 @@ It then outputs a **glyphed OGG** file for playback in *Glyph Composer*, *Glyphi
   - The synchronized Glyph animation
 
 ## 📖 How to use the python script?
-The usage is pretty simple and straightforward. Nevertheless, we made a detailed wiki page which explains the installation, usage, configuration files in detail and a troubleshooting section. You can also find out how to make new presets(not yet tho). [Just click here to see how to use **musicViz.py** as a python script](https://github.com/Aleks-Levet/better-nothing-music-visualizer/wiki/). You know what's cool? You can convert an unlimited number of files in bulk without any trouble!
+The usage is pretty simple and straightforward. Nevertheless, we made a detailed wiki page which explains the installation, usage, configuration files in detail and a troubleshooting section. You can also find out how to make new presets(not yet tho). [Just click here to see how to use **musicViz.py** as a python script](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/wiki/). You know what's cool? You can convert an unlimited number of files in bulk without any trouble!

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">Аудиовизуализатор в реальном времени активен. Ваш телефон теперь танцует под ритм! Контент не сохраняется, конфиденциальность соблюдается.</string>
-    <string name="audio_description_idle">Это приложение было создано Aleks Levet, rKyzen и Oliver Lebaigue.\n\nДля синхронизации интерфейса Glyph с вашей музыкой это приложение захватывает звук устройства. Мы используем Media Projection для высокоточной визуализации.\n\nПримечание о конфиденциальности: мы используем только аудиопоток. Контент экрана не записывается.</string>
+    <string name="audio_description_idle">Это приложение было создано Oliver Lebaigue, rKyzen и Oliver Lebaigue.\n\nДля синхронизации интерфейса Glyph с вашей музыкой это приложение захватывает звук устройства. Мы используем Media Projection для высокоточной визуализации.\n\nПримечание о конфиденциальности: мы используем только аудиопоток. Контент экрана не записывается.</string>
     <string name="audio_warning_vizualizer">Предупреждение: этот источник использует стандартный аудиопоток Android в стиле визуализатора. Он имеет низкое качество и может работать неудовлетворительно.</string>
     <string name="auto_memorize_device">Автоматически запоминать устройство</string>
     <string name="saving_latency_for">Сохранение задержки для: %s</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Информация и обновления</string>
-    <string name="about_intro">VibeSync Музыкальный визуализатор раскрывает весь потенциал интерфейса Glyph с помощью высокоточного частотного анализа в реальном времени.</string>
+    <string name="about_intro">glyph-syncronator Музыкальный визуализатор раскрывает весь потенциал интерфейса Glyph с помощью высокоточного частотного анализа в реальном времени.</string>
     <string name="about_section_why">Почему мы лучше реализации от Nothing:</string>
     <string name="about_why_1">• 12-битная яркость (4096 уровней) против ~2-битной стандартной (3 уровня)</string>
     <string name="about_why_2">• Плавная анимация 60 кадров в секунду против ~25 кадров в секунду в стоке</string>
@@ -118,7 +118,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">Доступно обновление: %s</string>
     <string name="update_now">Обновить сейчас</string>
-    <string name="credit_alekslevet_role">Основатель, координатор, основная идея, владелец</string>
+    <string name="credit_owner_role">Основатель, координатор, основная идея, владелец</string>
     <string name="credit_rkyzen_role">Разработчик Android-приложения (музыкальный поток в реальном времени)</string>
     <string name="credit_oliver_role">Соавтор этого потрясающего приложения</string>
     <string name="credit_nicouschulas_role">Улучшения Readme и Wiki</string>
@@ -171,7 +171,7 @@
     <string name="not_now">Не сейчас</string>
     <string name="downloading_update">Загрузка обновления…</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">МЫ ЦЕНИМ ВАШУ ПОДДЕРЖКУ.</string>
     <string name="youre_welcome">ПОЖАЛУЙСТА!</string>
 
@@ -206,20 +206,20 @@
     <string name="license_title">Лицензия</string>
     <string name="license_agreement">Лицензионное соглашение</string>
     <string name="read_license">Прочитать лицензию ПО</string>
-    <string name="license_agreement_title">ЛИЦЕНЗИОННОЕ СОГЛАШЕНИЕ BETTER-NOTHING-MUSIC-VISUALIZER</string>
+    <string name="license_agreement_title">ЛИЦЕНЗИОННОЕ СОГЛАШЕНИЕ GLYPH-SYNCRONATOR</string>
     <string name="license_version">Версия: 1.1</string>
     <string name="license_date">Дата: 29 июня 2026 г.</string>
     <string name="license_licensor">Лицензиар</string>
     <string name="license_licensor_name">Oliver Lebaigue</string>
     <string name="license_founder">Основатель</string>
-    <string name="license_founder_name">Aleks Levet</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
     <string name="license_organization">Организация</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. ПРЕАМБУЛА</string>
-    <string name="license_preamble_1">Настоящее Лицензионное соглашение («Соглашение») является юридическим соглашением между вами («Лицензиат») и Oliver Lebaigue («Лицензиар») на использование, проверку и модификацию программного обеспечения музыкального визуализатора, известного как «better-nothing-music-visualizer» («Программное обеспечение»), проекта, основанного Aleks Levet в рамках организации Luminus Labs.</string>
-    <string name="license_preamble_2">Исходный код Программного обеспечения размещен в открытом доступе по адресу https://github.com/aleks-levet/better-nothing-music-visualizer. Получая доступ к Программному обеспечению или его Исходному коду, загружая, копируя или используя их иным образом, Лицензиат соглашается быть связанным условиями настоящего Соглашения.</string>
+    <string name="license_preamble_1">Настоящее Лицензионное соглашение («Соглашение») является юридическим соглашением между вами («Лицензиат») и Oliver Lebaigue («Лицензиар») на использование, проверку и модификацию программного обеспечения музыкального визуализатора, известного как «glyph-syncronator» («Программное обеспечение»), проекта, основанного Oliver Lebaigue в рамках организации Luminus Labs.</string>
+    <string name="license_preamble_2">Исходный код Программного обеспечения размещен в открытом доступе по адресу https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Получая доступ к Программному обеспечению или его Исходному коду, загружая, копируя или используя их иным образом, Лицензиат соглашается быть связанным условиями настоящего Соглашения.</string>
     <string name="license_section_2">2. ОПРЕДЕЛЕНИЯ</string>
-    <string name="license_def_1">2.1 «Программное обеспечение» означает программное приложение better-nothing-music-visualizer, включая, помимо прочего, исходный код, модули обработки аудио, механизмы рендеринга, визуальные активы, графические библиотеки, сценарии конфигурации, документацию, объектные файлы, исполняемые двоичные файлы и любые связанные медиафайлы или активы.</string>
+    <string name="license_def_1">2.1 «Программное обеспечение» означает программное приложение glyph-syncronator, включая, помимо прочего, исходный код, модули обработки аудио, механизмы рендеринга, визуальные активы, графические библиотеки, сценарии конфигурации, документацию, объектные файлы, исполняемые двоичные файлы и любые связанные медиафайлы или активы.</string>
     <string name="license_def_2">2.2 «Исходный код» означает публично раскрытые файлы Программного обеспечения, включая все файлы сценариев, код шейдеров, активы и конфигурации сборки.</string>
     <string name="license_section_3">3. ПРЕДОСТАВЛЕНИЕ ЛИЦЕНЗИИ И ДОСТУПНОСТЬ</string>
     <string name="license_section_3_1">3.1 Публичная доступность</string>
@@ -228,16 +228,16 @@
     <string name="license_grant_3_2">Лицензиат НЕ может:</string>
     <string name="license_restriction_a">* (a) Распространять Программное обеспечение или его модифицированные версии третьим лицам, за исключением стандартных форков репозитория на GitHub, при условии, что эти форки остаются связанными настоящей Лицензией.</string>
     <string name="license_restriction_b">* (b) Использовать Программное обеспечение или любые производные работы в коммерческих целях, для публичных выступлений, коммерческого стриминга или любой деятельности, приносящей доход, без отдельного письменного разрешения.</string>
-    <string name="license_restriction_c">* (c) Удалять, изменять или скрывать любые уведомления об авторских правах, товарных знаках, патентах или правах собственности, размещенные на или внутри Программного обеспечения, включая ссылки на Aleks Levet, Luminus Labs или Лицензиара.</string>
+    <string name="license_restriction_c">* (c) Удалять, изменять или скрывать любые уведомления об авторских правах, товарных знаках, патентах или правах собственности, размещенные на или внутри Программного обеспечения, включая ссылки на Oliver Lebaigue, Luminus Labs или Лицензиара.</string>
     <string name="license_restriction_d">* (d) Использовать Программное обеспечение для разработки любого конкурирующего коммерческого программного обеспечения или платформы для визуализации музыки.</string>
     <string name="license_section_4">4. ПРАВА ИНТЕЛЛЕКТУАЛЬНОЙ СОБСТВЕННОСТИ</string>
     <string name="license_section_4_1">4.1 Владение</string>
-    <string name="license_ownership">Лицензиар, Aleks Levet и Luminus Labs сохраняют за собой все соответствующие права, титулы и интересы в отношении Программного обеспечения, включая все права интеллектуальной собственности на него. Публичное раскрытие Исходного кода не означает отказ от авторских прав или права собственности.</string>
+    <string name="license_ownership">Лицензиар, Oliver Lebaigue и Luminus Labs сохраняют за собой все соответствующие права, титулы и интересы в отношении Программного обеспечения, включая все права интеллектуальной собственности на него. Публичное раскрытие Исходного кода не означает отказ от авторских прав или права собственности.</string>
     <string name="license_section_5">5. ОТКАЗ ОТ ГАРАНТИЙ</string>
     <string name="license_section_5_1">5.1 Отказ от ответственности</string>
     <string name="license_warranty_disclaimer">ПРОГРАММНОЕ ОБЕСПЕЧЕНИЕ ПРЕДОСТАВЛЯЕТСЯ «КАК ЕСТЬ» И «СО ВСЕМИ ОШИБКАМИ». В МАКСИМАЛЬНО ДОПУСТИМОЙ ПРИМЕНИМЫМ ЗАКОНОДАТЕЛЬСТВОМ СТЕПЕНИ ЛИЦЕНЗИАР ОТКАЗЫВАЕТСЯ ОТ ВСЕХ ДРУГИХ ГАРАНТИЙ И УСЛОВИЙ, ЯВНЫХ, ПОДРАЗУМЕВАЕМЫХ ИЛИ ПРЕДУСМОТРЕННЫХ ЗАКОНОМ, ВКЛЮЧАЯ, ПОМИМО ПРОЧЕГО, ЛЮБЫЕ ПОДРАЗУМЕВАЕМЫЕ ГАРАНТИИ ТОВАРНОЙ ПРИГОДНОСТИ, ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННОЙ ЦЕЛИ, ТИТУЛА И НЕПРЕДОСТАВЛЕНИЯ НАРУШЕНИЯ ПРАВ.</string>
     <string name="license_section_5_2">5.2 Отсутствие технической поддержки</string>
-    <string name="license_technical_support">Лицензиар, Aleks Levet и Luminus Labs не несут никаких обязательств по предоставлению технической поддержки, обновлений или модификаций Программного обеспечения.</string>
+    <string name="license_technical_support">Лицензиар, Oliver Lebaigue и Luminus Labs не несут никаких обязательств по предоставлению технической поддержки, обновлений или модификаций Программного обеспечения.</string>
     <string name="license_section_6">6. ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ</string>
     <string name="license_section_6_1">6.1 Предел ответственности</string>
     <string name="license_liability_cap">В МАКСИМАЛЬНОЙ СТЕПЕНИ, РАЗРЕШЕННОЙ ПРИМЕНИМЫМ ЗАКОНОДАТЕЛЬСТВОМ, НИ ПРИ КАКИХ ОБСТОЯТЕЛЬСТВАХ ЛИЦЕНЗИАР, ALEKS LEVET ИЛИ LUMINUS LABS НЕ НЕСУТ ОТВЕТСТВЕННОСТИ ЗА ЛЮБОЙ КОСВЕННЫЙ, СЛУЧАЙНЫЙ, ОСОБЫЙ, ПОСЛЕДУЮЩИЙ ИЛИ ШТРАФНОЙ УЩЕРБ (ВКЛЮЧАЯ, ПОМИМО ПРОЧЕГО, УПУЩЕННУЮ ВЫГОДУ, ПРЕРЫВАНИЕ ДЕЛОВОЙ АКТИВНОСТИ ИЛИ ЛЮБЫЕ ДРУГИЕ ДЕНЕЖНЫЕ ПОТЕРИ), ВОЗНИКАЮЩИЕ В РЕЗУЛЬТАТЕ ИСПОЛЬЗОВАНИЯ ИЛИ НЕВОЗМОЖНОСТИ ИСПОЛЬЗОВАНИЯ ПРОГРАММНОГО ОБЕСПЕЧЕНИЯ, ДАЖЕ ЕСЛИ ОНИ БЫЛИ ПРЕДУПРЕЖДЕНЫ О ВОЗМОЖНОСТИ ТАКОГО УЩЕРБА.</string>

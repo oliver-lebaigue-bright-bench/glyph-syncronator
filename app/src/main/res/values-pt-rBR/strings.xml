@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">O visualizador de áudio em tempo real está ativo. Seu telefone agora está dançando no ritmo! Nenhum conteúdo é salvo e a privacidade é respeitada.</string>
-    <string name="audio_description_idle">Este aplicativo foi feito por Aleks Levet, rKyzen e Oliver Lebaigue.\n\nPara sincronizar a Interface Glyph com sua música, este aplicativo captura o áudio do dispositivo. Usamos Media Projection para visualização de alta fidelidade.\n\nNota de Privacidade: Utilizamos apenas o fluxo de áudio. Nenhum conteúdo da tela é gravado.</string>
+    <string name="audio_description_idle">Este aplicativo foi feito por Oliver Lebaigue e rKyzen.\n\nPara sincronizar a Interface Glyph com sua música, este aplicativo captura o áudio do dispositivo. Usamos Media Projection para visualização de alta fidelidade.\n\nNota de Privacidade: Utilizamos apenas o fluxo de áudio. Nenhum conteúdo da tela é gravado.</string>
     <string name="audio_warning_vizualizer">Aviso: esta fonte utiliza o fluxo de áudio padrão do estilo visualizador do Android. É de baixa fidelidade e pode não ser ideal.</string>
     <string name="auto_memorize_device">Memorizar Dispositivo Automaticamente</string>
     <string name="saving_latency_for">Salvando latência para: %s</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Informações do app e atualizações</string>
-    <string name="about_intro">VibeSync desbloqueia todo o potencial da Interface Glyph com análise de frequência em tempo real de alta fidelidade.</string>
+    <string name="about_intro">glyph-syncronator desbloqueia todo o potencial da Interface Glyph com análise de frequência em tempo real de alta fidelidade.</string>
     <string name="about_section_why">Por que somos melhores que a implementação da Nothing:</string>
     <string name="about_why_1">• Brilho de 12 bits (4096 níveis) vs ~2 bits padrão (3 níveis)</string>
     <string name="about_why_2">• Animações fluidas de 60 FPS vs ~25 FPS padrão</string>
@@ -118,7 +118,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">Atualização disponível: %s</string>
     <string name="update_now">Atualizar Agora</string>
-    <string name="credit_alekslevet_role">Fundador, coordenador, ideia principal, proprietário</string>
+    <string name="credit_owner_role">Fundador, coordenador, ideia principal, proprietário</string>
     <string name="credit_rkyzen_role">Desenvolvedor do app Android (fluxo de música em tempo real)</string>
     <string name="credit_oliver_role">Co-desenvolvedor deste aplicativo incrível</string>
     <string name="credit_nicouschulas_role">Melhorias no Readme e Wiki</string>
@@ -171,7 +171,7 @@
     <string name="not_now">Agora não</string>
     <string name="downloading_update">Baixando Atualização…</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">AGRADECEMOS O SEU APOIO.</string>
     <string name="youre_welcome">DE NADA!</string>
 
@@ -206,20 +206,20 @@
     <string name="license_title">Licença</string>
     <string name="license_agreement">Contrato de Licença</string>
     <string name="read_license">Ler a licença do software</string>
-    <string name="license_agreement_title">CONTRATO DE LICENÇA DO BETTER-NOTHING-MUSIC-VISUALIZER</string>
+    <string name="license_agreement_title">CONTRATO DE LICENÇA DO GLYPH-SYNCRONATOR</string>
     <string name="license_version">Versão: 1.1</string>
     <string name="license_date">Data: 29 de junho de 2026</string>
     <string name="license_licensor">Licenciador</string>
     <string name="license_licensor_name">Oliver Lebaigue</string>
     <string name="license_founder">Fundador</string>
-    <string name="license_founder_name">Aleks Levet</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
     <string name="license_organization">Organização</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. PREÂMBULO</string>
-    <string name="license_preamble_1">Este Contrato de Licença (\"Contrato\") é um acordo legal entre você (\"Licenciado\") e Oliver Lebaigue (\"Licenciador\") para o uso, revisão e modificação do aplicativo de visualização de música conhecido como \"better-nothing-music-visualizer\" (o \"Software\"), um projeto fundado por Aleks Levet sob a organização Luminus Labs.</string>
-    <string name="license_preamble_2">O código fonte do Software está hospedado publicamente em https://github.com/aleks-levet/better-nothing-music-visualizer. Ao acessar, baixar, copiar ou utilizar o Software ou seu Código Fonte de qualquer outra forma, o Licenciado concorda em cumprir os termos deste Contrato.</string>
+    <string name="license_preamble_1">Este Contrato de Licença (\"Contrato\") é um acordo legal entre você (\"Licenciado\") e Oliver Lebaigue (\"Licenciador\") para o uso, revisão e modificação do aplicativo de visualização de música conhecido como \"glyph-syncronator\" (o \"Software\"), um projeto fundado por Oliver Lebaigue sob a organização Luminus Labs.</string>
+    <string name="license_preamble_2">O código fonte do Software está hospedado publicamente em https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Ao acessar, baixar, copiar ou utilizar o Software ou seu Código Fonte de qualquer outra forma, o Licenciado concorda em cumprir os termos deste Contrato.</string>
     <string name="license_section_2">2. DEFINIÇÕES</string>
-    <string name="license_def_1">2.1 \"Software\" significa o aplicativo better-nothing-music-visualizer, incluindo, mas não se limitando ao código fonte, módulos de processamento de áudio, motores de renderização, ativos visuais, bibliotecas gráficas, scripts de configuração, documentação, arquivos de objeto, executáveis binários e quaisquer mídias ou ativos associados.</string>
+    <string name="license_def_1">2.1 \"Software\" significa o aplicativo glyph-syncronator, incluindo, mas não se limitando ao código fonte, módulos de processamento de áudio, motores de renderização, ativos visuais, bibliotecas gráficas, scripts de configuração, documentação, arquivos de objeto, executáveis binários e quaisquer mídias ou ativos associados.</string>
     <string name="license_def_2">2.2 \"Código Fonte\" significa os arquivos do Software divulgados publicamente, incluindo todos os arquivos de script, código de shader, ativos e configurações de build.</string>
     <string name="license_section_3">3. CONCESSÃO DE LICENÇA E ACESSIBILIDADE</string>
     <string name="license_section_3_1">3.1 Disponibilidade Pública</string>
@@ -228,16 +228,16 @@
     <string name="license_grant_3_2">O Licenciado NÃO pode:</string>
     <string name="license_restriction_a">* (a) Redistribuir o Software ou versões modificadas dele a terceiros, exceto através de forks de repositório padrão no GitHub, desde que esses forks permaneçam vinculados a esta Licença exata.</string>
     <string name="license_restriction_b">* (b) Usar o Software ou qualquer trabalho derivado para fins comerciais, apresentações públicas, streaming comercial ou quaisquer atividades geradoras de receita sem autorização prévia por escrito.</string>
-    <string name="license_restriction_c">* (c) Remover, alterar ou ocultar quaisquer avisos de direitos autorais, marcas registradas, patentes ou direitos de propriedade colocados no ou dentro do Software, incluindo referências a Aleks Levet, Luminus Labs ou ao Licenciador.</string>
+    <string name="license_restriction_c">* (c) Remover, alterar ou ocultar quaisquer avisos de direitos autorais, marcas registradas, patentes ou direitos de propriedade colocados no ou dentro do Software, incluindo referências a Oliver Lebaigue, Luminus Labs ou ao Licenciador.</string>
     <string name="license_restriction_d">* (d) Usar o Software para desenvolver qualquer software ou plataforma de visualização de música comercial concorrente.</string>
     <string name="license_section_4">4. DIREITOS DE PROPRIEDADE INTELECTUAL</string>
     <string name="license_section_4_1">4.1 Propriedade</string>
-    <string name="license_ownership">O Licenciador, Aleks Levet e Luminus Labs retêm todos os respectivos direitos, títulos e interesses no e sobre o Software, incluindo todos os direitos de propriedade intelectual contidos nele. A divulgação pública do Código Fonte não constitui uma renúncia aos direitos autorais ou à propriedade.</string>
+    <string name="license_ownership">O Licenciador, Oliver Lebaigue e Luminus Labs retêm todos os respectivos direitos, títulos e interesses no e sobre o Software, incluindo todos os direitos de propriedade intelectual contidos nele. A divulgação pública do Código Fonte não constitui uma renúncia aos direitos autorais ou à propriedade.</string>
     <string name="license_section_5">5. AUSÊNCIA DE GARANTIA</string>
     <string name="license_section_5_1">5.1 Isenção de Responsabilidade</string>
     <string name="license_warranty_disclaimer">O SOFTWARE É FORNECIDO \"COMO ESTÁ\" E \"COM TODAS AS FALHAS\". NA MEDIDA MÁXIMA PERMITIDA PELA LEI APLICÁVEL, O LICENCIADOR SE ISENTA DE TODAS AS OUTRAS GARANTIAS E CONDIÇÕES, SEJAM EXPRESSAS, IMPLÍCITAS OU LEGAIS, INCLUINDO, MAS NÃO SE LIMITANDO A QUAISQUER GARANTIAS IMPLÍCITAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM PROPÓSITO ESPECÍFICO, TÍTULO E NÃO VIOLAÇÃO.</string>
     <string name="license_section_5_2">5.2 Ausência de Suporte Técnico</string>
-    <string name="license_technical_support">O Licenciador, Aleks Levet e Luminus Labs não têm obrigação de fornecer suporte técnico, atualizações, upgrades ou modificações ao Software.</string>
+    <string name="license_technical_support">O Licenciador, Oliver Lebaigue e Luminus Labs não têm obrigação de fornecer suporte técnico, atualizações, upgrades ou modificações ao Software.</string>
     <string name="license_section_6">6. LIMITAÇÃO DE RESPONSABILIDADE</string>
     <string name="license_section_6_1">6.1 Limite de Responsabilidade</string>
     <string name="license_liability_cap">NA MEDIDA MÁXIMA PERMITIDA PELA LEI APLICÁVEL, EM NENHUM CASO O LICENCIADOR, ALEKS LEVET OU LUMINUS LABS SERÃO RESPONSÁVEIS POR QUAISQUER DANOS INDIRETOS, INCIDENTAIS, ESPECIAIS, CONSEQUENCIAIS OU PUNITIVOS (INCLUINDO, MAS NÃO SE LIMITANDO A PERDA DE LUCROS, INTERRUPÇÃO DE NEGÓCIOS OU QUALQUER OUTRA PERDA PECUNIÁRIA) DECORRENTES DO USO OU DA INCAPACIDADE DE USAR O SOFTWARE, MESMO QUE AVISADOS DA POSSIBILIDADE DE TAIS DANOS.</string>

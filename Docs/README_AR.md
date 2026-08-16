@@ -7,19 +7,19 @@
 يلتقط تطبيق Android هذا بث الصوت المباشر من جهازك باستخدام مصادر مثل **MediaProjection**، أو **الميكروفون**، أو *المصور المرئي المدمج في Android (غير موصى به)*، أو حتى عبر Shizuku (في المستقبل)، ويعالجه مباشرةً لعرضه باستخدام واجهة Glyph، أو محرك الاهتزاز، أو الكشاف. هذا يعني أنه يمكنك تصوير الموسيقى مرئيًا من **Spotify** و**YouTube Music**، وأي تطبيق آخر تقريبًا! يمكن أن يعمل التطبيق أيضًا مع الألعاب، ويمكنك كذلك استخدام الميكروفون لتصوير الموسيقى التي يشغلها الآخرون، خاصة في الحفلات!
 
 <img 
-  src="https://img.shields.io/github/downloads/Aleks-Levet/better-nothing-music-visualizer/total?style=for-the-badge&logo=github&label=Devices%20made%20better:&color=ff0000&labelColor=000000"
+  src="https://img.shields.io/github/downloads/oliver-lebaigue-bright-bench/glyph-syncronator/total?style=for-the-badge&logo=github&label=Devices%20made%20better:&color=ff0000&labelColor=000000"
   style="height:40px;">
 
 # **إليك زر التنزيل، استخدمه!**
 > (إذا كنت لا ترغب في قراءة بقية الملف)
 
-[<img widtht="60%" alt="Get it on GitHub" src="/.github/assets/big-ass-fucking-download-button.png" />](https://github.com/Aleks-Levet/better-nothing-music-visualizer/releases/download/V3.2.1/Better-Nothing-Music-Vizualizer-V3.2.1.apk)
+[<img widtht="60%" alt="Get it on GitHub" src="/.github/assets/big-ass-fucking-download-button.png" />](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/releases/download/V3.2.1/Better-Nothing-Music-Vizualizer-V3.2.1.apk)
    
 ## 💬 انضم إلى مجتمعنا على Discord
 
 انقر على الصورة أدناه للانضمام إلى مجتمعنا على Discord والتواصل مع المجتمع:
 
-<a href="https://discord.gg/h7DYNttc8K">
+<a href="https://discord.gg/cQ4hxNE8fX">
   <img src="https://discord.com/api/guilds/1509496060094054531/widget.png?style=banner3" 
        alt="مجتمع Discord" 
        style="border-radius: 12px; box-shadow: 0 0 15px rgba(88, 101, 242, 0.4); max-width: 100%; height: auto;">
@@ -38,9 +38,9 @@
 | **المناطق** | قياسي، تُستخدم واجهة Glyph المادية بالكامل | **يتم استخدام والتحكم في كل مقطع فرعي ومجال من Glyph بشكل مستقل** |
 | **طريقة التصوير المرئي** | الوقت الفعلي فقط | **الوقت الفعلي مع زمن تأخير يصل إلى 20 مللي ثانية، أو ملفات صوتية معالجة مسبقًا** |
 
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [عروض فيديو وأمثلة](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Docs/Demo-video-examples.md)
+## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [عروض فيديو وأمثلة](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Docs/Demo-video-examples.md)
 
-### شاهد الفرق بنفسك! [**انقر هنا لمشاهدة عروض الفيديو!**](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Docs/Demo-video-examples.md)
+### شاهد الفرق بنفسك! [**انقر هنا لمشاهدة عروض الفيديو!**](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Docs/Demo-video-examples.md)
 
 ## 📲 هواتف Nothing المدعومة لتصوير Glyph المرئي
 **هذه الطرازات مدعومة حاليًا:**
@@ -59,7 +59,7 @@
 
 
 ### <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2699_fe0f/512.gif" alt="⚙" width="25" height="25"> كيف يعمل (تقنيًا)
-- **حتمي**: تطبيق VibeSync **حتمي** بالكامل. على عكس التنفيذ الأصلي *(أو تطبيقات الطرف الثالث الرديئة المنسوخة بالذكاء الاصطناعي التي تقلد عملنا)* والتي قد تبدو شبه عشوائية، يستخدم المصور المرئي الخاص بنا تحليلًا رياضيًا مباشرًا لبث الصوت لضمان توافق كل ضوء تمامًا مع نطاق تردد معين. هذا يعني أنه *إذا احتفظت بنفس الإعدادات*، فإن **نفس الأغنية ستنتج نفس نمط الإضاءة.**
+- **حتمي**: تطبيق glyph-syncronator **حتمي** بالكامل. على عكس التنفيذ الأصلي *(أو تطبيقات الطرف الثالث الرديئة المنسوخة بالذكاء الاصطناعي التي تقلد عملنا)* والتي قد تبدو شبه عشوائية، يستخدم المصور المرئي الخاص بنا تحليلًا رياضيًا مباشرًا لبث الصوت لضمان توافق كل ضوء تمامًا مع نطاق تردد معين. هذا يعني أنه *إذا احتفظت بنفس الإعدادات*، فإن **نفس الأغنية ستنتج نفس نمط الإضاءة.**
 - يتم التقاط بث صوتي عالي الجودة من خلال المصدر الذي تحدده.
 - يُستخدم **FFT** لتحليل الترددات في **نافذة مدتها 20 مللي ثانية** لكل **إطار مدته 16.666 مللي ثانية** (60 Hz)، مما يجعل التصوير المرئي أكثر دقة.
 - لتصوير Glyph المرئي:
@@ -84,14 +84,14 @@
 5. **استمتع!**: استكشف التطبيق وإعداداته المختلفة للاستفادة منه بالكامل!
 
 ## 📖 كيف تستخدم نص Python؟ (الطريقة القديمة لمزامنة الموسيقى مع واجهة Glyph في هواتف Nothing)
-لقد أنشأنا صفحة Wiki تفصيلية تشرح التثبيت والاستخدام وملفات الإعداد بالتفصيل بالإضافة إلى قسم لاستكشاف الأخطاء وإصلاحها. يمكنك أيضًا معرفة كيفية إنشاء إعدادات مسبقة جديدة (لكن ليس بعد). [فقط انقر هنا لمعرفة كيفية استخدام **musicViz.py** كنص Python](https://github.com/Aleks-Levet/better-nothing-music-visualizer/wiki/). هل تعرف ما هو الرائع؟ يمكنك تحويل عدد غير محدود من الملفات دفعة واحدة دون أي عناء!
+لقد أنشأنا صفحة Wiki تفصيلية تشرح التثبيت والاستخدام وملفات الإعداد بالتفصيل بالإضافة إلى قسم لاستكشاف الأخطاء وإصلاحها. يمكنك أيضًا معرفة كيفية إنشاء إعدادات مسبقة جديدة (لكن ليس بعد). [فقط انقر هنا لمعرفة كيفية استخدام **musicViz.py** كنص Python](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/wiki/). هل تعرف ما هو الرائع؟ يمكنك تحويل عدد غير محدود من الملفات دفعة واحدة دون أي عناء!
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Handshake.png" alt="Handshake" width="25" height="25" /> انضم إلى مجتمعنا
 هل ترغب في التحدث أو المناقشة؟ *أخطاء، طلبات ميزات؟* 
 * [**لا تتردد في الانضمام إلينا في موضوع Discord الرسمي في مجتمع Nothing!**](https://discord.com/channels/930878214237200394/1434923843239280743)
 * أو انضم إلى مجتمعنا على Discord! *(انقر أدناه)*
 
-[![Discord Server](https://discord.com/api/guilds/1509496060094054531/widget.png?style=banner3)](https://discord.gg/h7DYNttc8K)
+[![Discord Server](https://discord.com/api/guilds/1509496060094054531/widget.png?style=banner3)](https://discord.gg/cQ4hxNE8fX)
 
 
 ## 🏗️ المساهمة
@@ -117,9 +117,9 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 <table>
   <tr>
     <td>
-      <a href="https://github.com/Aleks-Levet">
-        <img src="https://github.com/Aleks-Levet.png?size=100&mask=circle" alt="aleks-levet-pfp" width="50" style="border-radius: 50%; border: 2px solid #555;"><br/>
-        <sub><b>Aleks Levet</b></sub>
+      <a href="https://github.com/oliver-lebaigue-bright-bench">
+        <img src="https://github.com/oliver-lebaigue-bright-bench.png?size=100&mask=circle" alt="oliver-lebaigue-pfp" width="50" style="border-radius: 50%; border: 2px solid #555;"><br/>
+        <sub><b>Oliver Lebaigue</b></sub>
       </a>
     </td>
     <td>
@@ -142,7 +142,7 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
   <tr>
     <td>
       <a href="https://github.com/cookiedcdev">
-        <img src="https://github.com/cookiedcdev.png?size=100&mask=circle" alt="aleks-levet-pfp" width="50" style="border-radius: 50%; border: 2px solid #555;"><br/>
+        <img src="https://github.com/cookiedcdev.png?size=100&mask=circle" alt="oliver-lebaigue-pfp" width="50" style="border-radius: 50%; border: 2px solid #555;"><br/>
         <sub><b>Cookie</b></sub>
       </a>
     </td>
@@ -215,11 +215,11 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 </table>
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" alt="Star" width="25" height="25" />سجل النجوم
-<a href="https://www.star-history.com/?repos=Aleks-Levet%2Fbetter-nothing-music-visualizer&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=oliver-lebaigue-bright-bench%2Fglyph-syncronator&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Aleks-Levet/better-nothing-music-visualizer&type=date&theme=dark&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Aleks-Levet/better-nothing-music-visualizer&type=date&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Aleks-Levet/better-nothing-music-visualizer&type=date&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&theme=dark&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&legend=top-left&sealed_token=uvxovJ58naHdu_btCKJ4NCVFxaJ9PE-ZZ6uqvQByXxpP7Vq9oz-siTnlfLNPp6ZFKPcs9Da1hzOKf2q23WK4pA2blP_UD8K9FtE4zD7nOE00sCJjRpGdyMR_83XnsequVLTfgBM5YpxhfbIzOM6SAvcw_qUiedoPTiCzficgf19uj_2PBHA4UmcuHNyI" />
  </picture>
 </a>
 

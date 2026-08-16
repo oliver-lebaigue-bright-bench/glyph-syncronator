@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">Le visualiseur audio en temps réel est actif. Votre téléphone danse désormais au rythme de la musique ! Aucun contenu n\'est enregistré et votre vie privée est respectée.</string>
-    <string name="audio_description_idle">Cette application a été créée par Aleks Levet, rKyzen et Oliver Lebaigue.\n\nPour synchroniser l\'interface Glyph avec votre musique, cette application capture le flux audio de l\'appareil via Media Projection pour une visualisation haute fidélité.\n\nNote sur la confidentialité : seul le flux audio est utilisé. Aucun contenu à l\'écran n\'est enregistré.</string>
+    <string name="audio_description_idle">Cette application a été créée par Oliver Lebaigue et rKyzen.\n\nPour synchroniser l\'interface Glyph avec votre musique, cette application capture le flux audio de l\'appareil via Media Projection pour une visualisation haute fidélité.\n\nNote sur la confidentialité : seul le flux audio est utilisé. Aucun contenu à l\'écran n\'est enregistré.</string>
     <string name="audio_warning_vizualizer">Attention : cette source utilise le flux audio standard du visualiseur Android. La fidélité est moindre et le résultat est dans la plupart des cas merdique.</string>
     <string name="auto_memorize_device">Mémorisation auto de l\'appareil</string>
     <string name="saving_latency_for">Latence enregistrée pour : %s</string>
@@ -100,7 +100,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Infos et mises à jour</string>
-    <string name="about_intro">VibeSync exploite tout le potentiel de l\'interface Glyph grâce à une analyse fréquentielle haute fidélité en temps réel.</string>
+    <string name="about_intro">glyph-syncronator exploite tout le potentiel de l\'interface Glyph grâce à une analyse fréquentielle haute fidélité en temps réel.</string>
     <string name="about_section_why">Pourquoi nous sommes meilleurs que Nothing :</string>
     <string name="about_why_1">• Luminosité 12 bits (4096 niveaux) vs ~2 bits (3 niveaux)</string>
     <string name="about_why_2">• Animations fluides à 60 FPS vs ~25 FPS</string>
@@ -126,7 +126,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">Mise à jour disponible : %s</string>
     <string name="update_now">Mettre à jour</string>
-    <string name="credit_alekslevet_role">Fondateur, coordinateur, idée originale</string>
+    <string name="credit_owner_role">Fondateur, coordinateur, idée originale</string>
     <string name="credit_rkyzen_role">Développeur Android (flux musical temps réel)</string>
     <string name="credit_oliver_role">Co-développeur de cette application incroyable</string>
     <string name="credit_nicouschulas_role">Améliorations du Readme et du Wiki</string>
@@ -206,7 +206,7 @@
     <string name="not_now">Plus tard</string>
     <string name="downloading_update">Téléchargement…</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">NOUS APPRÉCIONS VOTRE SOUTIEN.</string>
     <string name="youre_welcome">AVEC PLAISIR !</string>
 
@@ -241,18 +241,18 @@
     <string name="license_title">Licence</string>
     <string name="license_agreement">Contrat de licence</string>
     <string name="read_license">Lire la licence logicielle</string>
-    <string name="license_agreement_title">CONTRAT DE LICENCE BETTER-NOTHING-MUSIC-VISUALIZER</string>
+    <string name="license_agreement_title">CONTRAT DE LICENCE GLYPH-SYNCRONATOR</string>
     <string name="license_version">Version : 1.1</string>
     <string name="license_date">Date : 29 juin 2026</string>
     <string name="license_licensor">Concédant</string>
     <string name="license_licensor_name">Oliver Lebaigue</string>
     <string name="license_founder">Fondateur</string>
-    <string name="license_founder_name">Aleks Levet</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
     <string name="license_organization">Organisation</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. PRÉAMBULE</string>
-    <string name="license_preamble_1">Ce contrat de licence (« Contrat ») est un accord juridique entre vous (« Titulaire ») et Oliver Lebaigue (« Concédant ») pour l\'utilisation et la modification de l\'application « better-nothing-music-visualizer » (le « Logiciel »), un projet fondé par Aleks Levet (Luminus Labs).</string>
-    <string name="license_preamble_2">Le code source est public (https://github.com/aleks-levet/better-nothing-music-visualizer). En utilisant le Logiciel, vous acceptez les termes de ce Contrat.</string>
+    <string name="license_preamble_1">Ce contrat de licence (« Contrat ») est un accord juridique entre vous (« Titulaire ») et Oliver Lebaigue (« Concédant ») pour l\'utilisation et la modification de l\'application « glyph-syncronator » (le « Logiciel »), un projet fondé par Oliver Lebaigue (Luminus Labs).</string>
+    <string name="license_preamble_2">Le code source est public (https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator). En utilisant le Logiciel, vous acceptez les termes de ce Contrat.</string>
     <string name="license_section_2">2. DÉFINITIONS</string>
     <string name="license_def_1">2.1 « Logiciel » désigne l\'application, son code source, ses modules de traitement audio, ses visuels et sa documentation.</string>
     <string name="license_def_2">2.2 « Code Source » désigne les fichiers publics du projet.</string>
@@ -263,7 +263,7 @@
     <string name="license_grant_3_2">Le Titulaire ne peut PAS :</string>
     <string name="license_restriction_a">* (a) Redistribuer le Logiciel ou ses versions modifiées à des tiers en dehors des forks GitHub sous la même licence.</string>
     <string name="license_restriction_b">* (b) Utiliser le Logiciel à des fins commerciales ou génératrices de revenus sans accord écrit.</string>
-    <string name="license_restriction_c">* (c) Supprimer les mentions de droits d\'auteur (Aleks Levet, Oliver Lebaigue, Luminus Labs).</string>
+    <string name="license_restriction_c">* (c) Supprimer les mentions de droits d\'auteur (Oliver Lebaigue, Oliver Lebaigue, Luminus Labs).</string>
     <string name="license_restriction_d">* (d) Créer un logiciel concurrent commercial basé sur ce projet.</string>
     <string name="license_section_4">4. PROPRIÉTÉ INTELLECTUELLE</string>
     <string name="license_section_4_1">4.1 Propriété</string>

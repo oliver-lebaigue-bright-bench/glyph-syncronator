@@ -1,6 +1,6 @@
-# BNMV Website
+# glyph-syncronator Website
 
-This is a static website for the VibeSync app.
+This is a static website for the glyph-syncronator app.
 
 ## Features
 - Modern, Nothing-inspired design (Monochrome + Red accents).
@@ -17,6 +17,6 @@ The easiest way to host this website is via **GitHub Pages**:
 2. Navigate to **Pages**.
 3. Under **Build and deployment**, set the source to **Deploy from a branch**.
 4. Select the branch and the `/website` folder.
-5. Save, and your site will be live at `https://<your-username>.github.io/better-nothing-music-visualizer/`.
+5. Save, and your site will be live at `https://<your-username>.github.io/glyph-syncronator/`.
 
 Alternatively, you can use services like Netlify, Vercel, or even just open `index.html` locally.

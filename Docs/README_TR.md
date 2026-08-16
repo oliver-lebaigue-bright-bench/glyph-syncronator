@@ -1,6 +1,6 @@
 # <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Fire.png" alt="Fire" width="35" height="35" />Better Nothing Müzik Görselleştirici
 <img 
-  src="https://img.shields.io/github/downloads/Aleks-Levet/better-nothing-music-visualizer/total?style=for-the-badge&logo=github&label=Total%20app%20downloads%20from%20github:&color=ff0000&labelColor=000000"
+  src="https://img.shields.io/github/downloads/oliver-lebaigue-bright-bench/glyph-syncronator/total?style=for-the-badge&logo=github&label=Total%20app%20downloads%20from%20github:&color=ff0000&labelColor=000000"
   style="height:40px; border-radius:12px;">
 ## 🌐 Diğer dillerde oku: 
 🇮🇳 [हिन्दी](README_HI.md)
@@ -23,9 +23,9 @@ Teknik olarak öyle olmasa bile, müziğe verilen görsel tepki çok belirgin de
 | **Bölgeler** | Standart, tam fiziksel glifler kullanılır | **Her glif segmenti ve alt bölgesi bağımsız olarak kullanılır ve kontrol edilir** |
 | **Görselleştirme Yöntemi** | Sadece gerçek zamanlı | **20 ms'ye kadar düşük gecikmeli gerçek zamanlı veya önceden işlenmiş ses dosyaları** |
 
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [Video demoları ve örnekler](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Demo-video-examples.md)
+## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [Video demoları ve örnekler](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
 
-### Aradaki farkı iş başında görün! [**Video demolarımıza kolayca göz atmak için buraya tıklayın!**](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Demo-video-examples.md)
+### Aradaki farkı iş başında görün! [**Video demolarımıza kolayca göz atmak için buraya tıklayın!**](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
 
 ## 📲 Desteklenen Nothing Phone Modelleri
 **Şu an için bu modeller desteklenmektedir:**
@@ -60,7 +60,7 @@ Teknik olarak öyle olmasa bile, müziğe verilen görsel tepki çok belirgin de
 5. **Hazır Ayarları Değiştirin**: **Glifler** (Glyphs) sekmesindeki farklı görselleştirme stillerini keşfedin ve değerleri isteğinize göre ayarlayın!
 
 ## 📖 Python betiği nasıl kullanılır?
-Kullanımı oldukça basit ve anlaşılırdır. Yine de; kurulumu, kullanımı, yapılandırma dosyalarını ve sorun giderme bölümünü ayrıntılı olarak açıklayan detaylı bir wiki sayfası hazırladık. Ayrıca nasıl yeni hazır ayarlar (preset) oluşturabileceğinizi de öğrenebilirsiniz (henüz eklenmedi). **musicViz.py** dosyasının Python betiği olarak nasıl kullanılacağını görmek için [buraya tıklamanız yeterlidir](https://github.com/Aleks-Levet/better-nothing-music-visualizer/wiki/). Harika olan ne biliyor musunuz? Sınırsız sayıdaki dosyayı hiçbir sorun yaşamadan toplu olarak dönüştürebilirsiniz!
+Kullanımı oldukça basit ve anlaşılırdır. Yine de; kurulumu, kullanımı, yapılandırma dosyalarını ve sorun giderme bölümünü ayrıntılı olarak açıklayan detaylı bir wiki sayfası hazırladık. Ayrıca nasıl yeni hazır ayarlar (preset) oluşturabileceğinizi de öğrenebilirsiniz (henüz eklenmedi). **musicViz.py** dosyasının Python betiği olarak nasıl kullanılacağını görmek için [buraya tıklamanız yeterlidir](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/wiki/). Harika olan ne biliyor musunuz? Sınırsız sayıdaki dosyayı hiçbir sorun yaşamadan toplu olarak dönüştürebilirsiniz!
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Handshake.png" alt="Handshake" width="25" height="25" /> Topluluğumuza katılın
 Konuşmak veya tartışmak mı istiyorsunuz? *Hatalar, özellik istekleri?* [**Nothing sunucusundaki resmi Discord başlığına katılmaktan çekinmeyin!**](https://discord.com/channels/930878214237200394/1434923843239280743)
@@ -81,7 +81,7 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Copyright.png" alt="Copyright" width="25" height="25" /> Emeği Geçenler:
 #### Bu projede yer alan kişiler şunlardır:
-- [Aleks-Levet](https://github.com/Aleks-Levet) (Kurucu ve koordinatör, ana fikir, sahip)
+- [Oliver Lebaigue](https://github.com/oliver-lebaigue-bright-bench) (Kurucu ve koordinatör, ana fikir, sahip)
 - [Nicouschulas](https://github.com/Nicouschulas) (Beni oku ve Viki geliştirmeleri)
 - [rKyzen(namıdiğer Shivank Dan)](https://github.com/rKyzen) (Gerçek zamanlı müzik akışına sahip Android Uygulama geliştiricisi)
 - [Oliver Lebaigue](https://github.com/oliver-lebaigue-bright-bench) (Geliştirici)
@@ -91,4 +91,4 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 - [Interlastic](https://github.com/Interlastic) (Betiği kolayca denemek için Discord Botu) (Kullanımdan kaldırıldı)
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" alt="Star" width="25" height="25" /> Yıldız Geçmişi
-![Yıldız Geçmişi](https://api.star-history.com/svg?repos=Aleks-Levet/better-nothing-music-visualizer&type=Date)
+![Yıldız Geçmişi](https://api.star-history.com/svg?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=Date)

@@ -1,6 +1,6 @@
 ---
 - # name: Feature request
-- ## about: Suggest an idea for the VibeSync.
+- ## about: Suggest an idea for the glyph-syncronator.
 - ## labels: enhancement
 ---
 

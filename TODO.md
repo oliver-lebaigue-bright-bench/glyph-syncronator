@@ -1,4 +1,4 @@
-# VibeSync - TODO list!
+# glyph-syncronator - TODO list!
 
 ## To Do Fuckery
 
@@ -28,16 +28,16 @@ predictively go to the prev viewed screen tab before exiting the app.
 
 ---
 
-## Aleks' fucking todo
+## TODO
 * track viz mode playing time (flashlight time, haptics time, glyphs time, these will be added up in the firebase charts if possible)
 
 * ***Improve notification (ALEKS DOES IT)***
 
-* VibeSync redisigned settings expandable cards, with M3E BOUNCY ARROW
+* glyph-syncronator redisigned settings expandable cards, with M3E BOUNCY ARROW
 
 * Auto update mechanism without scary permissions
 
-* Modify the VibeSync liscence so only the owner can release, and everything that other developers do should be reported to the owner. And state that debug builds should never be released to the public because they are not meant to be used by the users, but only by the developers for developing purposes.
+* Modify the glyph-syncronator liscence so only the owner can release, and everything that other developers do should be reported to the owner. And state that debug builds should never be released to the public because they are not meant to be used by the users, but only by the developers for developing purposes.
 
 * enhance the built-in switches by adding an X (cross) or a done (✅) in them, like the battery guru's settings switches, and also with bouncy animations and nice haptics
 
@@ -47,7 +47,7 @@ predictively go to the prev viewed screen tab before exiting the app.
 
 * Merge Git repo link card with app version card
 
-* Change audio page big texts (such as made by aleks rkysen and oliver thing)
+* Change audio page big texts (such as made by Oliver and rKyzen)
 
 * Add rotary haptic motor mode
 
@@ -93,7 +93,7 @@ predictively go to the prev viewed screen tab before exiting the app.
 * same for flashlight
 * Remove notification detection
 * Add disclaimer that this app uses Google Analytics
-* Say that VibeSync is DETERMINISTIC (add to readme)
+* Say that glyph-syncronator is DETERMINISTIC (add to readme)
 * *(Low priority)* nothing styled widget with:
   * 3 buttons for source,
   * 3 for the Viz outputs,
@@ -134,13 +134,13 @@ less reactive than the narrow ones, which are usually the bass ones, so we can't
 * Implement leaderboard and usage statistics
 * --- 3.2.1
 * Refine beat detection engine haptics
-* Fix the amplitude haptics (Aleks)
+* Fix the amplitude haptics (Oliver)
 * fix the app crash
 * Remove richtap haptics and 
 ALL CODE RELATED TO IT, ALSO DEPS
 * Add one-shot spam haptics engine (from Oliver)
 * Add 3.0 gamma to the UI shift vizualisation and only have downward smoothing
-* **Change np1 preset with wider spectrum range (Aleks)**
+* **Change np1 preset with wider spectrum range (Oliver)**
 * Remove the debug disclaimer in readme one we release
 * Dynamic UI Theming: Use Palette API to match app colors with album art
 * Dynamic Gain Normalization: Auto-Gain for quiet audio (Experimental)

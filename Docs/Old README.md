@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Fire.png" alt="Fire" width="35" height="35" />VibeSync
+# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Fire.png" alt="Fire" width="35" height="35" />glyph-syncronator
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Partying%20Face.png" alt="Partying Face" width="25" height="25" /> Important Announcement
 I'm currently working with a developer to make an app, a special app that grabs the live audio stream from the android device and directly processes it into the glyphs. It will use the media projection feature, which sounds like a scary permission, but that's the only way to grab a high-quality audio stream from every app. that also means that you'll be able to visualize music playing through spotify, youtube music, and basically any music app you want, which means you don't have to manually process each file or only use local files! So yeah, we're moving from the simple Python script to a nice android app, so it will be way easier to use our algorithm!  
@@ -16,9 +16,9 @@ Even if it technically isn’t, the visual response to music just isn’t very o
 | **Zones** | Standard, full physical glyphs are used | **Each glyph segment and sub-zone is used and controlled independently** |
 | **Visualisation method** | Real-time only | **Realtime with 20ms latency, or pre-processed audio files** |
 
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [Video demos and examples](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Demo-video-examples.md)
+## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [Video demos and examples](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
 
-### See the difference in action! [**Click here to easily browse our video demos!**](https://github.com/Aleks-Levet/better-nothing-music-visualizer/blob/main/Demo-video-examples.md)
+### See the difference in action! [**Click here to easily browse our video demos!**](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
 
 ## 📲 Supported Nothing Phone Models
 Currently these models are supported:
@@ -52,7 +52,7 @@ It then outputs a **glyphed OGG** file for playback in *Glyph Composer*, *Glyphi
   - The synchronized Glyph animation
 
 ## 📖 How to use?
-The usage is pretty simple and straightforward. Nevertheless, we made a detailed wiki page which explains the installation, usage, configuration files in detail and a troubleshooting section. You can also find out how to make new presets. [Just click here to see how to use **musicViz.py** as a python script](https://github.com/Aleks-Levet/better-nothing-music-visualizer/wiki/). You know what's cool? You can convert an unlimited number of files in bulk without any trouble!
+The usage is pretty simple and straightforward. Nevertheless, we made a detailed wiki page which explains the installation, usage, configuration files in detail and a troubleshooting section. You can also find out how to make new presets. [Just click here to see how to use **musicViz.py** as a python script](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/wiki/). You know what's cool? You can convert an unlimited number of files in bulk without any trouble!
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Musical%20Notes.png" alt="Musical Notes" width="30" height="30" /> Our Music App (coming soon):
 We are also working on a potential **Music Player App** that can easily run the script on any audio file for you! The best part? It's very simple to use, you just need your phone and don't need to process it manually! (this is different than what you can see at the top of the readme file.) 
@@ -83,7 +83,7 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Symbols/Copyright.png" alt="Copyright" width="25" height="25" /> Credits:
 #### Here are the people involved in this project:
-- [Aleks-Levet](https://github.com/Aleks-Levet) (founder and coordinator, main idea, owner)
+- [Aleks-Levet](https://github.com/oliver-lebaigue-bright-bench) (founder and coordinator, main idea, owner)
 - [Nicouschulas](https://github.com/Nicouschulas) (Readme & Wiki enhancements)
 - [rKyzen(a.k.a Shivank Dan)](https://github.com/rKyzen)(Android App developer with real time music stream)
 - [SebiAi](https://github.com/SebiAi) (Glyphmodder and glyph related help)
@@ -92,4 +92,4 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 - [Interlastic](https://github.com/Interlastic) (Discord Bot to try the script easily) (deprecated)
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" alt="Star" width="25" height="25" /> Star History
-![Star History](https://api.star-history.com/svg?repos=Aleks-Levet/better-nothing-music-visualizer&type=Date)
+![Star History](https://api.star-history.com/svg?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=Date)

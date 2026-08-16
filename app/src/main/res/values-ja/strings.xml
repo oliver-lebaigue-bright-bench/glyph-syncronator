@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">VibeSync</string>
+    <string name="app_name">glyph-syncronator</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">VibeSync</string>
+    <string name="audio_screen_title">glyph-syncronator</string>
     <string name="audio_description_running">リアルタイム・オーディオ・ビジュアライザーが有効です。あなたのスマートフォンがリズムに合わせて踊っています！コンテンツは保存されず、プライバシーは尊重されます。</string>
-    <string name="audio_description_idle">このアプリは、Aleks Levet、rKyzen、Oliver Lebaigueによって作成されました。\n\nGlyphインターフェースを音楽と同期させるために、このアプリはデバイスのオーディオをキャプチャします。高精度の視覚化のためにメディアプロジェクションを使用しています。\n\nプライバシーに関する注意：オーディオストリームのみを利用します。画面のコンテンツは録画されません。</string>
+    <string name="audio_description_idle">このアプリは、Oliver Lebaigue、rKyzenによって作成されました。\n\nGlyphインターフェースを音楽と同期させるために、このアプリはデバイスのオーディオをキャプチャします。高精度の視覚化のためにメディアプロジェクションを使用しています。\n\nプライバシーに関する注意：オーディオストリームのみを利用します。画面のコンテンツは録画されません。</string>
     <string name="audio_warning_vizualizer">警告：このソースは標準的なAndroidビジュアライザースタイルのオーディオストリームを使用しています。低忠実度であり、品質が劣る可能性があります。</string>
     <string name="auto_memorize_device">デバイスを自動記憶</string>
     <string name="saving_latency_for">レイテンシを保存中： %s</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">アプリ情報とアップデート</string>
-    <string name="about_intro">VibeSync 音楽ビジュアライザーは、高忠実度・リアルタイムの周波数分析により、Glyphインターフェースの可能性を最大限に引き出します。</string>
+    <string name="about_intro">glyph-syncronator 音楽ビジュアライザーは、高忠実度・リアルタイムの周波数分析により、Glyphインターフェースの可能性を最大限に引き出します。</string>
     <string name="about_section_why">Nothingの実装よりも優れている理由：</string>
     <string name="about_why_1">• 12ビット輝度（4096段階） vs 約2ビットの標準（3段階）</string>
     <string name="about_why_2">• 60 FPSの滑らかなアニメーション vs 約25 FPSの標準</string>
@@ -118,7 +118,7 @@
     <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">アップデートがあります： %s</string>
     <string name="update_now">今すぐアップデート</string>
-    <string name="credit_alekslevet_role">創設者、コーディネーター、メインアイデア、オーナー</string>
+    <string name="credit_owner_role">創設者、コーディネーター、メインアイデア、オーナー</string>
     <string name="credit_rkyzen_role">Androidアプリ開発者（リアルタイム・ミュージックストリーム）</string>
     <string name="credit_oliver_role">この素晴らしいアプリの共同開発者</string>
     <string name="credit_nicouschulas_role">ReadmeおよびWikiの強化</string>
@@ -171,7 +171,7 @@
     <string name="not_now">後で</string>
     <string name="downloading_update">アップデートをダウンロード中…</string>
 
-    <string name="app_name_caps">VIBESYNC</string>
+    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
     <string name="appreciate_support">ご支援ありがとうございます。</string>
     <string name="youre_welcome">どういたしまして！</string>
 
@@ -206,20 +206,20 @@
     <string name="license_title">ライセンス</string>
     <string name="license_agreement">ライセンス契約</string>
     <string name="read_license">ソフトウェアライセンスを読む</string>
-    <string name="license_agreement_title">BETTER-NOTHING-MUSIC-VISUALIZER ライセンス契約</string>
+    <string name="license_agreement_title">GLYPH-SYNCRONATOR ライセンス契約</string>
     <string name="license_version">バージョン: 1.1</string>
     <string name="license_date">日付: 2026年6月29日</string>
     <string name="license_licensor">ライセンサー</string>
     <string name="license_licensor_name">Oliver Lebaigue</string>
     <string name="license_founder">創設者</string>
-    <string name="license_founder_name">Aleks Levet</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
     <string name="license_organization">組織</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. はじめに</string>
-    <string name="license_preamble_1">本ライセンス契約（以下「本契約」といいます）は、お客様（以下「ライセンシー」といいます）と Oliver Lebaigue（以下「ライセンサー」といいます）との間で行われる、「better-nothing-music-visualizer」（以下「本ソフトウェア」といいます）として知られる音楽ビジュアライザー・ソフトウェア・アプリケーションの使用、レビュー、および変更に関する法的契約です。本プロジェクトは、Luminus Labs 組織の下、Aleks Levet によって創設されました。</string>
-    <string name="license_preamble_2">本ソフトウェアのソースコードは、https://github.com/aleks-levet/better-nothing-music-visualizer で公開されています。本ソフトウェアまたはそのソースコードにアクセス、ダウンロード、コピー、またはその他の方法で使用することにより、ライセンシーは本契約の条項に拘束されることに同意したものとみなされます。</string>
+    <string name="license_preamble_1">本ライセンス契約（以下「本契約」といいます）は、お客様（以下「ライセンシー」といいます）と Oliver Lebaigue（以下「ライセンサー」といいます）との間で行われる、「glyph-syncronator」（以下「本ソフトウェア」といいます）として知られる音楽ビジュアライザー・ソフトウェア・アプリケーションの使用、レビュー、および変更に関する法的契約です。本プロジェクトは、Luminus Labs 組織の下、Oliver Lebaigue によって創設されました。</string>
+    <string name="license_preamble_2">本ソフトウェアのソースコードは、https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator で公開されています。本ソフトウェアまたはそのソースコードにアクセス、ダウンロード、コピー、またはその他の方法で使用することにより、ライセンシーは本契約の条項に拘束されることに同意したものとみなされます。</string>
     <string name="license_section_2">2. 定義</string>
-    <string name="license_def_1">2.1 「本ソフトウェア」とは、better-nothing-music-visualizer ソフトウェアアプリケーションを指し、ソースコード、オーディオ処理モジュール、レンダリングエンジン、ビジュアルアセット、グラフィックスライブラリ、設定スクリプト、ドキュメント、オブジェクトファイル、バイナリ実行ファイル、および関連するメディアまたはアセットを含みますが、これらに限定されません。</string>
+    <string name="license_def_1">2.1 「本ソフトウェア」とは、glyph-syncronator ソフトウェアアプリケーションを指し、ソースコード、オーディオ処理モジュール、レンダリングエンジン、ビジュアルアセット、グラフィックスライブラリ、設定スクリプト、ドキュメント、オブジェクトファイル、バイナリ実行ファイル、および関連するメディアまたはアセットを含みますが、これらに限定されません。</string>
     <string name="license_def_2">2.2 「ソースコード」とは、公開されている本ソフトウェアのファイルを指し、すべてのスクリプトファイル、シェーダーコード、アセット、およびビルド設定を含みます。</string>
     <string name="license_section_3">3. ライセンスの許諾およびアクセス可能性</string>
     <string name="license_section_3_1">3.1 公開可能性</string>
@@ -228,19 +228,19 @@
     <string name="license_grant_3_2">ライセンシーは、以下の行為を行うことはできません。</string>
     <string name="license_restriction_a">* (a) GitHub 上の標準的なリポジトリフォーク経由を除き、本ソフトウェアまたはその変更されたバージョンを第三者に再配布すること。ただし、それらのフォークが本ライセンスと全く同じ条項に拘束され続けることを条件とします。</string>
     <string name="license_restriction_b">* (b) ライセンサーからの別途書面による許可なく、商業目的、公開パフォーマンス、商業ストリーミング、または収益を生み出す活動のために本ソフトウェアまたはその派生物を使用すること。</string>
-    <string name="license_restriction_c">* (c) 本ソフトウェア上または本ソフトウェア内に配置された著作権、商標、特許、または所有権に関する通知（Aleks Levet、Luminus Labs、またはライセンサーへの言及を含む）を削除、改変、または隠蔽すること。</string>
+    <string name="license_restriction_c">* (c) 本ソフトウェア上または本ソフトウェア内に配置された著作権、商標、特許、または所有権に関する通知（Oliver Lebaigue、Luminus Labs、またはライセンサーへの言及を含む）を削除、改変、または隠蔽すること。</string>
     <string name="license_restriction_d">* (d) 競合する商用音楽ビジュアライザー・ソフトウェアまたはプラットフォームの開発のために本ソフトウェアを使用すること。</string>
     <string name="license_section_4">4. 知的財産権</string>
     <string name="license_section_4_1">4.1 所有権</string>
-    <string name="license_ownership">ライセンサー、Aleks Levet、および Luminus Labs は、本ソフトウェアに関するすべての権利、権限、および利益（そこに含まれるすべての知的財産権を含む）を保持します。ソースコードの公開は、著作権または所有権の放棄を構成するものではありません。</string>
+    <string name="license_ownership">ライセンサー、Oliver Lebaigue、および Luminus Labs は、本ソフトウェアに関するすべての権利、権限、および利益（そこに含まれるすべての知的財産権を含む）を保持します。ソースコードの公開は、著作権または所有権の放棄を構成するものではありません。</string>
     <string name="license_section_5">5. 無保証</string>
     <string name="license_section_5_1">5.1 免責事項</string>
     <string name="license_warranty_disclaimer">本ソフトウェアは「現状有姿」で、かつ「すべての瑕疵を問わず」提供されます。適用法で認められる最大限の範囲において、ライセンサーは、商品性、特定の目的への適合性、権限、および非侵害の黙示の保証を含むがこれらに限定されない、明示的、黙示的、または法定の他のすべての保証および条件を否認します。</string>
     <string name="license_section_5_2">5.2 テクニカルサポートの不在</string>
-    <string name="license_technical_support">ライセンサー、Aleks Levet、および Luminus Labs は、本ソフトウェアに対するテクニカルサポート、アップデート、アップグレード、または変更を提供する義務を負いません。</string>
+    <string name="license_technical_support">ライセンサー、Oliver Lebaigue、および Luminus Labs は、本ソフトウェアに対するテクニカルサポート、アップデート、アップグレード、または変更を提供する義務を負いません。</string>
     <string name="license_section_6">6. 責任の制限</string>
     <string name="license_section_6_1">6.1 責任の上限</string>
-    <string name="license_liability_cap">適用法で認められる最大限の範囲において、いかなる場合も、ライセンサー、Aleks Levet、または Luminus Labs は、本ソフトウェアの使用または使用不能から生じるいかなる間接的、付随的、特別、結果的、または懲罰的損害（逸失利益、事業の中断、またはその他の金銭的損失を含むがこれらに限定されない）についても、たとえそのような損害の可能性について知らされていたとしても、一切の責任を負わないものとします。</string>
+    <string name="license_liability_cap">適用法で認められる最大限の範囲において、いかなる場合も、ライセンサー、Oliver Lebaigue、または Luminus Labs は、本ソフトウェアの使用または使用不能から生じるいかなる間接的、付随的、特別、結果的、または懲罰的損害（逸失利益、事業の中断、またはその他の金銭的損失を含むがこれらに限定されない）についても、たとえそのような損害の可能性について知らされていたとしても、一切の責任を負わないものとします。</string>
     <string name="license_section_7">7. 終了</string>
     <string name="license_section_7_1">7.1 自動終了</string>
     <string name="license_termination">ライセンシーが本契約のいずれかの条項に違反した場合、本契約に基づくライセンシーの権利は、ライセンサーからの通知なく自動的に終了します。終了に伴い、ライセンシーはすべての使用を中止し、本ソフトウェアのすべてのローカルコピーを破棄するものとします。</string>

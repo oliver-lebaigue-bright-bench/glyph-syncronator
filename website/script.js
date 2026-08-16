@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 6. Load License Dynamically
     const licenseText = document.getElementById("licenseText");
     if (licenseText) {
-        fetch("https://raw.githubusercontent.com/Aleks-Levet/better-nothing-music-visualizer/main/LICENSE")
+        fetch("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/LICENSE")
             .then(response => {
                 if (!response.ok) throw new Error("Failed to load license");
                 return response.text();
@@ -172,20 +172,11 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================================
 
 const teamMembers = {
-    aleks: {
-        name: "Aleks Levet",
-        role: "Founder, Coordinator & Main Developer",
-        image: "https://github.com/Aleks-Levet.png",
-        bio: "Main idea and owner of the project. Leading the development of BNMV with a focus on high-fidelity synchronization and user experience.",
-        socials: [
-            { platform: "GitHub", url: "https://github.com/Aleks-Levet" }
-        ]
-    },
     oliver: {
         name: "Oliver Lebaigue",
-        role: "Android Developer",
+        role: "Owner & Lead Developer",
         image: "https://github.com/oliver-lebaigue-bright-bench.png",
-        bio: "Focused on enhancing the app with modern Material 3 Expressive UI components and improving the core visualization logic.",
+        bio: "Owner, coordinator, and lead developer of glyph-syncronator. Focused on high-fidelity synchronization, modern UI, and core visualization logic.",
         socials: [
             { platform: "GitHub", url: "https://github.com/oliver-lebaigue-bright-bench" }
         ]
