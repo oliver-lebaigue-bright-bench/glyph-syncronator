@@ -4,8 +4,8 @@
 -dontwarn com.nothing.thirdparty.**
 
 # Keep models for Firebase Realtime Database
--keep class com.better.nothing.music.vizualizer.model.** { *; }
--keepclassmembers class com.better.nothing.music.vizualizer.model.** {
+-keep class com.better.nothing.music.visualizer.model.** { *; }
+-keepclassmembers class com.better.nothing.music.visualizer.model.** {
     <init>(...);
     private <fields>;
     public <fields>;
