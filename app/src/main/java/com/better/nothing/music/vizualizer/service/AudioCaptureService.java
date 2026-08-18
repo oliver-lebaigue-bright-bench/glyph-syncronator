@@ -765,7 +765,7 @@ public class AudioCaptureService extends Service {
             stopCaptureLocked();
             mCapturing = true;
             setRunning(true);
-            startForeground(NOTIF_ID, buildNotification());
+            showNotification();
             if (mMediaSyncEngine != null) mMediaSyncEngine.start();
         }
     }
