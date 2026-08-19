@@ -55,7 +55,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:252304807982:android:8a99b47e422a69413b27bf",
         "android_client_info": {
-          "package_name": "com.better.nothing.music.vizualizer"
+          "package_name": "com.better.nothing.music.visualizer"
         }
       },
       "oauth_client": [
@@ -63,7 +63,7 @@
           "client_id": "252304807982-al36gn7ionq4kmukop9rog6i2fsog723.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.better.nothing.music.vizualizer",
+            "package_name": "com.better.nothing.music.visualizer",
             "certificate_hash": "1efdb505a23c3e8f33ce7d7b799d3399b3caff1a"
           }
         },
@@ -71,7 +71,7 @@
           "client_id": "252304807982-crlmpifaj4f6gh001s546ou4ikaimufi.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.better.nothing.music.vizualizer",
+            "package_name": "com.better.nothing.music.visualizer",
             "certificate_hash": "d7d0b753158cbdc8ee34a88d43eb8df53a44e272"
           }
         },

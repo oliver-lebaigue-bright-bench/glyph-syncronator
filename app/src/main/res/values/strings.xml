@@ -37,6 +37,10 @@
     <string name="font_ntype">NType</string>
     <string name="typography_help_text">Toggle between NDot and NType fonts app-wide.</string>
     <string name="more_settings_coming">More settings coming soon…</string>
+    <string name="banana_mode">Banana Mode</string>
+    <string name="banana_mode_description">Enable banana visualizer style</string>
+    <string name="penis_mode">Penis Mode</string>
+    <string name="penis_mode_description">Enable penis visualizer style</string>
 
     <!-- Haptics Screen -->
     <string name="haptics_title">Haptics</string>

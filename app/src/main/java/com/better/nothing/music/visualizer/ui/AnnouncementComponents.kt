@@ -36,7 +36,6 @@ fun AnnouncementModal(
     val styleConfig = getStyleConfig(announcement.style)
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
-    
     val handleOpenLink = { url: String ->
         try {
             val sanitizedUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {

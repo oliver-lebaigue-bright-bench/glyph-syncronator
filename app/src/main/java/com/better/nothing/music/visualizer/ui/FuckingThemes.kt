@@ -100,102 +100,172 @@ fun GlyphSyncronatorTheme(
             )
         } else {
             when (themeName) {
-            "Music" -> {
-                val baseColor = musicPrimaryColor ?: Color(0xFFD71921)
-                
-                // Adjust color for visibility
-                val hsl = FloatArray(3)
-                ColorUtils.colorToHSL(baseColor.toArgb(), hsl)
-                
-                if (isDark) {
-                    // In dark mode, ensure color is visible against black but not pure white
-                    if (hsl[2] < 0.6f) hsl[2] = 0.6f
-                    if (hsl[2] > 0.85f) hsl[2] = 0.85f
-                    if (hsl[1] < 0.1f) { // If it's too grey/white, boost saturation and use a default hue
-                        hsl[1] = 0.5f 
-                    }
-                } else {
-                    // In light mode, ensure color is visible against white but not pure black
-                    if (hsl[2] > 0.45f) hsl[2] = 0.45f
-                    if (hsl[2] < 0.15f) hsl[2] = 0.15f
-                    if (hsl[1] < 0.1f) {
-                        hsl[1] = 0.5f
-                    }
-                }
-                
-                val adjustedPrimary = Color(ColorUtils.HSLToColor(hsl))
-
-                if (isDark) {
+                "Monster Classic" -> {
                     androidx.compose.material3.darkColorScheme(
                         background = Color.Black,
-                        surface = Color(0xFF0D0D0D),
-                        primary = adjustedPrimary,
-                        secondary = adjustedPrimary,
-                        error = adjustedPrimary,
+                        surface = Color(0xFF0D0F0A),
+                        primary = Color(0xFFB8D926), // Фирменный цвет кнопок Monster
+                        secondary = Color(0xFFB8D926),
+                        error = Color(0xFFFF4D4D),
                         onBackground = Color.White,
                         onSurface = Color.White,
                         onPrimary = Color.Black,
                         onSecondary = Color.Black,
                         onError = Color.Black,
-                        surfaceVariant = Color(0xFF1A1A1A),
-                        onSurfaceVariant = Color(0xFFB3B3B3),
-                        outline = Color(0xFF333333)
+                        surfaceVariant = Color(0xFF171A12),
+                        onSurfaceVariant = Color(0xFFB8D926),
+                        outline = Color(0xFF2C3314)
                     )
-                } else {
+                }
+                "Monster Ultra White" -> {
                     androidx.compose.material3.lightColorScheme(
                         background = Color.White,
-                        surface = Color(0xFFF5F5F5),
-                        primary = adjustedPrimary,
-                        secondary = adjustedPrimary,
-                        error = adjustedPrimary,
+                        surface = Color(0xFFF7F8FA),
+                        primary = Color(0xFF00C4D9), // Ледяной циан Ultra
+                        secondary = Color(0xFF4A5568),
+                        error = Color(0xFFD71921),
                         onBackground = Color.Black,
                         onSurface = Color.Black,
                         onPrimary = Color.White,
                         onSecondary = Color.White,
                         onError = Color.White,
-                        surfaceVariant = Color(0xFFE0E0E0),
-                        onSurfaceVariant = Color(0xFF757575),
-                        outline = Color(0xFFBDBDBD)
+                        surfaceVariant = Color(0xFFEBEFF4),
+                        onSurfaceVariant = Color(0xFF2D3748),
+                        outline = Color(0xFFCBD5E0)
                     )
                 }
-            }
-            "Material You" -> {
-                val base = if (isDark) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        dynamicDarkColorScheme(context)
+                "Music" -> {
+                    val baseColor = musicPrimaryColor ?: Color(0xFFD71921)
+
+                    // Adjust color for visibility
+                    val hsl = FloatArray(3)
+                    ColorUtils.colorToHSL(baseColor.toArgb(), hsl)
+
+                    if (isDark) {
+                        // In dark mode, ensure color is visible against black but not pure white
+                        if (hsl[2] < 0.6f) hsl[2] = 0.6f
+                        if (hsl[2] > 0.85f) hsl[2] = 0.85f
+                        if (hsl[1] < 0.1f) { // If it's too grey/white, boost saturation and use a default hue
+                            hsl[1] = 0.5f
+                        }
                     } else {
-                        androidx.compose.material3.darkColorScheme(
-                            background = Color.Black
-                        )
+                        // In light mode, ensure color is visible against white but not pure black
+                        if (hsl[2] > 0.45f) hsl[2] = 0.45f
+                        if (hsl[2] < 0.15f) hsl[2] = 0.15f
+                        if (hsl[1] < 0.1f) {
+                            hsl[1] = 0.5f
+                        }
                     }
-                } else {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        dynamicLightColorScheme(context)
+
+                    val adjustedPrimary = Color(ColorUtils.HSLToColor(hsl))
+
+                    if (isDark) {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF0D0D0D),
+                            primary = adjustedPrimary,
+                            secondary = adjustedPrimary,
+                            error = adjustedPrimary,
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color.Black,
+                            onError = Color.Black,
+                            surfaceVariant = Color(0xFF1A1A1A),
+                            onSurfaceVariant = Color(0xFFB3B3B3),
+                            outline = Color(0xFF333333)
+                        )
                     } else {
                         androidx.compose.material3.lightColorScheme(
-                            background = Color.White
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = adjustedPrimary,
+                            secondary = adjustedPrimary,
+                            error = adjustedPrimary,
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
                         )
                     }
                 }
-                
-                // Boost surface brightness for better contrast against background
-                if (isDark) {
-                    base.copy(
-                        surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.1f)),
-                    )
-                } else {
-                    base.copy(
-                        surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.5f)),
-                    )
+                "Material You" -> {
+                    val base = if (isDark) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            dynamicDarkColorScheme(context)
+                        } else {
+                            androidx.compose.material3.darkColorScheme(
+                                background = Color.Black
+                            )
+                        }
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            dynamicLightColorScheme(context)
+                        } else {
+                            androidx.compose.material3.lightColorScheme(
+                                background = Color.White
+                            )
+                        }
+                    }
+
+                    // Boost surface brightness for better contrast against background
+                    if (isDark) {
+                        base.copy(
+                            surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.1f)),
+                        )
+                    } else {
+                        base.copy(
+                            surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.5f)),
+                        )
+                    }
                 }
-            }
-            "Nothing" -> {
-                if (isDark) {
-                    // Nothing Red (Branded Dark)
+                "Nothing" -> {
+                    if (isDark) {
+                        // Nothing Red (Branded Dark)
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF0D0D0D),
+                            primary = Color(0xFFD71921),    // Authentic Nothing Red
+                            secondary = Color(0xFFD71921),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFF1A1A1A),
+                            onSurfaceVariant = Color(0xFFB3B3B3),
+                            outline = Color(0xFF333333)
+                        )
+                    } else {
+                        // Nothing Light (Branded Light)
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = Color(0xFF000000),
+                            secondary = Color(0xFF626262),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
+                        )
+                    }
+                }
+                "Nothing Red" -> {
+                    // Fallback for old selection, same as Nothing Dark
                     androidx.compose.material3.darkColorScheme(
                         background = Color.Black,
                         surface = Color(0xFF0D0D0D),
-                        primary = Color(0xFFD71921),    // Authentic Nothing Red
+                        primary = Color(0xFFD71921),
                         secondary = Color(0xFFD71921),
                         error = Color(0xFFD71921),
                         onBackground = Color.White,
@@ -207,118 +277,47 @@ fun GlyphSyncronatorTheme(
                         onSurfaceVariant = Color(0xFFB3B3B3),
                         outline = Color(0xFF333333)
                     )
-                } else {
-                    // Nothing Light (Branded Light)
-                    androidx.compose.material3.lightColorScheme(
-                        background = Color.White,
-                        surface = Color(0xFFF5F5F5),
-                        primary = Color(0xFF000000),
-                        secondary = Color(0xFF626262),
-                        error = Color(0xFFD71921),
-                        onBackground = Color.Black,
-                        onSurface = Color.Black,
-                        onPrimary = Color.White,
-                        onSecondary = Color.White,
-                        onError = Color.White,
-                        surfaceVariant = Color(0xFFE0E0E0),
-                        onSurfaceVariant = Color(0xFF757575),
-                        outline = Color(0xFFBDBDBD)
-                    )
                 }
-            }
-            "Nothing Red" -> {
-                // Fallback for old selection, same as Nothing Dark
-                androidx.compose.material3.darkColorScheme(
-                    background = Color.Black,
-                    surface = Color(0xFF0D0D0D),
-                    primary = Color(0xFFD71921),
-                    secondary = Color(0xFFD71921),
-                    error = Color(0xFFD71921),
-                    onBackground = Color.White,
-                    onSurface = Color.White,
-                    onPrimary = Color.White,
-                    onSecondary = Color.White,
-                    onError = Color.White,
-                    surfaceVariant = Color(0xFF1A1A1A),
-                    onSurfaceVariant = Color(0xFFB3B3B3),
-                    outline = Color(0xFF333333)
-                )
-            }
-            "Glass" -> {
-                if (isDark) {
-                    androidx.compose.material3.darkColorScheme(
-                        background = Color(0xFF010204), // Even deeper black for contrast
-                        surface = Color(0x26FFFFFF),   // Slightly more opaque
-                        primary = Color(0xFF00FBFF),    // Vivid Cyan
-                        secondary = Color(0xFFFF00C8),  // Vivid Magenta
-                        error = Color(0xFFFF5252),
-                        onBackground = Color.White,
-                        onSurface = Color.White,
-                        onPrimary = Color.Black,
-                        onSecondary = Color.Black,
-                        onError = Color.White,
-                        surfaceVariant = Color(0x33FFFFFF),
-                        onSurfaceVariant = Color.White,
-                        outline = Color(0x66FFFFFF)
-                    )
-                } else {
-                    androidx.compose.material3.lightColorScheme(
-                        background = Color(0xFFF0F2F5),
-                        surface = Color(0x33FFFFFF),
-                        primary = Color(0xFF00B8D4),    // Slightly darker cyan for light mode
-                        secondary = Color(0xFFD81B60),  // Slightly darker magenta for light mode
-                        error = Color(0xFFB00020),
-                        onBackground = Color.Black,
-                        onSurface = Color.Black,
-                        onPrimary = Color.White,
-                        onSecondary = Color.White,
-                        onError = Color.White,
-                        surfaceVariant = Color(0x4D000000),
-                        onSurfaceVariant = Color.Black,
-                        outline = Color(0x1A000000)
-                    )
+                "Glass" -> {
+                    if (isDark) {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color(0xFF010204), // Even deeper black for contrast
+                            surface = Color(0x26FFFFFF),   // Slightly more opaque
+                            primary = Color(0xFF00FBFF),    // Vivid Cyan
+                            secondary = Color(0xFFFF00C8),  // Vivid Magenta
+                            error = Color(0xFFFF5252),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color.Black,
+                            onError = Color.White,
+                            surfaceVariant = Color(0x33FFFFFF),
+                            onSurfaceVariant = Color.White,
+                            outline = Color(0x66FFFFFF)
+                        )
+                    } else {
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color(0xFFF0F2F5),
+                            surface = Color(0x33FFFFFF),
+                            primary = Color(0xFF00B8D4),    // Slightly darker cyan for light mode
+                            secondary = Color(0xFFD81B60),  // Slightly darker magenta for light mode
+                            error = Color(0xFFB00020),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0x4D000000),
+                            onSurfaceVariant = Color.Black,
+                            outline = Color(0x1A000000)
+                        )
+                    }
                 }
-            }
-            "Liquorice Black" -> {
-                androidx.compose.material3.darkColorScheme(
-                    background = Color(0xFF0F0F0F),
-                    surface = Color(0xFF1A1A1A),
-                    primary = Color(0xFFD8D3DA),
-                    secondary = Color(0xFFA0FFA3),
-                    error = Color(0xFFC83B3B),
-                    onBackground = Color.White,
-                    onSurface = Color.White,
-                    onPrimary = Color(0xFF1C1A1D),
-                    onSecondary = Color(0xFF1C5A21),
-                    onError = Color.White,
-                    surfaceVariant = Color(0xFF242424),
-                    onSurfaceVariant = Color(0xFF676767),
-                    outline = Color(0xFF2C2C2C)
-                )
-            }
-            else -> { // Default / OLED Black
-                if (themeName == "Default" && !isDark) {
-                    // Use Nothing Light for Default in Light Mode
-                    androidx.compose.material3.lightColorScheme(
-                        background = Color.White,
-                        surface = Color(0xFFF5F5F5),
-                        primary = Color(0xFF000000),
-                        secondary = Color(0xFF626262),
-                        error = Color(0xFFD71921),
-                        onBackground = Color.Black,
-                        onSurface = Color.Black,
-                        onPrimary = Color.White,
-                        onSecondary = Color.White,
-                        onError = Color.White,
-                        surfaceVariant = Color(0xFFE0E0E0),
-                        onSurfaceVariant = Color(0xFF757575),
-                        outline = Color(0xFFBDBDBD)
-                    )
-                } else {
+                "Liquorice Black" -> {
                     androidx.compose.material3.darkColorScheme(
-                        background = Color.Black,
-                        surface = Color(0xFF282828),
-                        primary = Color(0xFFDCDCDC),
+                        background = Color(0xFF0F0F0F),
+                        surface = Color(0xFF1A1A1A),
+                        primary = Color(0xFFD8D3DA),
                         secondary = Color(0xFFA0FFA3),
                         error = Color(0xFFC83B3B),
                         onBackground = Color.White,
@@ -326,15 +325,50 @@ fun GlyphSyncronatorTheme(
                         onPrimary = Color(0xFF1C1A1D),
                         onSecondary = Color(0xFF1C5A21),
                         onError = Color.White,
-                        surfaceVariant = Color(0xFF3C3C3C),
-                        onSurfaceVariant = Color(0xFFA0A0A0),
+                        surfaceVariant = Color(0xFF242424),
+                        onSurfaceVariant = Color(0xFF676767),
                         outline = Color(0xFF2C2C2C)
                     )
+                }
+                else -> { // Default / OLED Black
+                    if (themeName == "Default" && !isDark) {
+                        // Use Nothing Light for Default in Light Mode
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = Color(0xFF000000),
+                            secondary = Color(0xFF626262),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
+                        )
+                    } else {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF282828),
+                            primary = Color(0xFFDCDCDC),
+                            secondary = Color(0xFFA0FFA3),
+                            error = Color(0xFFC83B3B),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color(0xFF1C5A21),
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFF3C3C3C),
+                            onSurfaceVariant = Color(0xFFA0A0A0),
+                            outline = Color(0xFF2C2C2C)
+                        )
+                    }
                 }
             }
         }
     }
-}
 
     val colorScheme = targetColorScheme.copy(
         primary = animateColorAsState(targetColorScheme.primary, tween(500), label = "primary").value,
@@ -491,7 +525,7 @@ internal class MusicThemeHandler(
 
     fun getArtworkBitmap(metadata: MediaMetadata?): Bitmap? {
         if (metadata == null) return null
-        
+
         // Try direct bitmap first
         val bitmap = try {
             metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
@@ -500,14 +534,14 @@ internal class MusicThemeHandler(
         } catch (_: Exception) {
             null
         }
-        
+
         if (bitmap != null) return bitmap
-        
+
         // If no bitmap, try loading from URI (some players only provide URIs)
         val uriString = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
             ?: metadata.getString(MediaMetadata.METADATA_KEY_ART_URI)
             ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
-            
+
         if (uriString != null) {
             try {
                 val uri = android.net.Uri.parse(uriString)
@@ -519,7 +553,7 @@ internal class MusicThemeHandler(
                 Log.w("MusicThemeHandler", "Failed to load artwork from URI: $uriString", e)
             }
         }
-        
+
         return null
     }
 

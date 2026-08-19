@@ -10,6 +10,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -125,9 +127,9 @@ internal fun SettingsScreen(
             }
         )
 
-
         // ── App Theme ───────────────────────────────────────────────────────
         var themeExpanded by remember { mutableStateOf(false) }
+        var monsterSubmenuExpanded by remember { mutableStateOf(false) }
 
         ExpressiveCard {
             Row(
@@ -230,6 +232,13 @@ internal fun SettingsScreen(
                         )
                     )
 
+                    val isMonsterActive = selectedTheme.startsWith("Monster")
+                    val mainMonsterIconRes = if (selectedTheme == "Monster Ultra White") {
+                        R.drawable.ic_monster_white
+                    } else {
+                        R.drawable.ic_monster_black
+                    }
+
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         maxItemsInEachRow = 2,
@@ -254,11 +263,11 @@ internal fun SettingsScreen(
                                         viewModel.setSelectedTheme(key)
                                     }
                                 },
-                                modifier = Modifier.height(64.dp)
+                                modifier = Modifier
+                                    .height(64.dp)
                                     .then(
                                         if (isGlassTheme && isSelected) {
                                             Modifier.graphicsLayer {
-                                                // Removed shadowElevation to fix the "square shadow" bug
                                                 scaleX = 1.03f
                                                 scaleY = 1.03f
                                             }
@@ -266,6 +275,63 @@ internal fun SettingsScreen(
                                     ),
                                 maxLines = 1
                             )
+                        }
+                    }
+
+                    OptionTile(
+                        label = "Monster Energy",
+                        painter = painterResource(mainMonsterIconRes),
+                        isSelected = isMonsterActive,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            monsterSubmenuExpanded = !monsterSubmenuExpanded
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp),
+                        maxLines = 1
+                    )
+
+                    AnimatedVisibility(visible = monsterSubmenuExpanded) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Monster Flavors",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
+
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                maxItemsInEachRow = 2,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OptionTile(
+                                    label = "Classic Green",
+                                    painter = painterResource(R.drawable.ic_monster_black),
+                                    isSelected = selectedTheme == "Monster Classic",
+                                    onClick = {
+                                        viewModel.setSelectedTheme("Monster Classic")
+                                    },
+                                    modifier = Modifier.height(56.dp),
+                                    maxLines = 1
+                                )
+                                OptionTile(
+                                    label = "Ultra White",
+                                    painter = painterResource(R.drawable.ic_monster_white),
+                                    isSelected = selectedTheme == "Monster Ultra White",
+                                    onClick = {
+                                        viewModel.setSelectedTheme("Monster Ultra White")
+                                    },
+                                    modifier = Modifier.height(56.dp),
+                                    maxLines = 1
+                                )
+                            }
                         }
                     }
                 }
@@ -465,61 +531,61 @@ internal fun SettingsScreen(
 
         // ── Developer Mode ──────────────────────────────────────────────────
         if (showDevModePanel) {
-        val devModeEnabled by viewModel.developerModeEnabled.collectAsStateWithLifecycle()
-        var showPasswordDialog by remember { mutableStateOf(false) }
-        var passwordInput by remember { mutableStateOf("") }
+            val devModeEnabled by viewModel.developerModeEnabled.collectAsStateWithLifecycle()
+            var showPasswordDialog by remember { mutableStateOf(false) }
+            var passwordInput by remember { mutableStateOf("") }
 
-        if (showPasswordDialog) {
-            AlertDialog(
-                onDismissRequest = { 
-                    showPasswordDialog = false
-                    passwordInput = ""
-                },
-                title = { Text(stringResource(R.string.developer_access)) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(stringResource(R.string.developer_access_desc))
-                        OutlinedTextField(
-                            value = passwordInput,
-                            onValueChange = { passwordInput = it },
-                            label = { Text(stringResource(R.string.password)) },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                autoCorrect = false
-                            )
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (viewModel.verifyDeveloperPassword(passwordInput)) {
-                                viewModel.showAnnouncementEditor()
-                                showPasswordDialog = false
-                                passwordInput = ""
-                            } else {
-                                val message = localContext.getString(R.string.incorrect_password)
-                                Toast.makeText(localContext, message, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    ) {
-                        Text(stringResource(R.string.unlock))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { 
+            if (showPasswordDialog) {
+                AlertDialog(
+                    onDismissRequest = {
                         showPasswordDialog = false
                         passwordInput = ""
-                    }) {
-                        Text(stringResource(R.string.cancel))
+                    },
+                    title = { Text(stringResource(R.string.developer_access)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(stringResource(R.string.developer_access_desc))
+                            OutlinedTextField(
+                                value = passwordInput,
+                                onValueChange = { passwordInput = it },
+                                label = { Text(stringResource(R.string.password)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    autoCorrect = false
+                                )
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (viewModel.verifyDeveloperPassword(passwordInput)) {
+                                    viewModel.showAnnouncementEditor()
+                                    showPasswordDialog = false
+                                    passwordInput = ""
+                                } else {
+                                    val message = localContext.getString(R.string.incorrect_password)
+                                    Toast.makeText(localContext, message, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Text(stringResource(R.string.unlock))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showPasswordDialog = false
+                            passwordInput = ""
+                        }) {
+                            Text(stringResource(R.string.cancel))
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
             ExpressiveCard {
                 Row(
@@ -605,7 +671,7 @@ internal fun SettingsScreen(
                                 }
                                 if (isAdmin || BuildConfig.DEBUG || devModeEnabled) {
                                     Button(
-                                        onClick = { 
+                                        onClick = {
                                             showPasswordDialog = true
                                         },
                                         shape = RoundedCornerShape(12.dp),
@@ -805,7 +871,6 @@ internal fun SettingsScreen(
                                 selectedItem = currentSpoofLocale,
                                 onItemSelection = { tag -> viewModel.setSpoofLocale(tag) },
                                 labelProvider = { tag ->
-                                    // Find the matching visual label from our list of pairs
                                     locales.firstOrNull { it.first == tag }?.second.orEmpty()
                                 },
                                 modifier = Modifier.fillMaxWidth()
@@ -982,7 +1047,7 @@ internal fun SettingsScreen(
                         selectedItem = currentNotifSet,
                         onItemSelection = { viewModel.setNotificationButtonSet(it) },
                         labelProvider = {
-                            if (it == "presets") stringResource(R.string.notification_button_set_presets) 
+                            if (it == "presets") stringResource(R.string.notification_button_set_presets)
                             else stringResource(R.string.notification_button_set_quick_controls)
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -1037,7 +1102,7 @@ internal fun SettingsScreen(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
-                        
+
                         if (!isAnonymous) {
                             Box(
                                 modifier = Modifier
@@ -1182,6 +1247,53 @@ internal fun SettingsScreen(
 }
 
 @Composable
+fun OptionTile(
+    label: String,
+    painter: Painter,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1
+) {
+    val haptics = LocalHapticFeedback.current
+    Surface(
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            onClick()
+        },
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+        ),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Image(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                contentScale = ContentScale.Fit
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                maxLines = maxLines
+            )
+        }
+    }
+}
+
+@Composable
 fun LinkCard(
     title: String,
     icon: ImageVector,
@@ -1192,27 +1304,16 @@ fun LinkCard(
     val interactionSource = remember { MutableInteractionSource() }
     val view = LocalView.current
 
-    // 1. Stream raw touch events directly to trigger frame-perfect hardware haptics
     LaunchedEffect(interactionSource) {
         interactionSource.interactions.collect { interaction ->
             when (interaction) {
-                is PressInteraction.Press -> {
-                    // Tactile down-press simulation
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                }
-                is PressInteraction.Release -> {
-                    // Tactile up-release simulation
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE)
-                }
-                is PressInteraction.Cancel -> {
-                    // Mutes or triggers a light cleanup if the user drags their finger away
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE)
-                }
+                is PressInteraction.Press -> view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                is PressInteraction.Release -> view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE)
+                is PressInteraction.Cancel -> view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE)
             }
         }
     }
 
-    // 2. Purely visual spring-physics layout tracking
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
@@ -1232,11 +1333,7 @@ fun LinkCard(
                 scaleY = scale
             },
         shape = RoundedCornerShape(24.dp),
-        color = if (isPressed) {
-            MaterialTheme.colorScheme.surfaceBright
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
+        color = if (isPressed) MaterialTheme.colorScheme.surfaceBright else MaterialTheme.colorScheme.surface,
         interactionSource = interactionSource
     ) {
         Row(
@@ -1250,44 +1347,18 @@ fun LinkCard(
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(40.dp)
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
             }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 if (subtitle != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
-            Icon(
-                imageVector = FontAwesomeIcons.Solid.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
+            Icon(imageVector = FontAwesomeIcons.Solid.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
     }
 }
