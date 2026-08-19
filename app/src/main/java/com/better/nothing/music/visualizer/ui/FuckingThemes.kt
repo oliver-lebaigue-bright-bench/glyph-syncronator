@@ -12,7 +12,11 @@ import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -29,8 +33,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -66,7 +76,7 @@ fun GlyphSyncronatorTheme(
             androidx.compose.material3.darkColorScheme(
                 background = Color.Black,
                 surface = Color(0xFF0D0D00),
-                primary = Color(0xFFFFE135), // Banana Yellow
+                primary = Color(0xFFFFE135),
                 secondary = Color(0xFFFFF600),
                 error = Color(0xFFD71921),
                 onBackground = Color.White,
@@ -83,11 +93,11 @@ fun GlyphSyncronatorTheme(
                 background = Color.Black,
                 surface = Color(0xFF0A0E14),
                 onSurface = Color.White,
-                primary = Color(0xFFFEACA4), // Pink Tip / Titles (Active)
+                primary = Color(0xFFFEACA4),
                 onPrimary = Color.Black,
                 primaryContainer = Color(0xFFFEACA4).copy(alpha = 0.15f),
                 onPrimaryContainer = Color(0xFFFEACA4),
-                secondary = Color(0xFFD68751), // Brown Shaft
+                secondary = Color(0xFFD68751),
                 onSecondary = Color.Black,
                 secondaryContainer = Color(0xFFD68751).copy(alpha = 0.15f),
                 onSecondaryContainer = Color(0xFFD68751),
@@ -96,7 +106,7 @@ fun GlyphSyncronatorTheme(
                 onBackground = Color.White,
                 surfaceVariant = Color(0xFF1E2B36),
                 onSurfaceVariant = Color(0xFFFEACA4),
-                outline = Color(0xFF2D4356) // Border and intents
+                outline = Color(0xFF2D4356)
             )
         } else {
             when (themeName) {
@@ -104,7 +114,7 @@ fun GlyphSyncronatorTheme(
                     androidx.compose.material3.darkColorScheme(
                         background = Color.Black,
                         surface = Color(0xFF0D0F0A),
-                        primary = Color(0xFFB8D926), // Фирменный цвет кнопок Monster
+                        primary = Color(0xFFB8D926),
                         secondary = Color(0xFFB8D926),
                         error = Color(0xFFFF4D4D),
                         onBackground = Color.White,
@@ -121,7 +131,7 @@ fun GlyphSyncronatorTheme(
                     androidx.compose.material3.lightColorScheme(
                         background = Color.White,
                         surface = Color(0xFFF7F8FA),
-                        primary = Color(0xFF00C4D9), // Ледяной циан Ultra
+                        primary = Color(0xFF00C4D9),
                         secondary = Color(0xFF4A5568),
                         error = Color(0xFFD71921),
                         onBackground = Color.Black,
@@ -136,25 +146,17 @@ fun GlyphSyncronatorTheme(
                 }
                 "Music" -> {
                     val baseColor = musicPrimaryColor ?: Color(0xFFD71921)
-
-                    // Adjust color for visibility
                     val hsl = FloatArray(3)
                     ColorUtils.colorToHSL(baseColor.toArgb(), hsl)
 
                     if (isDark) {
-                        // In dark mode, ensure color is visible against black but not pure white
                         if (hsl[2] < 0.6f) hsl[2] = 0.6f
                         if (hsl[2] > 0.85f) hsl[2] = 0.85f
-                        if (hsl[1] < 0.1f) { // If it's too grey/white, boost saturation and use a default hue
-                            hsl[1] = 0.5f
-                        }
+                        if (hsl[1] < 0.1f) hsl[1] = 0.5f
                     } else {
-                        // In light mode, ensure color is visible against white but not pure black
                         if (hsl[2] > 0.45f) hsl[2] = 0.45f
                         if (hsl[2] < 0.15f) hsl[2] = 0.15f
-                        if (hsl[1] < 0.1f) {
-                            hsl[1] = 0.5f
-                        }
+                        if (hsl[1] < 0.1f) hsl[1] = 0.5f
                     }
 
                     val adjustedPrimary = Color(ColorUtils.HSLToColor(hsl))
@@ -198,38 +200,27 @@ fun GlyphSyncronatorTheme(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             dynamicDarkColorScheme(context)
                         } else {
-                            androidx.compose.material3.darkColorScheme(
-                                background = Color.Black
-                            )
+                            androidx.compose.material3.darkColorScheme(background = Color.Black)
                         }
                     } else {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             dynamicLightColorScheme(context)
                         } else {
-                            androidx.compose.material3.lightColorScheme(
-                                background = Color.White
-                            )
+                            androidx.compose.material3.lightColorScheme(background = Color.White)
                         }
                     }
-
-                    // Boost surface brightness for better contrast against background
                     if (isDark) {
-                        base.copy(
-                            surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.1f)),
-                        )
+                        base.copy(surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.1f)))
                     } else {
-                        base.copy(
-                            surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.5f)),
-                        )
+                        base.copy(surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.5f)))
                     }
                 }
                 "Nothing" -> {
                     if (isDark) {
-                        // Nothing Red (Branded Dark)
                         androidx.compose.material3.darkColorScheme(
                             background = Color.Black,
                             surface = Color(0xFF0D0D0D),
-                            primary = Color(0xFFD71921),    // Authentic Nothing Red
+                            primary = Color(0xFFD71921),
                             secondary = Color(0xFFD71921),
                             error = Color(0xFFD71921),
                             onBackground = Color.White,
@@ -242,7 +233,6 @@ fun GlyphSyncronatorTheme(
                             outline = Color(0xFF333333)
                         )
                     } else {
-                        // Nothing Light (Branded Light)
                         androidx.compose.material3.lightColorScheme(
                             background = Color.White,
                             surface = Color(0xFFF5F5F5),
@@ -261,7 +251,6 @@ fun GlyphSyncronatorTheme(
                     }
                 }
                 "Nothing Red" -> {
-                    // Fallback for old selection, same as Nothing Dark
                     androidx.compose.material3.darkColorScheme(
                         background = Color.Black,
                         surface = Color(0xFF0D0D0D),
@@ -281,10 +270,10 @@ fun GlyphSyncronatorTheme(
                 "Glass" -> {
                     if (isDark) {
                         androidx.compose.material3.darkColorScheme(
-                            background = Color(0xFF010204), // Even deeper black for contrast
-                            surface = Color(0x26FFFFFF),   // Slightly more opaque
-                            primary = Color(0xFF00FBFF),    // Vivid Cyan
-                            secondary = Color(0xFFFF00C8),  // Vivid Magenta
+                            background = Color(0xFF010204),
+                            surface = Color(0x26FFFFFF),
+                            primary = Color(0xFF00FBFF),
+                            secondary = Color(0xFFFF00C8),
                             error = Color(0xFFFF5252),
                             onBackground = Color.White,
                             onSurface = Color.White,
@@ -299,8 +288,8 @@ fun GlyphSyncronatorTheme(
                         androidx.compose.material3.lightColorScheme(
                             background = Color(0xFFF0F2F5),
                             surface = Color(0x33FFFFFF),
-                            primary = Color(0xFF00B8D4),    // Slightly darker cyan for light mode
-                            secondary = Color(0xFFD81B60),  // Slightly darker magenta for light mode
+                            primary = Color(0xFF00B8D4),
+                            secondary = Color(0xFFD81B60),
                             error = Color(0xFFB00020),
                             onBackground = Color.Black,
                             onSurface = Color.Black,
@@ -330,9 +319,8 @@ fun GlyphSyncronatorTheme(
                         outline = Color(0xFF2C2C2C)
                     )
                 }
-                else -> { // Default / OLED Black
+                else -> {
                     if (themeName == "Default" && !isDark) {
-                        // Use Nothing Light for Default in Light Mode
                         androidx.compose.material3.lightColorScheme(
                             background = Color.White,
                             surface = Color(0xFFF5F5F5),
@@ -388,7 +376,6 @@ fun GlyphSyncronatorTheme(
 
     val typography = remember(useNType) {
         Typography(
-            // HEADERS
             displayLarge = TextStyle(
                 fontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily,
                 fontSize = 45.sp,
@@ -401,31 +388,11 @@ fun GlyphSyncronatorTheme(
                 lineHeight = 40.sp,
                 fontWeight = FontWeight.Normal
             ),
-
-            // SUB-HEADERS
-            titleLarge = TextStyle(
-                fontSize = 21.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Normal
-            ),
-            titleMedium = TextStyle(
-                fontSize = 17.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Normal
-            ),
-
-            // BODY & LABELS (Keep system font for high legibility at small sizes)
+            titleLarge = TextStyle(fontSize = 21.sp, lineHeight = 28.sp, fontWeight = FontWeight.Normal),
+            titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
             bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
-            labelLarge = TextStyle(
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                fontWeight = FontWeight.Medium
-            ),
-            labelMedium = TextStyle(
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium
-            ),
+            labelLarge = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+            labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
         )
     }
 
@@ -466,6 +433,8 @@ fun GlyphSyncronatorTheme(
         typography = typography
     ) {
         val uiAmplitude by MainViewModel.instance!!.uiAmplitude.collectAsStateWithLifecycle()
+        val isMonsterTheme = themeName.startsWith("Monster")
+
         CompositionLocalProvider(
             LocalAppSpacing provides appSpacing,
             LocalM3EEnabled provides m3eEnabled,
@@ -474,7 +443,27 @@ fun GlyphSyncronatorTheme(
             LocalUIAmplitude provides uiAmplitude,
             LocalIsGlassTheme provides (themeName == "Glass")
         ) {
-            content()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background)
+            ) {
+                if (isMonsterTheme && !bananaMode && !penisMode) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_monster_claw),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize(0.9f)
+                            .align(Alignment.Center)
+                            .graphicsLayer {
+                                rotationZ = -10f
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
+                content()
+            }
         }
     }
 }
@@ -525,8 +514,6 @@ internal class MusicThemeHandler(
 
     fun getArtworkBitmap(metadata: MediaMetadata?): Bitmap? {
         if (metadata == null) return null
-
-        // Try direct bitmap first
         val bitmap = try {
             metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                 ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
@@ -534,10 +521,8 @@ internal class MusicThemeHandler(
         } catch (_: Exception) {
             null
         }
-
         if (bitmap != null) return bitmap
 
-        // If no bitmap, try loading from URI (some players only provide URIs)
         val uriString = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
             ?: metadata.getString(MediaMetadata.METADATA_KEY_ART_URI)
             ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
@@ -553,7 +538,6 @@ internal class MusicThemeHandler(
                 Log.w("MusicThemeHandler", "Failed to load artwork from URI: $uriString", e)
             }
         }
-
         return null
     }
 
@@ -561,7 +545,6 @@ internal class MusicThemeHandler(
         activeMediaController?.unregisterCallback(mediaCallback)
     }
 }
-
 
 val NTypeFontFamily = FontFamily(
     Font(R.font.ntype82)

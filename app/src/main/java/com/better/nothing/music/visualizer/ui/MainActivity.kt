@@ -30,6 +30,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -39,12 +40,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.better.nothing.music.visualizer.R
@@ -69,7 +73,6 @@ class MainActivity : ComponentActivity() {
     private val audioManager by lazy {
         getSystemService(AUDIO_SERVICE) as AudioManager
     }
-
 
     private var service: AudioCaptureService? = null
     private var bound = false
@@ -263,9 +266,29 @@ class MainActivity : ComponentActivity() {
                 penisMode = penisMode,
                 musicPrimaryColor = musicThemeColor,
             ) {
-                // Ensure a solid black root background to prevent "white bits" showing through from window
-                Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+                val isMonsterTheme = selectedTheme.startsWith("Monster")
+
+                Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     GlyphSyncronatorBackground()
+
+                    if (isMonsterTheme && !bananaMode && !penisMode) {
+                        val clawFilter = if (selectedTheme == "Monster Ultra White") {
+                            androidx.compose.ui.graphics.ColorFilter.tint(Color(0xFF888888))
+                        } else {
+                            null // Для Monster Classic рендерим оригинальные цвета картинки без фильтра
+                        }
+
+                        Image(
+                            painter = painterResource(R.drawable.ic_monster_claw),
+                            contentDescription = null,
+                            colorFilter = clawFilter,
+                            modifier = Modifier
+                                .fillMaxSize(0.85f)
+                                .align(Alignment.Center),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
+
                     GlyphSyncronatorApp(
                         viewModel = viewModel,
                         onToggleVisualizer = { toggleVisualizer() },
@@ -297,7 +320,6 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
-
     private fun toggleVisualizer() {
         val s = service ?: return
         if (s.isVisualizerRunning) {
@@ -309,7 +331,6 @@ class MainActivity : ComponentActivity() {
             val source = viewModel.captureSource.value
             when (source) {
                 AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
-
                 AudioCaptureService.CaptureSource.MIC -> {
                     if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                         s.startVisualizer()
@@ -354,8 +375,8 @@ class MainActivity : ComponentActivity() {
             hasPendingToken = true
             pendingVisualizerStart = true
             try {
-            FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-        } catch (_: Exception) {}
+                FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+            } catch (_: Exception) {}
 
             val intent = Intent(this, AudioCaptureService::class.java)
             bindService(intent, serviceConnection, BIND_AUTO_CREATE)
@@ -387,7 +408,7 @@ class MainActivity : ComponentActivity() {
             it.setLensVisualizerMaxHeight(viewModel.lensVisualizerMaxHeight.value)
             it.setLensVisualizerBarCount(viewModel.lensVisualizerBarCount.value)
             it.setLensVisualizerSensitivity(viewModel.lensVisualizerSensitivity.value)
-            
+
             it.setOverlayEnabled(viewModel.overlayEnabled.value)
             it.setOverlayTopEnabled(viewModel.overlayTopEnabled.value)
             it.setOverlayBottomEnabled(viewModel.overlayBottomEnabled.value)
@@ -397,7 +418,7 @@ class MainActivity : ComponentActivity() {
             it.setOverlayYOffset(viewModel.overlayYOffset.value)
             it.setOverlaySensitivity(viewModel.overlaySensitivity.value)
             it.setOverlaySensitivityBottom(viewModel.overlaySensitivityBottom.value)
-            
+
             it.setEdgeVisualizerEnabled(viewModel.edgeVisualizerEnabled.value)
             it.setEdgeThickness(viewModel.edgeThickness.value)
             it.setEdgeSensitivity(viewModel.edgeSensitivity.value)
@@ -525,7 +546,7 @@ internal fun GlyphSyncronatorApp(
             try {
                 val steps = (target - pagerState.currentPage).absoluteValue
                 val duration = (350 + (steps - 1) * 80).coerceAtMost(700)
-                
+
                 pagerState.animateScrollToPage(
                     page = target,
                     animationSpec = tween(
@@ -560,6 +581,8 @@ internal fun GlyphSyncronatorApp(
     val isGlass = LocalIsGlassTheme.current
     val bananaMode = LocalBananaMode.current
     val penisMode = LocalPenisMode.current
+    val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
+    val isMonster = selectedTheme.startsWith("Monster")
 
     Scaffold(
         bottomBar = {
@@ -572,7 +595,7 @@ internal fun GlyphSyncronatorApp(
         floatingActionButton = {
             StartStopButton(running = isRunning, onClick = onToggleVisualizer)
         },
-        containerColor = if (isGlass || bananaMode || penisMode) Color.Transparent else MaterialTheme.colorScheme.background,
+        containerColor = if (isGlass || bananaMode || penisMode || isMonster) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         modifier = Modifier.fillMaxSize()
     ) { padding ->

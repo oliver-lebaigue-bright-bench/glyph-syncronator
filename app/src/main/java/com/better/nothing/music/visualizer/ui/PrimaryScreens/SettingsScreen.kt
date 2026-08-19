@@ -64,7 +64,6 @@ import com.better.nothing.music.visualizer.ui.ExpressiveSplitButton
 import com.better.nothing.music.visualizer.ui.ExpressiveSlider
 import com.better.nothing.music.visualizer.ui.LocalAppSpacing
 import com.better.nothing.music.visualizer.ui.MainViewModel
-import com.better.nothing.music.visualizer.ui.OptionTile
 import com.better.nothing.music.visualizer.ui.ScreenTitle
 import com.better.nothing.music.visualizer.ui.Tab
 
@@ -883,366 +882,413 @@ internal fun SettingsScreen(
                     }
                 }
             }
-        }
 
-        // ── Audio Processing ────────────────────────────────────────────────
-        var processingExpanded by remember { mutableStateOf(false) }
-        val fftReadMethod by viewModel.fftReadMethod.collectAsStateWithLifecycle()
+            // ── Audio Processing ────────────────────────────────────────────────
+            var processingExpanded by remember { mutableStateOf(false) }
+            val fftReadMethod by viewModel.fftReadMethod.collectAsStateWithLifecycle()
 
-        ExpressiveCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        processingExpanded = !processingExpanded
-                    },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            ExpressiveCard {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        FontAwesomeIcons.Solid.WaveSquare,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.audio_pipeline_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = if (processingExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                )
-            }
-
-            AnimatedVisibility(visible = processingExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.freq_detection_method),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    ExpressiveSplitButton(
-                        items = AudioProcessor.ReadMethod.entries,
-                        selectedItem = fftReadMethod,
-                        onItemSelection = { viewModel.setFftReadMethod(it) },
-                        labelProvider = { it.name },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    BodyText(
-                        text = stringResource(R.string.freq_detection_desc),
-                        size = 12.sp
-                    )
-                }
-            }
-        }
-
-        // ── Experimental Features ───────────────────────────────────────────
-        var experimentalExpanded by remember { mutableStateOf(false) }
-
-        ExpressiveCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        experimentalExpanded = !experimentalExpanded
-                    },
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        FontAwesomeIcons.Solid.SlidersH,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = stringResource(R.string.experimental_features),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Icon(
-                    imageVector = if (experimentalExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                )
-            }
-
-            AnimatedVisibility(visible = experimentalExpanded) {
-                Column(
-                    modifier = Modifier.padding(top = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        maxItemsInEachRow = 2,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OptionTile(
-                            label = stringResource(R.string.sync_ui_to_beat),
-                            icon = FontAwesomeIcons.Solid.SyncAlt,
-                            isSelected = uiAmplitudeSyncEnabled,
-                            onClick = { viewModel.setUiAmplitudeSyncEnabled(!uiAmplitudeSyncEnabled) }
-                        )
-                        if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
-                            OptionTile(
-                                label = stringResource(R.string.disable_glyphs_when_silent_title),
-                                icon = FontAwesomeIcons.Solid.VolumeMute,
-                                isSelected = disableGlyphsWhenSilent,
-                                onClick = { onDisableGlyphsWhenSilentChanged(!disableGlyphsWhenSilent) }
-                            )
-                        }
-                        if (viewModel.hasFlashlight) {
-                            OptionTile(
-                                label = stringResource(R.string.flashlight_multi_intensity_forced_title),
-                                icon = FontAwesomeIcons.Solid.Bolt,
-                                isSelected = flashlightMultiIntensityForced,
-                                onClick = { viewModel.setFlashlightMultiIntensityForced(!flashlightMultiIntensityForced) }
-                            )
-                        }
-                        if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
-                            OptionTile(
-                                label = stringResource(R.string.strobe_mode),
-                                icon = FontAwesomeIcons.Solid.MobileAlt,
-                                isSelected = strobeEnabled,
-                                onClick = { onStrobeEnabledChanged(!strobeEnabled) }
-                            )
-                        }
-                    }
-
-                    // Notification Button Set
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.notification_controls_title),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    val currentNotifSet by viewModel.notificationButtonSet.collectAsStateWithLifecycle()
-                    ExpressiveSplitButton(
-                        items = listOf("presets", "controls"),
-                        selectedItem = currentNotifSet,
-                        onItemSelection = { viewModel.setNotificationButtonSet(it) },
-                        labelProvider = {
-                            if (it == "presets") stringResource(R.string.notification_button_set_presets)
-                            else stringResource(R.string.notification_button_set_quick_controls)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            processingExpanded = !processingExpanded
                         },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    BodyText(
-                        text = stringResource(R.string.notification_controls_desc),
-                        size = 12.sp
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            FontAwesomeIcons.Solid.WaveSquare,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.audio_pipeline_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Icon(
+                        imageVector = if (processingExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                     )
                 }
-            }
-        }
 
-        // ── Account ─────────────────────────────────────────────────────────
-        ExpressiveCard {
-            CardHeader(title = "Account")
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            .clickable(!isAnonymous) {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (userProfile?.profilePictureUrl != null) {
-                            AsyncImage(
-                                model = userProfile?.profilePictureUrl,
-                                contentDescription = stringResource(R.string.profile_picture),
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                if (isAnonymous) FontAwesomeIcons.Solid.Cloud else FontAwesomeIcons.Solid.CloudUploadAlt,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        if (!isAnonymous) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    FontAwesomeIcons.Solid.Camera,
-                                    null,
-                                    tint = Color.White.copy(alpha = 0.8f),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-
+                AnimatedVisibility(visible = processingExpanded) {
                     Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(!isAnonymous) {
-                                newNickname = userProfile?.displayName ?: ""
-                                showNicknameDialog = true
-                            }
+                        modifier = Modifier.padding(top = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = if (isAnonymous) stringResource(R.string.anonymous_user) else userProfile?.displayName ?: stringResource(R.string.authenticated_user),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (!isAnonymous) {
-                                Spacer(Modifier.width(8.dp))
-                                Icon(
-                                    FontAwesomeIcons.Solid.Edit,
-                                    null,
-                                    modifier = Modifier.size(12.dp),
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                                )
-                            }
-                        }
                         Text(
-                            text = if (isAnonymous) stringResource(R.string.sync_account_desc) else "Your visualization data is synced.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            text = stringResource(R.string.freq_detection_method),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        ExpressiveSplitButton(
+                            items = AudioProcessor.ReadMethod.entries,
+                            selectedItem = fftReadMethod,
+                            onItemSelection = { viewModel.setFftReadMethod(it) },
+                            labelProvider = { it.name },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        BodyText(
+                            text = stringResource(R.string.freq_detection_desc),
+                            size = 12.sp
                         )
                     }
                 }
-
-                if (isAnonymous) {
-                    Button(
-                        onClick = { onGoogleSignIn() },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Icon(FontAwesomeIcons.Solid.SignInAlt, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.sign_in_with_google))
-                    }
-                } else {
-                    Button(
-                        onClick = { viewModel.signOut() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Icon(FontAwesomeIcons.Solid.SignOutAlt, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.sign_out))
-                    }
-                }
             }
-        }
 
-        // ── Links & Info ────────────────────────────────────────────────────
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            maxItemsInEachRow = 3,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            LinkCard(
-                title = stringResource(R.string.discord_server),
-                icon = FontAwesomeIcons.Solid.Users,
-                onClick = { uriHandler.openUri("https://discord.gg/DBGX7evmy6") },
-                modifier = Modifier.weight(1f)
-            )
-            LinkCard(
-                title = "Vizualizer Stats",
-                icon = FontAwesomeIcons.Solid.ChartBar,
-                onClick = { viewModel.showStats() },
-                modifier = Modifier.weight(1f)
-            )
-            LinkCard(
-                title = stringResource(R.string.about_title),
-                icon = FontAwesomeIcons.Solid.InfoCircle,
-                onClick = { viewModel.showAbout() },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Spacer(modifier = Modifier.height(85.dp))
-    }
+            // ── Experimental Features ───────────────────────────────────────────
+            var experimentalExpanded by remember { mutableStateOf(false) }
 
-    if (showNicknameDialog) {
-        AlertDialog(
-            onDismissRequest = { showNicknameDialog = false },
-            title = { Text(stringResource(R.string.leaderboard_nickname)) },
-            text = {
-                OutlinedTextField(
-                    value = newNickname,
-                    onValueChange = { if (it.length <= 20) newNickname = it },
-                    label = { Text("Nickname") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.updateProfile(newNickname)
-                        showNicknameDialog = false
-                    },
-                    enabled = newNickname.isNotBlank()
+            ExpressiveCard {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            experimentalExpanded = !experimentalExpanded
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(stringResource(R.string.save))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            FontAwesomeIcons.Solid.SlidersH,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.experimental_features),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Icon(
+                        imageVector = if (experimentalExpanded) FontAwesomeIcons.Solid.ChevronUp else FontAwesomeIcons.Solid.ChevronDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    )
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNicknameDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+
+                AnimatedVisibility(visible = experimentalExpanded) {
+                    Column(
+                        modifier = Modifier.padding(top = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            maxItemsInEachRow = 2,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OptionTile(
+                                label = stringResource(R.string.sync_ui_to_beat),
+                                icon = FontAwesomeIcons.Solid.SyncAlt,
+                                isSelected = uiAmplitudeSyncEnabled,
+                                onClick = { viewModel.setUiAmplitudeSyncEnabled(!uiAmplitudeSyncEnabled) }
+                            )
+                            if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
+                                OptionTile(
+                                    label = stringResource(R.string.disable_glyphs_when_silent_title),
+                                    icon = FontAwesomeIcons.Solid.VolumeMute,
+                                    isSelected = disableGlyphsWhenSilent,
+                                    onClick = { onDisableGlyphsWhenSilentChanged(!disableGlyphsWhenSilent) }
+                                )
+                            }
+                            if (viewModel.hasFlashlight) {
+                                OptionTile(
+                                    label = stringResource(R.string.flashlight_multi_intensity_forced_title),
+                                    icon = FontAwesomeIcons.Solid.Bolt,
+                                    isSelected = flashlightMultiIntensityForced,
+                                    onClick = { viewModel.setFlashlightMultiIntensityForced(!flashlightMultiIntensityForced) }
+                                )
+                            }
+                            if (selectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
+                                OptionTile(
+                                    label = stringResource(R.string.strobe_mode),
+                                    icon = FontAwesomeIcons.Solid.MobileAlt,
+                                    isSelected = strobeEnabled,
+                                    onClick = { onStrobeEnabledChanged(!strobeEnabled) }
+                                )
+                            }
+                        }
+
+                        // Notification Button Set
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.notification_controls_title),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        val currentNotifSet by viewModel.notificationButtonSet.collectAsStateWithLifecycle()
+                        ExpressiveSplitButton(
+                            items = listOf("presets", "controls"),
+                            selectedItem = currentNotifSet,
+                            onItemSelection = { viewModel.setNotificationButtonSet(it) },
+                            labelProvider = {
+                                if (it == "presets") stringResource(R.string.notification_button_set_presets)
+                                else stringResource(R.string.notification_button_set_quick_controls)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        BodyText(
+                            text = stringResource(R.string.notification_controls_desc),
+                            size = 12.sp
+                        )
+                    }
                 }
             }
-        )
+
+            // ── Account ─────────────────────────────────────────────────────────
+            ExpressiveCard {
+                CardHeader(title = "Account")
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                .clickable(!isAnonymous) {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (userProfile?.profilePictureUrl != null) {
+                                AsyncImage(
+                                    model = userProfile?.profilePictureUrl,
+                                    contentDescription = stringResource(R.string.profile_picture),
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    if (isAnonymous) FontAwesomeIcons.Solid.Cloud else FontAwesomeIcons.Solid.CloudUploadAlt,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            if (!isAnonymous) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        FontAwesomeIcons.Solid.Camera,
+                                        null,
+                                        tint = Color.White.copy(alpha = 0.8f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(!isAnonymous) {
+                                    newNickname = userProfile?.displayName ?: ""
+                                    showNicknameDialog = true
+                                }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (isAnonymous) stringResource(R.string.anonymous_user) else userProfile?.displayName ?: stringResource(R.string.authenticated_user),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                if (!isAnonymous) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Icon(
+                                        FontAwesomeIcons.Solid.Edit,
+                                        null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = if (isAnonymous) stringResource(R.string.sync_account_desc) else "Your visualization data is synced.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+
+                    if (isAnonymous) {
+                        Button(
+                            onClick = { onGoogleSignIn() },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(FontAwesomeIcons.Solid.SignInAlt, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.sign_in_with_google))
+                        }
+                    } else {
+                        Button(
+                            onClick = { viewModel.signOut() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                contentColor = MaterialTheme.colorScheme.error
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(FontAwesomeIcons.Solid.SignOutAlt, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.sign_out))
+                        }
+                    }
+                }
+            }
+
+            // ── Links & Info ────────────────────────────────────────────────────
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                maxItemsInEachRow = 3,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LinkCard(
+                    title = stringResource(R.string.discord_server),
+                    icon = FontAwesomeIcons.Solid.Users,
+                    onClick = { uriHandler.openUri("https://discord.gg/DBGX7evmy6") },
+                    modifier = Modifier.weight(1f)
+                )
+                LinkCard(
+                    title = "Vizualizer Stats",
+                    icon = FontAwesomeIcons.Solid.ChartBar,
+                    onClick = { viewModel.showStats() },
+                    modifier = Modifier.weight(1f)
+                )
+                LinkCard(
+                    title = stringResource(R.string.about_title),
+                    icon = FontAwesomeIcons.Solid.InfoCircle,
+                    onClick = { viewModel.showAbout() },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(85.dp))
+        }
+
+        if (showNicknameDialog) {
+            AlertDialog(
+                onDismissRequest = { showNicknameDialog = false },
+                title = { Text(stringResource(R.string.leaderboard_nickname)) },
+                text = {
+                    OutlinedTextField(
+                        value = newNickname,
+                        onValueChange = { if (it.length <= 20) newNickname = it },
+                        label = { Text("Nickname") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.updateProfile(newNickname)
+                            showNicknameDialog = false
+                        },
+                        enabled = newNickname.isNotBlank()
+                    ) {
+                        Text(stringResource(R.string.save))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNicknameDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun OptionTile(
+    label: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 1
+) {
+    val haptics = LocalHapticFeedback.current
+    Surface(
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            onClick()
+        },
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = BorderStroke(
+            1.dp,
+            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+        ),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                maxLines = maxLines
+            )
+        }
     }
 }
 
