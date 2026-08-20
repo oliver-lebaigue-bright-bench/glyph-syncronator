@@ -57,8 +57,6 @@ import com.better.nothing.music.visualizer.ui.VisualizerOverlayView;
 import com.better.nothing.music.visualizer.ui.EdgeVisualizerView;
 import com.better.nothing.music.visualizer.ui.LensVisualizerView;
 
-import rikka.shizuku.Shizuku;
-
 import com.nothing.ketchum.Glyph;
 import com.nothing.ketchum.GlyphException;
 import com.nothing.ketchum.GlyphManager;
@@ -97,7 +95,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SHIZUKU }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.better.nothing.music.visualizer.action.STOP";
@@ -226,7 +224,6 @@ public class AudioCaptureService extends Service {
 
     private MediaProjection mProjection;
     private AudioRecord mAudioRecord;
-    private java.lang.Process mShizukuProcess;
     private Visualizer mVisualizer;
     private final ArrayDeque<PendingFrame> mVisualizerPendingFrames = new ArrayDeque<>();
     private ExecutorService mCaptureExecutor;
@@ -543,7 +540,6 @@ public class AudioCaptureService extends Service {
     public void startVisualizer() {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
-        else if (mCaptureSource == CaptureSource.SHIZUKU) startShizukuCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -556,7 +552,6 @@ public class AudioCaptureService extends Service {
             stopCapture();
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
-            else if (mCaptureSource == CaptureSource.SHIZUKU) startShizukuCapture();
         });
     }
 
@@ -866,8 +861,6 @@ public class AudioCaptureService extends Service {
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
 
-    public void startShizukuCapture() { startCaptureInternal(CaptureSource.SHIZUKU, 0, null); }
-
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
@@ -885,7 +878,6 @@ public class AudioCaptureService extends Service {
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
                 Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
-                if (source == CaptureSource.SHIZUKU) { startShizukuProcessCapture(); return; }
                 SystemClock.sleep(PROJECTION_SETTLE_DELAY_MS);
                 AudioRecord localRecord = null;
                 try {
@@ -912,55 +904,12 @@ public class AudioCaptureService extends Service {
         refreshNotification();
     }
 
-    private void startShizukuProcessCapture() {
-        try {
-            String[] cmd = {"sh", "-c", "export CLASSPATH=" + getApplicationInfo().sourceDir + "; exec app_process / com.better.nothing.music.visualizer.server.AudioServer"};
-            try {
-                Method newProcessMethod = Shizuku.class.getDeclaredMethod("newProcess", String[].class, String[].class, String.class);
-                newProcessMethod.setAccessible(true);
-                mShizukuProcess = (java.lang.Process) newProcessMethod.invoke(null, cmd, null, null);
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to call Shizuku.newProcess via reflection", e);
-                throw e;
-            }
-            new Thread(() -> {
-                try (InputStream es = mShizukuProcess.getErrorStream()) {
-                    java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(es, StandardCharsets.UTF_8));
-                    String line; while ((line = reader.readLine()) != null) Log.e("AudioServer:Err", line);
-                } catch (IOException ignored) {}
-            }, "ShizukuStderr").start();
-            InputStream is = mShizukuProcess.getInputStream();
-            byte[] magic = new byte[4]; int readTotal = 0; while (readTotal < 4) { int r = is.read(magic, readTotal, 4 - readTotal); if (r < 0) break; readTotal += r; }
-            if (readTotal != 4 || magic[0] != 0x42 || magic[1] != 0x4E || magic[2] != 0x4D || magic[3] != 0x56) { showToast("Shizuku: Server handshake failed"); stopCapture(); return; }
-            mCurrentSampleRate = 48000; runShizukuStreamLoop(is);
-        } catch (Exception e) { Log.e(TAG, "Shizuku capture failed", e); showToast("Shizuku error: " + e.getMessage()); stopCapture(); }
-    }
-
-    private void runShizukuStreamLoop(InputStream is) throws IOException {
-        int sampleRate = 48000;
-        try { mVisualizerConfig = loadVisualizerConfig(mPresetKey, sampleRate); } catch (Exception ignored) {}
-        mAudioProcessor.updateFFTSize(sampleRate);
-        mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
-        mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
-        int hopSize = Math.round(sampleRate / (float) FPS); short[] hop = new short[hopSize]; byte[] byteBuffer = new byte[hopSize * 2]; ArrayDeque<PendingFrame> pendingFrames = new ArrayDeque<>();
-        while (mCapturing) {
-            int readTotal = 0; while (readTotal < byteBuffer.length && mCapturing) { int r = is.read(byteBuffer, readTotal, byteBuffer.length - readTotal); if (r < 0) throw new IOException("EOF"); readTotal += r; }
-            if (!mCapturing) break;
-            for (int i = 0; i < hopSize; i++) hop[i] = (short) ((byteBuffer[i * 2] & 0xFF) | (byteBuffer[i * 2 + 1] << 8));
-            AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
-            if (result == null) continue;
-            pendingFrames.addLast(new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs));
-            dispatchDueFrames(pendingFrames);
-        }
-    }
-
     public void stopCapture() { synchronized (mCaptureLock) { stopCaptureLocked(); } }
     private void stopCaptureLocked() {
         mCapturing = false; setRunning(false); updateOverlayVisibility();
-        shutdownCaptureExecutor(); releaseAudioRecord(); releaseShizukuProcess(); releaseVisualizer(); releaseProjection();
+        shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
-    private void releaseShizukuProcess() { if (mShizukuProcess != null) { mShizukuProcess.destroy(); mShizukuProcess = null; } }
     private void releaseAudioRecord() { if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; } }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
@@ -969,23 +918,76 @@ public class AudioCaptureService extends Service {
     private void showToast(String msg) { mMainHandler.post(() -> android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()); }
 
     private long lastFrameLogMs = 0;
+    private float[] mBoostedBuffer = new float[0];
+    private float[] mLightStateBuffer = new float[0];
+    private int[] mFrameColorsBuffer = new int[0];
+
     private void processFrame(float[] uniqueMagnitudes, float hapticPeak, AudioProcessor.VisualizerConfig config, int configVersion) {
         if (config == null || configVersion != mPresetConfigVersion.get()) return;
         try {
-            long now = SystemClock.elapsedRealtime(); float gain = mGlyphRenderer.getSpectrumGain(); boolean hasActivity = false;
-            if (uniqueMagnitudes != null && uniqueMagnitudes.length > 0) { for (float mag : uniqueMagnitudes) if (mag * gain > 0.0005f) { hasActivity = true; break; } }
+            long now = SystemClock.elapsedRealtime(); 
+            float gain = mGlyphRenderer.getSpectrumGain(); 
+            boolean hasActivity = false;
+            
+            if (uniqueMagnitudes != null && uniqueMagnitudes.length > 0) { 
+                for (float mag : uniqueMagnitudes) if (mag * gain > 0.0005f) { hasActivity = true; break; } 
+            }
             if (!hasActivity && hapticPeak * gain > 0.0005f) hasActivity = true;
-            if (hasActivity || (mIdleBreathingEnabled && (mMaxBrightness > 0))) { mLastAudioActivityMs = now; if (!mSessionOpen) ensureGlyphSession(); } else if (mDisableGlyphsWhenSilent && mSessionOpen && (now - mLastAudioActivityMs > 3000)) clearGlyphSession();
+            
+            if (hasActivity || (mIdleBreathingEnabled && (mMaxBrightness > 0))) { 
+                mLastAudioActivityMs = now; 
+                if (!mSessionOpen) ensureGlyphSession(); 
+            } else if (mDisableGlyphsWhenSilent && mSessionOpen && (now - mLastAudioActivityMs > 3000)) {
+                clearGlyphSession();
+            }
+            
             if (now - mLastSendMs < MIN_SEND_INTERVAL_MS) return;
-            float[] boosted = (uniqueMagnitudes != null) ? new float[uniqueMagnitudes.length] : new float[0];
-            if (uniqueMagnitudes != null) for (int i = 0; i < uniqueMagnitudes.length; i++) boosted[i] = uniqueMagnitudes[i] * gain;
-            float originalGain = mGlyphRenderer.getSpectrumGain(); mGlyphRenderer.setSpectrumGain(1.0f); int[] frameColors;
-            try { frameColors = mGlyphRenderer.processFrame(boosted, config, now); } finally { mGlyphRenderer.setSpectrumGain(originalGain); }
+
+            // Reuse boosted buffer
+            if (uniqueMagnitudes != null) {
+                if (mBoostedBuffer.length != uniqueMagnitudes.length) {
+                    mBoostedBuffer = new float[uniqueMagnitudes.length];
+                }
+                for (int i = 0; i < uniqueMagnitudes.length; i++) {
+                    mBoostedBuffer[i] = uniqueMagnitudes[i] * gain;
+                }
+            } else {
+                mBoostedBuffer = new float[0];
+            }
+
+            float originalGain = mGlyphRenderer.getSpectrumGain(); 
+            mGlyphRenderer.setSpectrumGain(1.0f); 
+            int[] frameColors;
+            try { 
+                frameColors = mGlyphRenderer.processFrame(mBoostedBuffer, config, now); 
+            } finally { 
+                mGlyphRenderer.setSpectrumGain(originalGain); 
+            }
+            
             if (frameColors == null) return;
-            float[] lightState = new float[frameColors.length]; for (int i = 0; i < frameColors.length; i++) lightState[i] = frameColors[i] / 4095f; mCurrentLightState = lightState;
+
+            // Reuse light state buffer
+            if (mLightStateBuffer.length != frameColors.length) {
+                mLightStateBuffer = new float[frameColors.length];
+            }
+            for (int i = 0; i < frameColors.length; i++) {
+                mLightStateBuffer[i] = frameColors[i] / 4095f;
+            }
+            // Use clone to ensure thread-safety and trigger UI updates in StateFlow
+            mCurrentLightState = mLightStateBuffer.clone();
+
             if (!canPushGlyphFrames()) return;
-            try { if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) { if (mGMM != null) mGMM.setAppMatrixFrame(frameColors); } else if (mGM != null) mGM.setFrameColors(frameColors); mLastSendMs = now; } catch (Exception ignored) {}
-        } catch (Exception e) { Log.e(TAG, "processFrame error", e); }
+            try { 
+                if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) { 
+                    if (mGMM != null) mGMM.setAppMatrixFrame(frameColors); 
+                } else if (mGM != null) {
+                    mGM.setFrameColors(frameColors); 
+                }
+                mLastSendMs = now; 
+            } catch (Exception ignored) {}
+        } catch (Exception e) { 
+            Log.e(TAG, "processFrame error", e); 
+        }
     }
     private void dispatchDueFrames(ArrayDeque<PendingFrame> pendingFrames) {
         if (pendingFrames == null) return; long nowMs = SystemClock.elapsedRealtime(); PendingFrame latestDueFrame = null;
@@ -995,8 +997,12 @@ public class AudioCaptureService extends Service {
                 synchronized (mFftLock) {
                     mLatestRawFFT = latestDueFrame.rawFFT;
                     mLatestDecayedFFT = latestDueFrame.decayedFFT;
-                    if (mLatestMagnitudes.length != 512) mLatestMagnitudes = new float[512];
-                    for (int i = 0; i < 512; i++) mLatestMagnitudes[i] = mLatestDecayedFFT[i] / 4095f;
+                    float[] mags = new float[512];
+                    float invMax = 1.0f / 4095f;
+                    for (int i = 0; i < 512; i++) {
+                        mags[i] = mLatestDecayedFFT[i] * invMax;
+                    }
+                    mLatestMagnitudes = mags;
                 }
                 mLatestHapticPeak = latestDueFrame.hapticPeak;
                 mLatestUiPeak = latestDueFrame.uiPeak;
@@ -1035,14 +1041,26 @@ public class AudioCaptureService extends Service {
         } catch (Exception e) { Log.e(TAG, "Failed to start Visualizer capture", e); releaseVisualizer(); }
     }
 
+    private short[] mWaveformHopBuffer = new short[0];
+
     private void processVisualizerWaveform(byte[] waveform, int samplingRate) {
         if (!mCapturing || mVisualizerConfig == null) return;
         mAudioProcessor.updateFFTSize(samplingRate / 1000);
-        short[] hop = new short[waveform.length]; for (int i = 0; i < waveform.length; i++) hop[i] = (short) (((waveform[i] & 0xFF) - 128) << 8);
-        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
+        
+        if (mWaveformHopBuffer.length != waveform.length) {
+            mWaveformHopBuffer = new short[waveform.length];
+        }
+        for (int i = 0; i < waveform.length; i++) {
+            mWaveformHopBuffer[i] = (short) (((waveform[i] & 0xFF) - 128) << 8);
+        }
+        
+        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(mWaveformHopBuffer, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
         if (result == null) return;
         PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
-        synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
+        synchronized (mVisualizerPendingFrames) { 
+            mVisualizerPendingFrames.addLast(frame); 
+            dispatchDueFrames(mVisualizerPendingFrames); 
+        }
     }
 
     private void runCaptureLoop(AudioRecord record) {

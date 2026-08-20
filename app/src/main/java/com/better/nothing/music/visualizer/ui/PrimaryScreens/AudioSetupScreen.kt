@@ -51,6 +51,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -116,11 +117,9 @@ fun AudioScreen(
     fftData: FloatArray = floatArrayOf(),
     captureSource: AudioCaptureService.CaptureSource = AudioCaptureService.CaptureSource.INTERNAL,
     onCaptureSourceChanged: (AudioCaptureService.CaptureSource) -> Unit = {},
-    shizukuUnlocked: Boolean = false,
     latencyWizardState: LatencyWizard.State = LatencyWizard.State.Idle,
     onRunLatencyWizard: () -> Unit = {},
     onResetLatencyWizard: () -> Unit = {},
-    developerModeEnabled: Boolean = false,
     bananaMode: Boolean = false,
     penisMode: Boolean = false,
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
@@ -216,9 +215,7 @@ fun AudioScreen(
                 } else {
                     onCaptureSourceChanged(source)
                 }
-            },
-            shizukuUnlocked = shizukuUnlocked,
-            developerModeEnabled = developerModeEnabled
+            }
         )
 
         val header2SpacerHeight by animateDpAsState(
@@ -232,7 +229,10 @@ fun AudioScreen(
         }
 
         AnimatedVisibility(visible = isRunning) {
-            FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
+            val compositionKey = remember(bananaMode, penisMode) { "$bananaMode-$penisMode" }
+            key(compositionKey) {
+                FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
+            }
         }
 
         if (isRunning) {
@@ -301,9 +301,7 @@ fun AudioScreen(
 @OptIn(ExperimentalLayoutApi::class)
 fun CaptureSourceCard(
     selectedSource: AudioCaptureService.CaptureSource,
-    onSourceSelected: (AudioCaptureService.CaptureSource) -> Unit,
-    shizukuUnlocked: Boolean,
-    developerModeEnabled: Boolean
+    onSourceSelected: (AudioCaptureService.CaptureSource) -> Unit
 ) {
     ExpressiveCard(modifier = Modifier.fillMaxWidth()) {
         CardHeader(title = "Select Capture Source")
@@ -358,22 +356,6 @@ fun CaptureSourceCard(
                 modifier = Modifier.height(64.dp),
                 maxLines = 2
             )
-
-            if (developerModeEnabled) {
-                val isSelected = selectedSource == AudioCaptureService.CaptureSource.SHIZUKU
-                val isEnabled = shizukuUnlocked
-                
-                OptionTile(
-                    label = if (!shizukuUnlocked) stringResource(R.string.capture_shizuku) + " (Locked)" 
-                            else stringResource(R.string.capture_shizuku),
-                    icon = FontAwesomeIcons.Solid.Terminal,
-                    isSelected = isSelected,
-                    enabled = isEnabled,
-                    onClick = { onSourceSelected(AudioCaptureService.CaptureSource.SHIZUKU) },
-                    modifier = Modifier.height(64.dp),
-                    maxLines = 2
-                )
-            }
         }
         if (selectedSource == AudioCaptureService.CaptureSource.VIZUALIZER) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -697,9 +679,20 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode:
                             )
                         }
                 ) {
+                    val barPath = remember { Path() }
+                    val fillPath = remember { Path() }
                     val primaryColor = MaterialTheme.colorScheme.primary
-                    val width = maxWidth
-                    val density = LocalDensity.current
+                    
+                    val gradient = remember(primaryColor) {
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                primaryColor.copy(alpha = 0.6f),
+                                primaryColor.copy(alpha = 0.02f)
+                            ),
+                            startY = 0f,
+                            endY = 400f // Approximate, will be scaled
+                        )
+                    }
 
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val data = fftData
@@ -707,21 +700,14 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode:
 
                         val w = size.width
                         val h = size.height
-
-                        val barPath = Path()
-                        var first = true
-
-                        // Dynamic gradient based on amplitude
-                        val gradient = Brush.verticalGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.6f),
-                                primaryColor.copy(alpha = 0.02f)
-                            ),
-                            startY = 0f,
-                            endY = h
-                        )
+                        
+                        barPath.reset()
 
                         val points = data.size - 1
+                        var first = true
+                        
+                        // Optimize: skip some points for performance if needed, 
+                        // but 512 points should be fine if we don't allocate paths.
                         for (i in 5..points) {
                             val fraction = i.toFloat() / points
                             val mag = data[i]
@@ -739,15 +725,13 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode:
                             }
                         }
 
-                        val fillPath = Path().apply {
-                            addPath(barPath)
-                            lineTo(w, h)
-                            lineTo(0f, h)
-                            close()
-                        }
+                        fillPath.reset()
+                        fillPath.addPath(barPath)
+                        fillPath.lineTo(w, h)
+                        fillPath.lineTo(0f, h)
+                        fillPath.close()
 
                         drawPath(path = fillPath, brush = gradient)
-
 
                         // Main line
                         drawPath(
@@ -806,12 +790,12 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode:
                             "%.1fkHz",
                             freq / 1000f
                         ) else String.format(Locale.US, "%dHz", freq.toInt())
-                        val txDp = with(density) { tx.toDp() }
+                        val txDp = with(LocalDensity.current) { tx.toDp() }
 
                         Surface(
                             modifier = Modifier
                                 .offset(
-                                    x = (txDp - 30.dp).coerceIn(4.dp, width - 64.dp),
+                                    x = (txDp - 30.dp).coerceIn(4.dp, maxWidth - 64.dp),
                                     y = 12.dp
                                 ),
                             color = MaterialTheme.colorScheme.primary,

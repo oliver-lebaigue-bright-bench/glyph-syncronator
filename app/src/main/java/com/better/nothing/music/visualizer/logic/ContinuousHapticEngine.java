@@ -84,7 +84,14 @@ public final class ContinuousHapticEngine {
         float current = Math.max(0f, rawPeak) * SPECTRUM_GAIN * hapticMultiplier * hapticAudioGain;
 
         // Apply Gamma shaping
-        float shaped = (float) Math.pow(current, hapticGamma);
+        float shaped;
+        if (hapticGamma == 2.0f) {
+            shaped = current * current;
+        } else if (hapticGamma == 1.0f) {
+            shaped = current;
+        } else {
+            shaped = (float) Math.pow(current, hapticGamma);
+        }
 
         int nextAmplitude = clampInt(Math.round(shaped * MAX_AMPLITUDE), 0, MAX_AMPLITUDE);
         if (shaped >= 0.95f) nextAmplitude = MAX_AMPLITUDE;

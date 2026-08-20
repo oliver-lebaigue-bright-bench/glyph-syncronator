@@ -136,7 +136,7 @@ fun GlyphPreviewContent(
                         left = 10f,
                         top = 10f,
                         right = 172f,
-                        bottom = 160f,
+                        bottom = 100f,
                         cornerRadius = CornerRadius(24f)
                     )
                 )
@@ -247,7 +247,7 @@ fun GlyphPreviewContent(
                         glowPaint.alpha = alpha * 0.35f
                         glowPaint.nativePaint.maskFilter = android.graphics.BlurMaskFilter(12f * scale, android.graphics.BlurMaskFilter.Blur.NORMAL)
                         canvas.drawPath(path, glowPaint)
-                        
+
                         glowPaint.alpha = alpha * 0.15f
                         glowPaint.nativePaint.maskFilter = android.graphics.BlurMaskFilter(24f * scale, android.graphics.BlurMaskFilter.Blur.NORMAL)
                         canvas.drawPath(path, glowPaint)
@@ -266,7 +266,7 @@ fun GlyphPreviewContent(
                 val silhouettePath = Path().apply {
                     addRoundRect(androidx.compose.ui.geometry.RoundRect(silhouetteRect, CornerRadius(32f)))
                 }
-                
+
                 // Bezel
                 drawPath(silhouettePath, Color(0xFF222222), style = Stroke(width = 4f))
                 

@@ -151,7 +151,7 @@ ALL CODE RELATED TO IT, ALSO DEPS
 * Use rotating rounded polygon for the haptic viz visual (boost rotate and change shape when beat detected)
 * Change that app theme carrousel thing cuz it sucks
 * Global "UI shift" variable (float -0.3 to 1.0, reactive to 70-130 Hz)
-* Add Shizuku audio source (Oliver) - Added structure & UI toggle
+* Add Shizuku audio source (Oliver) - DEPRECATED/REMOVED
 * Add shitty visualizer audio source WITH DISCLAIMER THAT IT SUCKS
 * Alternating strobe mode blinking of the glyphs (10ms)
 * Make toggle card white accent color when on

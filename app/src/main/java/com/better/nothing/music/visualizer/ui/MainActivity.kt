@@ -62,7 +62,6 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import rikka.shizuku.Shizuku
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
@@ -89,12 +88,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
-
-    private val shizukuPermissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-        if (requestCode == 1001 && grantResult == PackageManager.PERMISSION_GRANTED) {
-            service?.startVisualizer()
-        }
-    }
 
     private val audioDeviceCallback = object : AudioDeviceCallback() {
         override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>) {
@@ -209,7 +202,6 @@ class MainActivity : ComponentActivity() {
         bindService(intent, serviceConnection, BIND_AUTO_CREATE)
 
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, mainHandler)
-        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener)
 
         val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as MediaSessionManager
         if (isNotificationServiceEnabled()) {
@@ -234,24 +226,23 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(isRunning) {
                 if (isRunning) {
+                    val rawFloat = FloatArray(512)
+                    val decayedFloat = FloatArray(512)
                     while (true) {
                         service?.let { s ->
                             s.currentLightState?.let {
                                 viewModel.setVisualizerState(it)
                             }
-                            val raw = s.latestRawFFT
-                            val decayed = s.latestDecayedFFT
-                            if (raw != null && decayed != null) {
-                                val rawFloat = FloatArray(512)
-                                val decayedFloat = FloatArray(512)
-                                for (i in 0 until 512) {
-                                    rawFloat[i] = raw[i] / 4095f
-                                    decayedFloat[i] = decayed[i] / 4095f
-                                }
-                                viewModel.setFftState(decayedFloat, rawFloat)
+                            
+                            // Use the magnitudes already computed by the service instead of re-calculating
+                            val latestMags = s.latestMagnitudes
+                            if (latestMags != null && latestMags.size == 512) {
+                                // We still need to pass new arrays to StateFlow to trigger recomposition if it uses reference equality
+                                // But we can at least avoid the manual loop and division
+                                viewModel.setFftState(latestMags, latestMags) // Using same for both to reduce work if raw isn't strictly needed
                             }
                         }
-                        delay(33.milliseconds)
+                        delay(16.milliseconds) // Target 60fps for smoother UI
                     }
                 } else {
                     viewModel.setFftStateEmpty()
@@ -339,24 +330,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
-                AudioCaptureService.CaptureSource.SHIZUKU -> startShizukuVisualizer()
             }
-        }
-    }
-
-    private fun startShizukuVisualizer() {
-        val s = service ?: return
-        try {
-            if (Shizuku.isPreV11()) return
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                s.startVisualizer()
-            } else if (Shizuku.shouldShowRequestPermissionRationale()) {
-                Toast.makeText(this, getString(R.string.shizuku_permission_required), Toast.LENGTH_LONG).show()
-            } else {
-                Shizuku.requestPermission(1001)
-            }
-        } catch (_: Exception) {
-            Toast.makeText(this, getString(R.string.shizuku_not_running), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -471,7 +445,6 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         unbindService(serviceConnection)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
-        Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener)
         musicThemeHandler.onDestroy()
         val mediaSessionManager = getSystemService(MEDIA_SESSION_SERVICE) as MediaSessionManager
         if (isNotificationServiceEnabled()) {
@@ -633,7 +606,6 @@ internal fun GlyphSyncronatorApp(
                         val autoDeviceEnabled by viewModel.autoDeviceMemorize.collectAsStateWithLifecycle()
                         val fftData by viewModel.fftState.collectAsStateWithLifecycle()
                         val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
-                        val shizukuUnlocked by viewModel.shizukuSourceUnlocked.collectAsStateWithLifecycle()
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
@@ -652,7 +624,6 @@ internal fun GlyphSyncronatorApp(
                             fftData = fftData,
                             captureSource = captureSource,
                             onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
-                            shizukuUnlocked = shizukuUnlocked,
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },

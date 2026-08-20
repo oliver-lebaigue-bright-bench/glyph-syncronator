@@ -126,7 +126,6 @@
     <string name="capture_media_projection">Media Projection\n(default, best)</string>
     <string name="capture_microphone">Microphone</string>
     <string name="capture_vizualizer">Android built-in vizualizer</string>
-    <string name="capture_shizuku">Shizuku</string>
     <string name="update_available">Update available: %s</string>
     <string name="update_now">Update Now</string>
     <string name="credit_owner_role">Founder, coordinator, main idea, owner</string>
@@ -180,8 +179,6 @@
     <string name="global_announcements">Global Announcements</string>
     <string name="global_announcements_desc">Notify all users about updates or news</string>
     <string name="create">Create</string>
-    <string name="unlock_shizuku_source">Unlock Shizuku Source</string>
-    <string name="unlock_shizuku_source_desc">Experimental high-fidelity capture</string>
     <string name="expressive_ui">Expressive UI</string>
     <string name="sync_ui_to_beat">Sync UI to the beat</string>
     <string name="nav_overlay">Nav Overlay</string>
@@ -257,8 +254,6 @@
     <string name="mediaprojection_description">This permission lets the app access the device audio stream through Android\'s capture system so the Glyph visualizer can react in real time. No unnecessary recordings are stored, and the app does not save your media or private data.</string>
     <string name="continue_label">Continue</string>
 
-    <string name="shizuku_permission_required">Shizuku permission is required for this source</string>
-    <string name="shizuku_not_running">Shizuku not running or not installed</string>
     <string name="announcement_posted">Announcement posted!</string>
     <string name="failed_to_post">Failed to post: %s</string>
     <string name="audio_permission_required">Audio recording permission is required</string>

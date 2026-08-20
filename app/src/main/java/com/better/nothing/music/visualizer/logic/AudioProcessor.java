@@ -146,7 +146,7 @@ public class AudioProcessor {
             
             double re = fftData[2 * i];
             double im = fftData[2 * i + 1];
-            float mag = (float) (Math.hypot(re, im) / (fftSize / 2.0));
+            float mag = (float) (Math.sqrt(re * re + im * im) / (fftSize / 2.0));
 
             // Amplify high frequencies
             float freq = i * hzPerBin;
@@ -259,7 +259,10 @@ public class AudioProcessor {
             }
             case RMS: {
                 double sumSq = 0;
-                for (int i = start; i <= end; i++) sumSq += Math.pow(mDecayedFFT[i], 2);
+                for (int i = start; i <= end; i++) {
+                    int val = mDecayedFFT[i];
+                    sumSq += (double) val * val;
+                }
                 return (float) (Math.sqrt(sumSq / (end - start + 1)) / 4095.0);
             }
             case MAX:

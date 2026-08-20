@@ -16,7 +16,6 @@ android {
         targetSdk 34
         versionCode 1
         versionName '1.0'
-        buildConfigField "boolean", "SHOW_SHIZUKU", "true"
     }
 
     buildTypes {
@@ -111,8 +110,4 @@ dependencies {
 
     // 8. Debugging
     debugImplementation 'androidx.compose.ui:ui-tooling'
-
-    // Shizuku
-    implementation "dev.rikka.shizuku:api:13.1.5"
-    implementation "dev.rikka.shizuku:provider:13.1.5"
 }

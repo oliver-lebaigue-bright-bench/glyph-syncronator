@@ -38,7 +38,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
 import org.json.JSONException
 import org.json.JSONObject
-import rikka.shizuku.Shizuku
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
@@ -1147,17 +1146,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _showSpoofingSettings = MutableStateFlow(false)
     val showSpoofingSettings = _showSpoofingSettings.asStateFlow()
 
-    val _shizukuSourceUnlocked = MutableStateFlow(false)
-    val shizukuSourceUnlocked = _shizukuSourceUnlocked.asStateFlow()
-
-    fun setShizukuSourceUnlocked(unlocked: Boolean) {
-        _shizukuSourceUnlocked.value = unlocked
-        viewModelScope.launch(Dispatchers.IO) {
-            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
-                .edit { putBoolean("shizuku_source_unlocked", unlocked) }
-        }
-    }
-
     fun setShowSpoofingSettings(show: Boolean) {
         _showSpoofingSettings.value = show
         analytics.logSettingChanged("show_spoofing_settings", show)
@@ -1229,7 +1217,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val savedSource = prefs.getString("capture_source", AudioCaptureService.CaptureSource.INTERNAL.name)
         _captureSource.value = AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
 
-        _shizukuSourceUnlocked.value = prefs.getBoolean("shizuku_source_unlocked", false)
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
         _penisModeEnabled.value = prefs.getBoolean("penis_mode_enabled", false)
@@ -1453,38 +1440,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setCaptureSource(source: AudioCaptureService.CaptureSource) {
-        if (source == AudioCaptureService.CaptureSource.SHIZUKU) {
-            if (!checkShizukuPermission()) {
-                return
-            }
-        }
         _captureSource.value = source
         MainActivity.serviceStatic?.setCaptureSource(source)
         analytics.logCaptureSourceChanged(source.name)
         viewModelScope.launch(Dispatchers.IO) {
             ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
                 .edit { putString("capture_source", source.name) }
-        }
-    }
-
-    fun checkShizukuPermission(): Boolean {
-        try {
-            if (Shizuku.isPreV11()) return false
-            if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                analytics.logShizukuPermissionResult(true)
-                return true
-            } else if (Shizuku.shouldShowRequestPermissionRationale()) {
-                Toast.makeText(ctx, ctx.getString(R.string.shizuku_permission_required), Toast.LENGTH_LONG).show()
-                analytics.logShizukuPermissionResult(false)
-                return false
-            } else {
-                Shizuku.requestPermission(1001)
-                return false
-            }
-        } catch (e: Exception) {
-            analytics.logError("shizuku_error", e.message ?: "Unknown Shizuku error")
-            Toast.makeText(ctx, ctx.getString(R.string.shizuku_not_running), Toast.LENGTH_LONG).show()
-            return false
         }
     }
 

@@ -156,13 +156,6 @@ class AnalyticsHelper(context: Context) {
         logEvent("update_checked", bundle)
     }
 
-    fun logShizukuPermissionResult(granted: Boolean) {
-        val bundle = Bundle().apply {
-            putBoolean("granted", granted)
-        }
-        logEvent("shizuku_permission_result", bundle)
-    }
-
     fun logDeviceSpoofed(deviceName: String) {
         val bundle = Bundle().apply {
             putString("spoofed_device", deviceName)

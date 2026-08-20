@@ -23,7 +23,7 @@ public final class FlashlightEngine {
     private static final String TAG = "FlashlightEngine";
     private static final float SPECTRUM_GAIN = 12.0f;
     private static final float EPSILON = 0.001f;
-    private static final long MIN_RESUBMIT_INTERVAL_MS = 8L;
+    private static final long MIN_RESUBMIT_INTERVAL_MS = 32L;
     private static final int BEAT_PATTERN_STEPS = 24;
 
     private final CameraManager cameraManager;
@@ -366,9 +366,11 @@ public final class FlashlightEngine {
             return;
         }
 
+        /*
         if (significantChange) {
             Log.d(TAG, "Submitting torch level: " + level + " / " + maxTorchStrength + (forceMultiIntensity ? " (FORCED)" : ""));
         }
+        */
 
         try {
             if (hasVariableTorchStrength()) {
