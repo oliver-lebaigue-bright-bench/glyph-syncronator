@@ -1,0 +1,576 @@
+package com.glyphix.app.ui
+
+import android.content.ComponentName
+import android.content.Context
+import android.graphics.Bitmap
+import android.media.MediaMetadata
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
+import android.os.Build
+import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.core.view.WindowCompat
+import android.app.Activity
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.glyphix.app.R
+import com.glyphix.app.service.GlyphNotificationListener
+
+@Composable
+fun GlyphSyncronatorTheme(
+    themeName: String = "Default",
+    fontName: String = "NDot",
+    m3eEnabled: Boolean = true,
+    bananaMode: Boolean = false,
+    penisMode: Boolean = false,
+    musicPrimaryColor: Color? = null,
+    content: @Composable () -> Unit
+) {
+    val useNType = fontName == "NType"
+    val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
+
+    val targetColorScheme = remember(themeName, isDark, musicPrimaryColor, bananaMode, penisMode) {
+        if (bananaMode) {
+            androidx.compose.material3.darkColorScheme(
+                background = Color.Black,
+                surface = Color(0xFF0D0D00),
+                primary = Color(0xFFFFE135),
+                secondary = Color(0xFFFFF600),
+                error = Color(0xFFD71921),
+                onBackground = Color.White,
+                onSurface = Color.White,
+                onPrimary = Color.Black,
+                onSecondary = Color.Black,
+                onError = Color.White,
+                surfaceVariant = Color(0xFF1A1A00),
+                onSurfaceVariant = Color(0xFFFFF600),
+                outline = Color(0xFF333300)
+            )
+        } else if (penisMode) {
+            androidx.compose.material3.darkColorScheme(
+                background = Color.Black,
+                surface = Color(0xFF0A0E14),
+                onSurface = Color.White,
+                primary = Color(0xFFFEACA4),
+                onPrimary = Color.Black,
+                primaryContainer = Color(0xFFFEACA4).copy(alpha = 0.15f),
+                onPrimaryContainer = Color(0xFFFEACA4),
+                secondary = Color(0xFFD68751),
+                onSecondary = Color.Black,
+                secondaryContainer = Color(0xFFD68751).copy(alpha = 0.15f),
+                onSecondaryContainer = Color(0xFFD68751),
+                error = Color(0xFFD71921),
+                onError = Color.White,
+                onBackground = Color.White,
+                surfaceVariant = Color(0xFF1E2B36),
+                onSurfaceVariant = Color(0xFFFEACA4),
+                outline = Color(0xFF2D4356)
+            )
+        } else {
+            when (themeName) {
+                "Monster Classic" -> {
+                    androidx.compose.material3.darkColorScheme(
+                        background = Color.Black,
+                        surface = Color(0xFF0D0F0A),
+                        primary = Color(0xFFB8D926),
+                        secondary = Color(0xFFB8D926),
+                        error = Color(0xFFFF4D4D),
+                        onBackground = Color.White,
+                        onSurface = Color.White,
+                        onPrimary = Color.Black,
+                        onSecondary = Color.Black,
+                        onError = Color.Black,
+                        surfaceVariant = Color(0xFF171A12),
+                        onSurfaceVariant = Color(0xFFB8D926),
+                        outline = Color(0xFF2C3314)
+                    )
+                }
+                "Monster Ultra White" -> {
+                    androidx.compose.material3.lightColorScheme(
+                        background = Color.White,
+                        surface = Color(0xFFF7F8FA),
+                        primary = Color(0xFF00C4D9),
+                        secondary = Color(0xFF4A5568),
+                        error = Color(0xFFD71921),
+                        onBackground = Color.Black,
+                        onSurface = Color.Black,
+                        onPrimary = Color.White,
+                        onSecondary = Color.White,
+                        onError = Color.White,
+                        surfaceVariant = Color(0xFFEBEFF4),
+                        onSurfaceVariant = Color(0xFF2D3748),
+                        outline = Color(0xFFCBD5E0)
+                    )
+                }
+                "Music" -> {
+                    val baseColor = musicPrimaryColor ?: Color(0xFFD71921)
+                    val hsl = FloatArray(3)
+                    ColorUtils.colorToHSL(baseColor.toArgb(), hsl)
+
+                    if (isDark) {
+                        if (hsl[2] < 0.6f) hsl[2] = 0.6f
+                        if (hsl[2] > 0.85f) hsl[2] = 0.85f
+                        if (hsl[1] < 0.1f) hsl[1] = 0.5f
+                    } else {
+                        if (hsl[2] > 0.45f) hsl[2] = 0.45f
+                        if (hsl[2] < 0.15f) hsl[2] = 0.15f
+                        if (hsl[1] < 0.1f) hsl[1] = 0.5f
+                    }
+
+                    val adjustedPrimary = Color(ColorUtils.HSLToColor(hsl))
+
+                    if (isDark) {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF0D0D0D),
+                            primary = adjustedPrimary,
+                            secondary = adjustedPrimary,
+                            error = adjustedPrimary,
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color.Black,
+                            onError = Color.Black,
+                            surfaceVariant = Color(0xFF1A1A1A),
+                            onSurfaceVariant = Color(0xFFB3B3B3),
+                            outline = Color(0xFF333333)
+                        )
+                    } else {
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = adjustedPrimary,
+                            secondary = adjustedPrimary,
+                            error = adjustedPrimary,
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
+                        )
+                    }
+                }
+                "Material You" -> {
+                    val base = if (isDark) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            dynamicDarkColorScheme(context)
+                        } else {
+                            androidx.compose.material3.darkColorScheme(background = Color.Black)
+                        }
+                    } else {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            dynamicLightColorScheme(context)
+                        } else {
+                            androidx.compose.material3.lightColorScheme(background = Color.White)
+                        }
+                    }
+                    if (isDark) {
+                        base.copy(surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.1f)))
+                    } else {
+                        base.copy(surface = Color(ColorUtils.blendARGB(base.surface.toArgb(), Color.White.toArgb(), 0.5f)))
+                    }
+                }
+                "Nothing" -> {
+                    if (isDark) {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF0D0D0D),
+                            primary = Color(0xFFD71921),
+                            secondary = Color(0xFFD71921),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFF1A1A1A),
+                            onSurfaceVariant = Color(0xFFB3B3B3),
+                            outline = Color(0xFF333333)
+                        )
+                    } else {
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = Color(0xFF000000),
+                            secondary = Color(0xFF626262),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
+                        )
+                    }
+                }
+                "Nothing Red" -> {
+                    androidx.compose.material3.darkColorScheme(
+                        background = Color.Black,
+                        surface = Color(0xFF0D0D0D),
+                        primary = Color(0xFFD71921),
+                        secondary = Color(0xFFD71921),
+                        error = Color(0xFFD71921),
+                        onBackground = Color.White,
+                        onSurface = Color.White,
+                        onPrimary = Color.White,
+                        onSecondary = Color.White,
+                        onError = Color.White,
+                        surfaceVariant = Color(0xFF1A1A1A),
+                        onSurfaceVariant = Color(0xFFB3B3B3),
+                        outline = Color(0xFF333333)
+                    )
+                }
+                "Glass" -> {
+                    if (isDark) {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color(0xFF010204),
+                            surface = Color(0x26FFFFFF),
+                            primary = Color(0xFF00FBFF),
+                            secondary = Color(0xFFFF00C8),
+                            error = Color(0xFFFF5252),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color.Black,
+                            onError = Color.White,
+                            surfaceVariant = Color(0x33FFFFFF),
+                            onSurfaceVariant = Color.White,
+                            outline = Color(0x66FFFFFF)
+                        )
+                    } else {
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color(0xFFF0F2F5),
+                            surface = Color(0x33FFFFFF),
+                            primary = Color(0xFF00B8D4),
+                            secondary = Color(0xFFD81B60),
+                            error = Color(0xFFB00020),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0x4D000000),
+                            onSurfaceVariant = Color.Black,
+                            outline = Color(0x1A000000)
+                        )
+                    }
+                }
+                "Liquorice Black" -> {
+                    androidx.compose.material3.darkColorScheme(
+                        background = Color(0xFF0F0F0F),
+                        surface = Color(0xFF1A1A1A),
+                        primary = Color(0xFFD8D3DA),
+                        secondary = Color(0xFFA0FFA3),
+                        error = Color(0xFFC83B3B),
+                        onBackground = Color.White,
+                        onSurface = Color.White,
+                        onPrimary = Color(0xFF1C1A1D),
+                        onSecondary = Color(0xFF1C5A21),
+                        onError = Color.White,
+                        surfaceVariant = Color(0xFF242424),
+                        onSurfaceVariant = Color(0xFF676767),
+                        outline = Color(0xFF2C2C2C)
+                    )
+                }
+                else -> {
+                    if (themeName == "Default" && !isDark) {
+                        androidx.compose.material3.lightColorScheme(
+                            background = Color.White,
+                            surface = Color(0xFFF5F5F5),
+                            primary = Color(0xFF000000),
+                            secondary = Color(0xFF626262),
+                            error = Color(0xFFD71921),
+                            onBackground = Color.Black,
+                            onSurface = Color.Black,
+                            onPrimary = Color.White,
+                            onSecondary = Color.White,
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFFE0E0E0),
+                            onSurfaceVariant = Color(0xFF757575),
+                            outline = Color(0xFFBDBDBD)
+                        )
+                    } else {
+                        androidx.compose.material3.darkColorScheme(
+                            background = Color.Black,
+                            surface = Color(0xFF282828),
+                            primary = Color(0xFFDCDCDC),
+                            secondary = Color(0xFFA0FFA3),
+                            error = Color(0xFFC83B3B),
+                            onBackground = Color.White,
+                            onSurface = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color(0xFF1C5A21),
+                            onError = Color.White,
+                            surfaceVariant = Color(0xFF3C3C3C),
+                            onSurfaceVariant = Color(0xFFA0A0A0),
+                            outline = Color(0xFF2C2C2C)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val colorScheme = targetColorScheme.copy(
+        primary = animateColorAsState(targetColorScheme.primary, tween(500), label = "primary").value,
+        onPrimary = animateColorAsState(targetColorScheme.onPrimary, tween(500), label = "onPrimary").value,
+        secondary = animateColorAsState(targetColorScheme.secondary, tween(500), label = "secondary").value,
+        onSecondary = animateColorAsState(targetColorScheme.onSecondary, tween(500), label = "onSecondary").value,
+        error = animateColorAsState(targetColorScheme.error, tween(500), label = "error").value,
+        onError = animateColorAsState(targetColorScheme.onError, tween(500), label = "onError").value,
+        background = animateColorAsState(targetColorScheme.background, tween(500), label = "background").value,
+        onBackground = animateColorAsState(targetColorScheme.onBackground, tween(500), label = "onBackground").value,
+        surface = animateColorAsState(targetColorScheme.surface, tween(500), label = "surface").value,
+        onSurface = animateColorAsState(targetColorScheme.onSurface, tween(500), label = "onSurface").value,
+        surfaceVariant = animateColorAsState(targetColorScheme.surfaceVariant, tween(500), label = "surfaceVariant").value,
+        onSurfaceVariant = animateColorAsState(targetColorScheme.onSurfaceVariant, tween(500), label = "onSurfaceVariant").value,
+        outline = animateColorAsState(targetColorScheme.outline, tween(500), label = "outline").value,
+    )
+
+    val typography = remember(useNType) {
+        Typography(
+            displayLarge = TextStyle(
+                fontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily,
+                fontSize = 45.sp,
+                lineHeight = 55.sp,
+                fontWeight = FontWeight.Normal
+            ),
+            headlineMedium = TextStyle(
+                fontFamily = if (useNType) NTypeFontFamily else NDotFontFamily,
+                fontSize = 30.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.Normal
+            ),
+            titleLarge = TextStyle(fontSize = 21.sp, lineHeight = 28.sp, fontWeight = FontWeight.Normal),
+            titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
+            bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
+            labelLarge = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+            labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+        )
+    }
+
+    val shapes = remember {
+        Shapes(
+            extraLarge = RoundedCornerShape(32.dp),
+            large = RoundedCornerShape(28.dp),
+            medium = RoundedCornerShape(20.dp),
+            small = RoundedCornerShape(14.dp),
+        )
+    }
+
+    val animatedEdge by animateDpAsState(
+        targetValue = if (targetColorScheme.background == Color.Black) 6.dp else 16.dp,
+        animationSpec = tween(500),
+        label = "edgeSpacing"
+    )
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        LaunchedEffect(colorScheme.background) {
+            val window = (view.context as Activity).window
+            val isLight = ColorUtils.calculateLuminance(colorScheme.background.toArgb().toLong().toInt()) > 0.5
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLight
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = isLight
+        }
+    }
+
+    val appSpacing = remember { AppSpacing() }
+
+    LaunchedEffect(animatedEdge) {
+        appSpacing.edge = animatedEdge
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        shapes = shapes,
+        typography = typography
+    ) {
+        val uiAmplitude by MainViewModel.instance!!.uiAmplitude.collectAsStateWithLifecycle()
+        val isMonsterTheme = themeName.startsWith("Monster")
+
+        CompositionLocalProvider(
+            LocalAppSpacing provides appSpacing,
+            LocalM3EEnabled provides m3eEnabled,
+            LocalBananaMode provides bananaMode,
+            LocalPenisMode provides penisMode,
+            LocalUIAmplitude provides uiAmplitude,
+            LocalIsGlassTheme provides (themeName == "Glass")
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(colorScheme.background)
+            ) {
+                if (isMonsterTheme && !bananaMode && !penisMode) {
+                    Image(
+                        painter = painterResource(R.drawable.ic_monster_claw),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize(0.9f)
+                            .align(Alignment.Center)
+                            .graphicsLayer {
+                                rotationZ = -10f
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+                }
+
+                content()
+            }
+        }
+    }
+}
+
+internal class MusicThemeHandler(
+    private val context: Context,
+    private val viewModel: MainViewModel
+) {
+    private val mediaSessionManager by lazy {
+        context.getSystemService(Context.MEDIA_SESSION_SERVICE) as MediaSessionManager
+    }
+
+    var activeMediaController: MediaController? = null
+        private set
+
+    private val mediaCallback = object : MediaController.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadata?) {
+            val artwork = getArtworkBitmap(metadata)
+            viewModel.setMusicArtwork(artwork)
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackState?) {}
+    }
+
+    val sessionsChangedListener = MediaSessionManager.OnActiveSessionsChangedListener {
+        updateActiveMediaController()
+    }
+
+    fun updateActiveMediaController() {
+        try {
+            val controllers = mediaSessionManager.getActiveSessions(
+                ComponentName(context, GlyphNotificationListener::class.java)
+            )
+            val newController = controllers.firstOrNull()
+
+            if (activeMediaController?.packageName != newController?.packageName) {
+                activeMediaController?.unregisterCallback(mediaCallback)
+                activeMediaController = newController
+                activeMediaController?.registerCallback(mediaCallback)
+
+                val artwork = getArtworkBitmap(activeMediaController?.metadata)
+                viewModel.setMusicArtwork(artwork)
+            }
+        } catch (_: SecurityException) {
+            Log.w("MusicThemeHandler", "No notification access to get media sessions")
+        }
+    }
+
+    fun getArtworkBitmap(metadata: MediaMetadata?): Bitmap? {
+        if (metadata == null) return null
+        val bitmap = try {
+            metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
+        } catch (_: Exception) {
+            null
+        }
+        if (bitmap != null) return bitmap
+
+        val uriString = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI)
+            ?: metadata.getString(MediaMetadata.METADATA_KEY_ART_URI)
+            ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
+
+        if (uriString != null) {
+            try {
+                val uri = android.net.Uri.parse(uriString)
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val decoded = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+                return decoded
+            } catch (e: Exception) {
+                Log.w("MusicThemeHandler", "Failed to load artwork from URI: $uriString", e)
+            }
+        }
+        return null
+    }
+
+    fun onDestroy() {
+        activeMediaController?.unregisterCallback(mediaCallback)
+    }
+}
+
+val NTypeFontFamily = FontFamily(
+    Font(R.font.ntype82)
+)
+
+val NDotFontFamily = FontFamily(
+    Font(resId = R.font.ndot57, weight = FontWeight.Normal)
+)
+
+val NDot55FontFamily = FontFamily(
+    Font(resId = R.font.ndot55, weight = FontWeight.Normal)
+)
+
+@Immutable
+class AppSpacing(
+    edge: Dp = 6.dp,
+    val between: Dp = 12.dp,
+    val inner: Dp = 20.dp
+) {
+    var edge by mutableStateOf(edge)
+        internal set
+}
+
+val LocalAppSpacing = staticCompositionLocalOf { AppSpacing() }
+val LocalM3EEnabled = compositionLocalOf { true }
+val LocalBananaMode = compositionLocalOf { false }
+val LocalPenisMode = compositionLocalOf { false }
+val LocalUIAmplitude = compositionLocalOf { 1.0f }
+val LocalIsGlassTheme = compositionLocalOf { false }
