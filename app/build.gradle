@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace 'com.better.nothing.music.visualizer'
+    namespace 'com.glyphix.app'
     compileSdk 37
 
     defaultConfig {
-        applicationId "com.better.nothing.music.visualizer"
+        applicationId "com.glyphix.app"
         minSdk 26
         targetSdk 34
         versionCode 1

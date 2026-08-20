@@ -31,6 +31,14 @@
           }
         },
         {
+          "client_id": "252304807982-shmm226o4psr3brpku2e3udv7855v14m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.better.nothing.music.visualizer",
+            "certificate_hash": "0f83712d817b83484a1515f80047c02fcdfa47a4"
+          }
+        },
+        {
           "client_id": "252304807982-ubtpig2ddtukmjfa7cp21lj1mjgnr968.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -55,7 +63,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:252304807982:android:8a99b47e422a69413b27bf",
         "android_client_info": {
-          "package_name": "com.better.nothing.music.visualizer"
+          "package_name": "com.better.nothing.music.vizualizer"
         }
       },
       "oauth_client": [
@@ -63,7 +71,7 @@
           "client_id": "252304807982-al36gn7ionq4kmukop9rog6i2fsog723.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.better.nothing.music.visualizer",
+            "package_name": "com.better.nothing.music.vizualizer",
             "certificate_hash": "1efdb505a23c3e8f33ce7d7b799d3399b3caff1a"
           }
         },
@@ -71,7 +79,7 @@
           "client_id": "252304807982-crlmpifaj4f6gh001s546ou4ikaimufi.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.better.nothing.music.visualizer",
+            "package_name": "com.better.nothing.music.vizualizer",
             "certificate_hash": "d7d0b753158cbdc8ee34a88d43eb8df53a44e272"
           }
         },
@@ -118,6 +126,59 @@
           "android_info": {
             "package_name": "com.better.nothing.music.vizualizer.debug",
             "certificate_hash": "d7d0b753158cbdc8ee34a88d43eb8df53a44e272"
+          }
+        },
+        {
+          "client_id": "252304807982-ubtpig2ddtukmjfa7cp21lj1mjgnr968.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWTyc2YTxS3k2YFt_N_I23OhAP1MoreCU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "252304807982-ubtpig2ddtukmjfa7cp21lj1mjgnr968.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:252304807982:android:67a59dcd18c445833b27bf",
+        "android_client_info": {
+          "package_name": "com.glyphix.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "252304807982-36ri31aksptbihsrbkf94vf6uopq2vri.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.glyphix.app",
+            "certificate_hash": "1efdb505a23c3e8f33ce7d7b799d3399b3caff1a"
+          }
+        },
+        {
+          "client_id": "252304807982-bm0qj43qv2g2vghd07r2hmafl2pbn6bb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.glyphix.app",
+            "certificate_hash": "f0c8a905143221f111474a18ee6c037aee572370"
+          }
+        },
+        {
+          "client_id": "252304807982-re7gbj9mc3nee7rbnkk14hha4q4ss5ej.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.glyphix.app",
+            "certificate_hash": "8022681a5d4ed914697f4ed16e9e4a6410863f16"
           }
         },
         {

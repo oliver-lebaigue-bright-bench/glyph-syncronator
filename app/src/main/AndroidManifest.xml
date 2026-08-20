@@ -118,7 +118,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.better.nothing.music.visualizer.REFRESH_WIDGET" />
+                <action android:name="com.glyphix.app.REFRESH_WIDGET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
