@@ -36,16 +36,14 @@ class LeaderboardRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("LeaderboardRepo", "onCancelled: ${error.message}")
-                if (!isClosedForSend) {
-                    close(error.toException())
-                }
+                close()
             }
         }
         try {
             query.addValueEventListener(listener)
         } catch (e: Exception) {
             Log.e("LeaderboardRepo", "Failed to add leaderboard listener", e)
-            close(e)
+            close()
         }
         awaitClose { 
             try {

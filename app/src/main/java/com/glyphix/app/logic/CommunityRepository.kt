@@ -37,16 +37,14 @@ class CommunityRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("CommunityRepo", "onCancelled: ${error.message}")
-                if (!isClosedForSend) {
-                    close(error.toException())
-                }
+                close()
             }
         }
         try {
             database.addValueEventListener(listener)
         } catch (e: Exception) {
             Log.e("CommunityRepo", "Failed to add presets listener", e)
-            close(e)
+            close()
         }
         awaitClose { 
             Log.d("CommunityRepo", "Closing getPresets flow")

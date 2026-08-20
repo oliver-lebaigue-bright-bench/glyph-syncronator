@@ -29,16 +29,14 @@ class AnnouncementRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("AnnouncementRepo", "onCancelled: ${error.message}")
-                if (!isClosedForSend) {
-                    close(error.toException())
-                }
+                close()
             }
         }
         try {
             database.addValueEventListener(listener)
         } catch (e: Exception) {
             Log.e("AnnouncementRepo", "Failed to add listener", e)
-            close(e)
+            close()
         }
         awaitClose { 
             try {
@@ -70,16 +68,14 @@ class AnnouncementRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("AnnouncementRepo", "History onCancelled: ${error.message}")
-                if (!isClosedForSend) {
-                    close(error.toException())
-                }
+                close()
             }
         }
         try {
             database.addValueEventListener(listener)
         } catch (e: Exception) {
             Log.e("AnnouncementRepo", "Failed to add history listener", e)
-            close(e)
+            close()
         }
         awaitClose { 
             try {

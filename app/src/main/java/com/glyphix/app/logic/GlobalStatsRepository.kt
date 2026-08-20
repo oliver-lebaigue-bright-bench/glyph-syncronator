@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class GlobalStatsRepository {
-    private val database = FirebaseDatabase.getInstance("https://bnmv-67120-default-rtdb.europe-west1.firebasedatabase.app").getReference("global_stats")
+    private val database = FirebaseDatabase.getInstance("https://bnmv-67120-default-rtdb.europe-west1.firebasedatabase.app").getReference("global_stats_glyphix")
 
     fun getGlobalStats(): Flow<GlobalStats> = callbackFlow {
         val listener = object : ValueEventListener {
@@ -28,10 +28,15 @@ class GlobalStatsRepository {
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e("GlobalStatsRepo", "onCancelled: ${error.message}")
-                close(error.toException())
+                close()
             }
         }
-        database.addValueEventListener(listener)
+        try {
+            database.addValueEventListener(listener)
+        } catch (e: Exception) {
+            Log.e("GlobalStatsRepo", "Failed to add listener", e)
+            close()
+        }
         awaitClose { database.removeEventListener(listener) }
     }
 

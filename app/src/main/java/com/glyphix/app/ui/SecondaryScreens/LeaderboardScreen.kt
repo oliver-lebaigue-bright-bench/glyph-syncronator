@@ -1,5 +1,6 @@
 package com.glyphix.app.ui.SecondaryScreens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -35,6 +36,7 @@ internal fun LeaderboardScreen(
     entries: List<LeaderboardEntry>,
     onDismiss: () -> Unit
 ) {
+    BackHandler { onDismiss() }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     if (selectedImageUrl != null) {

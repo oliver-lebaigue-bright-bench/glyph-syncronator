@@ -1,5 +1,6 @@
 package com.glyphix.app.ui.SecondaryScreens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,6 +55,7 @@ import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Brands
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.brands.Github
+import compose.icons.fontawesomeicons.solid.ArrowLeft
 import compose.icons.fontawesomeicons.solid.Bullhorn
 import compose.icons.fontawesomeicons.solid.ChartBar
 import compose.icons.fontawesomeicons.solid.ChevronRight
@@ -98,6 +100,8 @@ internal fun AboutScreen(
         CreditEntry("Interlastic", stringResource(R.string.credit_interlastic_role), "Interlastic"),
     )
 
+    BackHandler { onDismiss?.invoke() }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -110,7 +114,26 @@ internal fun AboutScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-        ScreenTitle(text = stringResource(R.string.about_title))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { onDismiss?.invoke() },
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                ScreenTitle(text = stringResource(R.string.about_title), modifier = Modifier.padding(bottom = 0.dp))
+            }
 
         ExpressiveCard {
             CardHeader(title = "App info")
@@ -126,7 +149,7 @@ internal fun AboutScreen(
                     shape = MaterialTheme.shapes.medium,
                     color = Color.White,
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(48.dp)
                         .clickable {
                             depressedClickCount++
                             if (depressedClickCount >= 10) {
@@ -139,7 +162,7 @@ internal fun AboutScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_launcher_foreground),
                             contentDescription = null,
-                            modifier = Modifier.size(80.dp),
+                            modifier = Modifier.size(56.dp),
                             tint = Color.Unspecified
                         )
                     }
@@ -316,6 +339,7 @@ internal fun AboutScreen(
                                 Icon(
                                     FontAwesomeIcons.Solid.ChevronRight,
                                     null,
+                                    modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                                 )
                             }

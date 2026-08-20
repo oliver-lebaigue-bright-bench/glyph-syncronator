@@ -1,5 +1,6 @@
 package com.glyphix.app.ui.SecondaryScreens
 
+import androidx.activity.compose.BackHandler
 import com.glyphix.app.R
 import com.glyphix.app.model.CommunityPreset
 import androidx.compose.ui.res.stringResource
@@ -30,6 +31,7 @@ fun CommunityPresetsScreen(
     onDelete: (CommunityPreset) -> Unit,
     onDismiss: () -> Unit
 ) {
+    BackHandler { onDismiss() }
     Scaffold(
         topBar = {
             TopAppBar(
