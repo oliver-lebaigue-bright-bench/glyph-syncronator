@@ -9,7 +9,9 @@ import com.glyphix.app.logic.GlyphRenderer;
 import com.glyphix.app.logic.AudioDeviceManager;
 import com.glyphix.app.logic.ContinuousHapticEngine;
 import com.glyphix.app.logic.BeatDetectionHapticEngine;
+import com.glyphix.app.logic.GlobalStatsRepository;
 import com.glyphix.app.logic.FlashlightEngine;
+import com.glyphix.app.logic.BeatDetector;
 import com.glyphix.app.ui.MainActivity;
 
 import android.Manifest;
@@ -145,6 +147,38 @@ public class AudioCaptureService extends Service {
     }
     public static AudioCaptureService sInstance = null;
 
+    private GlobalStatsRepository mGlobalStatsRepository;
+    private long mUnsyncedTimeMs = 0;
+    private long mUnsyncedActiveMs = 0;
+    private long mUnsyncedIdleMs = 0;
+    private long mUnsyncedGlyphMs = 0;
+    private long mUnsyncedHapticMs = 0;
+    private long mUnsyncedFlashlightMs = 0;
+    private long mUnsyncedBeats = 0;
+    private long mLastGlobalSyncMs = 0;
+
+    // Session-wide counters (not reset until service stops)
+    private long mSessionTimeMs = 0;
+    private long mSessionActiveMs = 0;
+    private long mSessionIdleMs = 0;
+    private long mSessionGlyphMs = 0;
+    private long mSessionHapticMs = 0;
+    private long mSessionFlashlightMs = 0;
+
+    public long getSessionTimeMs() { return mSessionTimeMs; }
+    public long getSessionActiveMs() { return mSessionActiveMs; }
+    public long getSessionIdleMs() { return mSessionIdleMs; }
+    public long getSessionGlyphMs() { return mSessionGlyphMs; }
+    public long getSessionHapticMs() { return mSessionHapticMs; }
+    public long getSessionFlashlightMs() { return mSessionFlashlightMs; }
+
+    public long getTotalVisualizedTimeMs() { return mUnsyncedTimeMs; }
+    public long getTotalActiveTimeMs() { return mUnsyncedActiveMs; }
+    public long getTotalIdleTimeMs() { return mUnsyncedIdleMs; }
+    public long getTotalGlyphTimeMs() { return mUnsyncedGlyphMs; }
+    public long getTotalHapticTimeMs() { return mUnsyncedHapticMs; }
+    public long getTotalFlashlightTimeMs() { return mUnsyncedFlashlightMs; }
+
     private com.glyphix.app.util.AnalyticsHelper mAnalyticsHelper;
     private final IBinder mBinder = new LocalBinder();
     private final Object mCaptureLock = new Object();
@@ -235,6 +269,7 @@ public class AudioCaptureService extends Service {
     private int mSelectedDevice = DeviceProfile.DEVICE_UNKNOWN;
     private volatile int mLatencyCompensationMs = 0;
     private final AtomicInteger mPresetConfigVersion = new AtomicInteger(0);
+    private final BeatDetector mStatsBeatDetector = new BeatDetector();
     private volatile float mGamma = DEFAULT_GAMMA;
     private volatile int mMaxBrightness = 4095;
 
@@ -368,6 +403,47 @@ public class AudioCaptureService extends Service {
         public void run() {
             if (sIsRunning) {
                 long now = SystemClock.elapsedRealtime();
+                
+                // Track time deltas
+                long delta = 16; // Approx pulse interval
+                mUnsyncedTimeMs += delta;
+                mSessionTimeMs += delta;
+                
+                boolean hasActivity = false;
+                float gain = mGlyphRenderer != null ? mGlyphRenderer.getSpectrumGain() : 1.0f;
+                synchronized (mFftLock) {
+                    for (float mag : mLatestMagnitudes) {
+                        if (mag * gain > 0.001f) {
+                            hasActivity = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (hasActivity) {
+                    mUnsyncedActiveMs += delta;
+                    mSessionActiveMs += delta;
+                    if (mHapticEnabled) { mUnsyncedHapticMs += delta; mSessionHapticMs += delta; }
+                    if (mFlashlightEnabled) { mUnsyncedFlashlightMs += delta; mSessionFlashlightMs += delta; }
+                    if (mMaxBrightness > 0) { mUnsyncedGlyphMs += delta; mSessionGlyphMs += delta; }
+
+                    // Beat detection for stats (20Hz - 200Hz range)
+                    synchronized (mFftLock) {
+                        if (mStatsBeatDetector.detect(mLatestMagnitudes, 0, 155)) {
+                            mUnsyncedBeats++;
+                        }
+                    }
+                } else {
+                    mUnsyncedIdleMs += delta;
+                    mSessionIdleMs += delta;
+                }
+
+                // Sync to global stats every 3 minutes
+                if (now - mLastGlobalSyncMs > 180000) {
+                    syncStatsToGlobal();
+                    mLastGlobalSyncMs = now;
+                }
+
                 if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
                 if (mCaptureSource == CaptureSource.VIZUALIZER) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
@@ -427,6 +503,8 @@ public class AudioCaptureService extends Service {
     public void onCreate() {
         super.onCreate();
         sInstance = this;
+        mGlobalStatsRepository = new GlobalStatsRepository();
+        mLastGlobalSyncMs = SystemClock.elapsedRealtime();
         mAnalyticsHelper = new com.glyphix.app.util.AnalyticsHelper(this);
         mWorkerThread = new HandlerThread("GlyphVizWorker", Process.THREAD_PRIORITY_BACKGROUND);
         mWorkerThread.start();
@@ -907,6 +985,12 @@ public class AudioCaptureService extends Service {
     public void stopCapture() { synchronized (mCaptureLock) { stopCaptureLocked(); } }
     private void stopCaptureLocked() {
         mCapturing = false; setRunning(false); updateOverlayVisibility();
+        syncStatsToGlobal();
+        
+        // Reset sessions
+        mSessionTimeMs = 0; mSessionActiveMs = 0; mSessionIdleMs = 0;
+        mSessionGlyphMs = 0; mSessionHapticMs = 0; mSessionFlashlightMs = 0;
+
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
@@ -914,6 +998,42 @@ public class AudioCaptureService extends Service {
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
     private void ensureCaptureExecutor() { if (mCaptureExecutor == null || mCaptureExecutor.isShutdown()) mCaptureExecutor = Executors.newSingleThreadExecutor(); }
+    private void syncStatsToGlobal() {
+        if (mUnsyncedTimeMs <= 0) return;
+        
+        final long t = mUnsyncedTimeMs;
+        final long a = mUnsyncedActiveMs;
+        final long i = mUnsyncedIdleMs;
+        final long g = mUnsyncedGlyphMs;
+        final long h = mUnsyncedHapticMs;
+        final long f = mUnsyncedFlashlightMs;
+        final long b = mUnsyncedBeats;
+
+        // Persist locally
+        SharedPreferences prefs = getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE);
+        prefs.edit()
+            .putLong("total_visualized_time", prefs.getLong("total_visualized_time", 0L) + t)
+            .putLong("total_active_time", prefs.getLong("total_active_time", 0L) + a)
+            .putLong("total_idle_time", prefs.getLong("total_idle_time", 0L) + i)
+            .putLong("total_glyph_time", prefs.getLong("total_glyph_time", 0L) + g)
+            .putLong("total_haptic_time", prefs.getLong("total_haptic_time", 0L) + h)
+            .putLong("total_flashlight_time", prefs.getLong("total_flashlight_time", 0L) + f)
+            .apply();
+
+        // Reset local counters for next sync block
+        mUnsyncedTimeMs = 0;
+        mUnsyncedActiveMs = 0;
+        mUnsyncedIdleMs = 0;
+        mUnsyncedGlyphMs = 0;
+        mUnsyncedHapticMs = 0;
+        mUnsyncedFlashlightMs = 0;
+        mUnsyncedBeats = 0;
+
+        if (mGlobalStatsRepository != null) {
+            mGlobalStatsRepository.incrementStatsBlocking(t, a, i, g, h, f, 0, b);
+        }
+    }
+
     private void shutdownCaptureExecutor() { if (mCaptureExecutor != null) { mCaptureExecutor.shutdownNow(); mCaptureExecutor = null; } }
     private void showToast(String msg) { mMainHandler.post(() -> android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()); }
 

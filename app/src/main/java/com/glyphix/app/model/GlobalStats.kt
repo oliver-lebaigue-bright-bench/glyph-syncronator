@@ -1,13 +1,16 @@
 package com.glyphix.app.model
 
+import com.google.firebase.database.IgnoreExtraProperties
+
+@IgnoreExtraProperties
 data class GlobalStats(
-    val totalVisualizedTimeMs: Long = 0L,
-    val totalActiveTimeMs: Long = 0L,
-    val totalIdleTimeMs: Long = 0L,
-    val totalGlyphTimeMs: Long = 0L,
-    val totalHapticTimeMs: Long = 0L,
-    val totalFlashlightTimeMs: Long = 0L,
-    val totalSessions: Long = 0L,
-    val totalBeatsDetected: Long = 0L,
-    val userCount: Long = 0L
+    var totalVisualizedTimeMs: Long = 0L,
+    var totalActiveTimeMs: Long = 0L,
+    var totalIdleTimeMs: Long = 0L,
+    var totalGlyphTimeMs: Long = 0L,
+    var totalHapticTimeMs: Long = 0L,
+    var totalFlashlightTimeMs: Long = 0L,
+    var totalSessions: Long = 0L,
+    var totalBeatsDetected: Long = 0L,
+    var userCount: Long = 0L
 )

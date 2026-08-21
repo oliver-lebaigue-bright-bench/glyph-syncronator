@@ -62,9 +62,41 @@ class GlobalStatsRepository {
 
         if (updates.isNotEmpty()) {
             try {
+                Log.d("GlobalStatsRepo", "Incrementing stats: $updates")
                 database.updateChildren(updates).await()
+                Log.d("GlobalStatsRepo", "Successfully incremented global stats")
             } catch (e: Exception) {
                 Log.e("GlobalStatsRepo", "Failed to increment global stats", e)
+            }
+        }
+    }
+
+    /**
+     * Non-suspend version for Java interop
+     */
+    fun incrementStatsBlocking(
+        timeMs: Long = 0,
+        activeMs: Long = 0,
+        idleMs: Long = 0,
+        glyphMs: Long = 0,
+        hapticMs: Long = 0,
+        flashlightMs: Long = 0,
+        sessions: Long = 0,
+        beats: Long = 0
+    ) {
+        val updates = mutableMapOf<String, Any>()
+        if (timeMs != 0L) updates["totalVisualizedTimeMs"] = ServerValue.increment(timeMs)
+        if (activeMs != 0L) updates["totalActiveTimeMs"] = ServerValue.increment(activeMs)
+        if (idleMs != 0L) updates["totalIdleTimeMs"] = ServerValue.increment(idleMs)
+        if (glyphMs != 0L) updates["totalGlyphTimeMs"] = ServerValue.increment(glyphMs)
+        if (hapticMs != 0L) updates["totalHapticTimeMs"] = ServerValue.increment(hapticMs)
+        if (flashlightMs != 0L) updates["totalFlashlightTimeMs"] = ServerValue.increment(flashlightMs)
+        if (sessions != 0L) updates["totalSessions"] = ServerValue.increment(sessions)
+        if (beats != 0L) updates["totalBeatsDetected"] = ServerValue.increment(beats)
+
+        if (updates.isNotEmpty()) {
+            database.updateChildren(updates).addOnFailureListener {
+                Log.e("GlobalStatsRepo", "Failed to increment global stats (blocking)", it)
             }
         }
     }

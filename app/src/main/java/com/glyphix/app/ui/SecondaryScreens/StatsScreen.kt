@@ -171,6 +171,11 @@ internal fun StatsScreen(
                             value = "${globalStats.totalSessions}",
                             icon = FontAwesomeIcons.Solid.Play
                         )
+                        GlobalStatRow(
+                            label = "Total Beats Synchronized",
+                            value = "${globalStats.totalBeatsDetected}",
+                            icon = FontAwesomeIcons.Solid.Heartbeat
+                        )
                         
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                         

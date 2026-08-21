@@ -1299,89 +1299,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Time tracking & Global Stats Syncing
         viewModelScope.launch {
-            var lastUpdate = SystemClock.elapsedRealtime()
-            var lastGlobalSync = SystemClock.elapsedRealtime()
+            val prefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
             
-            // Unsynced deltas for global stats
-            var unsyncedTime = 0L
-            var unsyncedActive = 0L
-            var unsyncedIdle = 0L
-            var unsyncedGlyph = 0L
-            var unsyncedHaptic = 0L
-            var unsyncedFlashlight = 0L
-
             while (true) {
-                delay(1000)
-                val now = SystemClock.elapsedRealtime()
-                val delta = now - lastUpdate
-                lastUpdate = now
-
-                if (_runningState.value) {
-                    _totalVisualizedTime.value += delta
-                    unsyncedTime += delta
-                    
-                    val magnitudes = MainActivity.serviceStatic?.latestMagnitudes ?: _fftState.value
-                    val hasActivity = magnitudes.any { it > 0.001f }
-                    
-                    if (hasActivity) {
-                        _totalActiveTime.value += delta
-                        unsyncedActive += delta
-                        
-                        if (_hapticMotorEnabled.value) {
-                            _totalHapticTime.value += delta
-                            unsyncedHaptic += delta
-                        }
-                        if (_flashlightEnabled.value) {
-                            _totalFlashlightTime.value += delta
-                            unsyncedFlashlight += delta
-                        }
-                        if (_maxBrightness.value > 0) {
-                            _totalGlyphTime.value += delta
-                            unsyncedGlyph += delta
-                        }
-                    } else {
-                        // Only count as idle if it's actually running but quiet
-                        _totalIdleTime.value += delta
-                        unsyncedIdle += delta
+                delay(500)
+                MainActivity.serviceStatic?.let { s ->
+                    // If we haven't captured bases yet (e.g. app just opened while service was running)
+                    if (baseVisualized == 0L && s.sessionTimeMs > 0) {
+                        baseVisualized = prefs.getLong("total_visualized_time", 0L) - s.sessionTimeMs
+                        baseActive = prefs.getLong("total_active_time", 0L) - s.sessionActiveMs
+                        baseIdle = prefs.getLong("total_idle_time", 0L) - s.sessionIdleMs
+                        baseGlyph = prefs.getLong("total_glyph_time", 0L) - s.sessionGlyphMs
+                        baseHaptic = prefs.getLong("total_haptic_time", 0L) - s.sessionHapticMs
+                        baseFlashlight = prefs.getLong("total_flashlight_time", 0L) - s.sessionFlashlightMs
                     }
 
-                    // Save periodically (every 5 seconds to reduce IO, every 60s for leaderboard)
-                    val timestamp = SystemClock.elapsedRealtime()
-                    if (timestamp % 5000 < 1100) {
-                        saveStatsLocally()
-                    }
-                    if (timestamp % 60000 < 1100) {
+                    _totalVisualizedTime.value = (baseVisualized + s.sessionTimeMs).coerceAtLeast(0L)
+                    _totalActiveTime.value = (baseActive + s.sessionActiveMs).coerceAtLeast(0L)
+                    _totalIdleTime.value = (baseIdle + s.sessionIdleMs).coerceAtLeast(0L)
+                    _totalGlyphTime.value = (baseGlyph + s.sessionGlyphMs).coerceAtLeast(0L)
+                    _totalHapticTime.value = (baseHaptic + s.sessionHapticMs).coerceAtLeast(0L)
+                    _totalFlashlightTime.value = (baseFlashlight + s.sessionFlashlightMs).coerceAtLeast(0L)
+
+                    // Update leaderboard periodically if running
+                    if (SystemClock.elapsedRealtime() % 60000 < 600) {
                         updateLeaderboard()
                     }
-                }
-                
-                // Sync to Global Stats every 3 minutes if there's something to sync, OR if we stopped
-                val timeSinceLastGlobalSync = now - lastGlobalSync
-                if (timeSinceLastGlobalSync > 180000 || (!_runningState.value && unsyncedTime > 0)) {
-                    if (unsyncedTime > 0) {
-                        val t = unsyncedTime
-                        val a = unsyncedActive
-                        val i = unsyncedIdle
-                        val g = unsyncedGlyph
-                        val h = unsyncedHaptic
-                        val f = unsyncedFlashlight
-                        
-                        // Clear deltas before launching to avoid double counting if launch is slow
-                        unsyncedTime = 0; unsyncedActive = 0; unsyncedIdle = 0
-                        unsyncedGlyph = 0; unsyncedHaptic = 0; unsyncedFlashlight = 0
-                        
-                        viewModelScope.launch {
-                            globalStatsRepository.incrementStats(
-                                timeMs = t,
-                                activeMs = a,
-                                idleMs = i,
-                                glyphMs = g,
-                                hapticMs = h,
-                                flashlightMs = f
-                            )
-                        }
-                    }
-                    lastGlobalSync = now
+                } ?: run {
+                    // Service not running, reset bases for next session and show latest from prefs
+                    baseVisualized = 0L; baseActive = 0L; baseIdle = 0L
+                    baseGlyph = 0L; baseHaptic = 0L; baseFlashlight = 0L
+                    
+                    _totalVisualizedTime.value = prefs.getLong("total_visualized_time", 0L)
+                    _totalActiveTime.value = prefs.getLong("total_active_time", 0L)
+                    _totalIdleTime.value = prefs.getLong("total_idle_time", 0L)
+                    _totalGlyphTime.value = prefs.getLong("total_glyph_time", 0L)
+                    _totalHapticTime.value = prefs.getLong("total_haptic_time", 0L)
+                    _totalFlashlightTime.value = prefs.getLong("total_flashlight_time", 0L)
                 }
             }
         }
@@ -1628,9 +1582,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _runningState = MutableStateFlow(false)
     val runningState = _runningState.asStateFlow()
 
+    private var baseVisualized = 0L
+    private var baseActive = 0L
+    private var baseIdle = 0L
+    private var baseGlyph = 0L
+    private var baseHaptic = 0L
+    private var baseFlashlight = 0L
+
     fun setRunning(running: Boolean) {
         if (running && !_runningState.value) {
             // Start of a session
+            val prefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+            baseVisualized = prefs.getLong("total_visualized_time", 0L)
+            baseActive = prefs.getLong("total_active_time", 0L)
+            baseIdle = prefs.getLong("total_idle_time", 0L)
+            baseGlyph = prefs.getLong("total_glyph_time", 0L)
+            baseHaptic = prefs.getLong("total_haptic_time", 0L)
+            baseFlashlight = prefs.getLong("total_flashlight_time", 0L)
+
             viewModelScope.launch {
                 globalStatsRepository.incrementStats(sessions = 1)
             }
