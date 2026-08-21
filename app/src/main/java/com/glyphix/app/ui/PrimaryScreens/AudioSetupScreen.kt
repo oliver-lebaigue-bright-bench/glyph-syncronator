@@ -397,7 +397,7 @@ fun CaptureSourceCard(
             
             ExpressiveCard(modifier = Modifier.fillMaxWidth(), containerColor = MaterialTheme.colorScheme.surfaceVariant) {
                 Text(
-                    text = "Smart Capture downloads the audio of the song you're currently playing and analyzes its exact frequencies offline at high speed. This gives you a perfect, beat-matched lightshow that saves battery, because we only need to do it once per song!",
+                    text = "Smart Capture downloads and analyzes a song's frequencies offline to create a perfect, beat-matched lightshow. These lightshows are then crowdsourced—meaning if anyone else in the world has already played the song, you get the lightshow instantly without waiting! Over time, waiting for generation will become incredibly rare, saving everyone battery.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(8.dp)
