@@ -618,6 +618,7 @@ public class AudioCaptureService extends Service {
     public void startVisualizer() {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+        else if (mCaptureSource == CaptureSource.SMART_CAPTURE) startSmartCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -630,6 +631,7 @@ public class AudioCaptureService extends Service {
             stopCapture();
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+            else if (mCaptureSource == CaptureSource.SMART_CAPTURE) startSmartCapture();
         });
     }
 
@@ -938,6 +940,7 @@ public class AudioCaptureService extends Service {
     public void startMicCapture() { startCaptureInternal(CaptureSource.MIC, 0, null); }
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
+    public void startSmartCapture() { startCaptureInternal(CaptureSource.SMART_CAPTURE, 0, null); }
 
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
@@ -969,7 +972,7 @@ public class AudioCaptureService extends Service {
                                 localRecord = new AudioRecord.Builder().setAudioPlaybackCaptureConfig(config).setAudioFormat(new AudioFormat.Builder().setSampleRate(captureSampleRate).setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build()).setBufferSizeInBytes(bufSize).build();
                             }
                         }
-                    } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
+                    } else if (source == CaptureSource.VIZUALIZER || source == CaptureSource.SMART_CAPTURE) { setupVisualizerCapture(); return; }
                     else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
                     if (localRecord != null && localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
                         synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
