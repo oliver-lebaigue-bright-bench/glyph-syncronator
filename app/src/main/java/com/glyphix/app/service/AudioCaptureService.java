@@ -447,7 +447,9 @@ public class AudioCaptureService extends Service {
                 if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
                 if (mCaptureSource == CaptureSource.VIZUALIZER) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
-                    if (now - mLastSendMs >= 16 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
+                    // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
+                    // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
+                    if (now - mLastSendMs >= 150 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
                 } else if (mIdleBreathingEnabled && mSessionOpen && mVisualizerConfig != null) {
                     if (now - mLastAudioActivityMs > 100) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
                 }
