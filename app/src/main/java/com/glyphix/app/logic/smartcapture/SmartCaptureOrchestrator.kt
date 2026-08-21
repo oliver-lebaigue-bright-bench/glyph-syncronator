@@ -27,6 +27,10 @@ class SmartCaptureOrchestrator(
     private var currentJob: Job? = null
     
     private fun showToast(msg: String) {
+        val prefs = context.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+        val devMode = prefs.getBoolean("developer_mode_v2", false)
+        if (!devMode) return
+        
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(context, "Smart Capture: $msg", Toast.LENGTH_SHORT).show()
         }
