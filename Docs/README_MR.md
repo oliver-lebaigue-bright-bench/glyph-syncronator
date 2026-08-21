@@ -1,9 +1,9 @@
-# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Fire.png" alt="Fire" width="35" height="35" />glyph-syncronator
+# <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Fire.png" alt="Fire" width="35" height="35" />Glyphix
 <img 
-  src="https://img.shields.io/github/downloads/oliver-lebaigue-bright-bench/glyph-syncronator/total?style=for-the-badge&logo=github&label=Total%20app%20downloads%20from%20github:&color=ff0000&labelColor=000000"
+  src="https://img.shields.io/github/downloads/oliver-lebaigue-bright-bench/Glyphix/total?style=for-the-badge&logo=github&label=Total%20app%20downloads%20from%20github:&color=ff0000&labelColor=000000"
   style="height:40px;">
   
-[<img height="80" alt="Get it on GitHub" src="./.github/assets/get-it-on-github.png" />](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/releases)
+[<img height="80" alt="Get it on GitHub" src="./.github/assets/get-it-on-github.png" />](https://github.com/oliver-lebaigue-bright-bench/Glyphix/releases)
    
 # नवीन परवाना, कृपया वाचा 
 ## 🌐 Read this in other languages:   🇬🇧 [English](README.md) | 🇮🇳 [हिन्दी](README_HI.md) | 🇹🇷 [Türkçe](README_TR.md)
@@ -24,9 +24,9 @@
 | **Zones** | Standard, पूर्ण physical glyphs वापरल्या जातात | **प्रत्येक glyph segment आणि sub-zone स्वतंत्रपणे वापरला आणि नियंत्रित केला जातो** |
 | **Visualisation पद्धत** | फक्त Real-time | **20ms latency सह Realtime, किंवा pre-processed audio files** |
 
-## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [व्हिडिओ demos आणि उदाहरणे](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
+## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f3ac/512.gif" alt="🎬" width="40" height=""> [व्हिडिओ demos आणि उदाहरणे](https://github.com/oliver-lebaigue-bright-bench/Glyphix/blob/main/Demo-video-examples.md)
 
-### फरक प्रत्यक्षात पाहा! [**आमचे व्हिडिओ demos सहज browse करण्यासाठी येथे क्लिक करा!**](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/blob/main/Demo-video-examples.md)
+### फरक प्रत्यक्षात पाहा! [**आमचे व्हिडिओ demos सहज browse करण्यासाठी येथे क्लिक करा!**](https://github.com/oliver-lebaigue-bright-bench/Glyphix/blob/main/Demo-video-examples.md)
 
 ## 📲 समर्थित Nothing Phone मॉडेल्स
 सध्या हे मॉडेल्स समर्थित आहेत:
@@ -65,7 +65,7 @@
 5. **Presets बदला**: **Glyphs** tab मध्ये वेगवेगळ्या visualization styles एक्सप्लोर करा आणि तुमच्या आवडीनुसार values बदला!
 
 ## 📖 Python script कसा वापरायचा?
-वापर अगदी सोपा आणि सरळ आहे. तरीही, आम्ही एक विस्तृत wiki page बनवली आहे जी installation, वापर, configuration files तपशीलवार आणि troubleshooting section स्पष्ट करते. नवीन presets कसे बनवायचे हे देखील तुम्हाला कळू शकते (अजून नाही). [**musicViz.py** Python script म्हणून कसा वापरायचा हे पाहण्यासाठी येथे क्लिक करा](https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/wiki/). काय छान आहे माहीत आहे? तुम्ही कोणत्याही त्रासाशिवाय bulk मध्ये असंख्य files convert करू शकता!
+वापर अगदी सोपा आणि सरळ आहे. तरीही, आम्ही एक विस्तृत wiki page बनवली आहे जी installation, वापर, configuration files तपशीलवार आणि troubleshooting section स्पष्ट करते. नवीन presets कसे बनवायचे हे देखील तुम्हाला कळू शकते (अजून नाही). [**musicViz.py** Python script म्हणून कसा वापरायचा हे पाहण्यासाठी येथे क्लिक करा](https://github.com/oliver-lebaigue-bright-bench/Glyphix/wiki/). काय छान आहे माहीत आहे? तुम्ही कोणत्याही त्रासाशिवाय bulk मध्ये असंख्य files convert करू शकता!
 
 ## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Hand%20gestures/Handshake.png" alt="Handshake" width="25" height="25" /> आमच्या community मध्ये सामील व्हा
 तुम्हाला बोलायचे किंवा चर्चा करायची आहे का? *Bugs, feature requests?* [**Nothing server च्या official discord thread मध्ये सामील होण्यास मोकळ्या मनाने या!**](https://discord.com/channels/930878214237200394/1434923843239280743)
@@ -188,11 +188,11 @@ https://www.virustotal.com/gui/url/c92c1ff82b56eb60bfd1e159592d09f949f0ea2d195e0
 </table>
 
 ### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Star.png" alt="Star" width="25" height="25" />Star History
-<a href="https://www.star-history.com/?repos=oliver-lebaigue-bright-bench%2Fglyph-syncronator&type=date&legend=top-left">
+<a href="https://www.star-history.com/?repos=oliver-lebaigue-bright-bench%2FGlyphix&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/glyph-syncronator&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/Glyphix&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/Glyphix&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=oliver-lebaigue-bright-bench/Glyphix&type=date&legend=top-left" />
  </picture>
 </a>
 

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">Il visualizzatore audio in tempo reale è attivo. Il tuo telefono ora balla al ritmo! Nessun contenuto viene salvato e la privacy è rispettata.</string>
     <string name="audio_description_idle">Questa app è stata creata da Oliver Lebaigue e rKyzen.\n\nPer sincronizzare l\'interfaccia Glyph con la tua musica, questa app cattura l\'audio del dispositivo. Utilizziamo Media Projection per una visualizzazione ad alta fedeltà.\n\nNota sulla privacy: utilizziamo solo il flusso audio. Nessun contenuto dello schermo viene registrato.</string>
     <string name="audio_warning_vizualizer">Attenzione: questa sorgente utilizza il flusso audio standard dello stile visualizzatore Android. È a bassa fedeltà e potrebbe non essere ottimale.</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Info app e aggiornamenti</string>
-    <string name="about_intro">glyph-syncronator sblocca tutto il potenziale dell\'interfaccia Glyph con un\'analisi di frequenza in tempo reale ad alta fedeltà.</string>
+    <string name="about_intro">Glyphix sblocca tutto il potenziale dell\'interfaccia Glyph con un\'analisi di frequenza in tempo reale ad alta fedeltà.</string>
     <string name="about_section_why">Perché siamo migliori dell\'implementazione di Nothing:</string>
     <string name="about_why_1">• Luminosità a 12 bit (4096 livelli) vs ~2 bit di serie (3 livelli)</string>
     <string name="about_why_2">• Animazioni fluide a 60 FPS vs ~25 FPS di serie</string>
@@ -171,7 +171,7 @@
     <string name="not_now">Non ora</string>
     <string name="downloading_update">Download aggiornamento in corso…</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">APPREZZIAMO IL TUO SUPPORTO.</string>
     <string name="youre_welcome">PREGO!</string>
 
@@ -206,7 +206,7 @@
     <string name="license_title">Licenza</string>
     <string name="license_agreement">Contratto di licenza</string>
     <string name="read_license">Leggi la licenza del software</string>
-    <string name="license_agreement_title">ACCORDO DI LICENZA GLYPH-SYNCRONATOR</string>
+    <string name="license_agreement_title">ACCORDO DI LICENZA GLYPHIX</string>
     <string name="license_version">Versione: 1.1</string>
     <string name="license_date">Data: 29 giugno 2026</string>
     <string name="license_licensor">Licenziante</string>
@@ -216,10 +216,10 @@
     <string name="license_organization">Organizzazione</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. PREAMBOLO</string>
-    <string name="license_preamble_1">Il presente Accordo di licenza (\"Accordo\") è un accordo legale tra l\'utente (\"Licenziatario\") e Oliver Lebaigue (\"Licenziante\") per l\'uso, la revisione e la modifica dell\'applicazione software del visualizzatore musicale nota come \"glyph-syncronator\" (il \"Software\"), un progetto fondato da Oliver Lebaigue sotto l\'organizzazione Luminus Labs.</string>
+    <string name="license_preamble_1">Il presente Accordo di licenza (\"Accordo\") è un accordo legale tra l\'utente (\"Licenziatario\") e Oliver Lebaigue (\"Licenziante\") per l\'uso, la revisione e la modifica dell\'applicazione software del visualizzatore musicale nota come \"Glyphix\" (il \"Software\"), un progetto fondato da Oliver Lebaigue sotto l\'organizzazione Luminus Labs.</string>
     <string name="license_preamble_2">Il codice sorgente del Software è ospitato pubblicamente all\'indirizzo https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Accedendo, scaricando, copiando o utilizzando in altro modo il Software o il suo Codice sorgente, il Licenziatario accetta di essere vincolato dai termini del presente Accordo.</string>
     <string name="license_section_2">2. DEFINIZIONI</string>
-    <string name="license_def_1">2.1 Per \"Software\" si intende l\'applicazione software glyph-syncronator, inclusi, a titolo esemplificativo ma non esaustivo, il codice sorgente, i moduli di elaborazione audio, i motori di rendering, le risorse visive, le librerie grafiche, gli script di configurazione, la documentazione, i file oggetto, gli eseguibili binari e qualsiasi supporto o risorsa associata.</string>
+    <string name="license_def_1">2.1 Per \"Software\" si intende l\'applicazione software Glyphix, inclusi, a titolo esemplificativo ma non esaustivo, il codice sorgente, i moduli di elaborazione audio, i motori di rendering, le risorse visive, le librerie grafiche, gli script di configurazione, la documentazione, i file oggetto, gli eseguibili binari e qualsiasi supporto o risorsa associata.</string>
     <string name="license_def_2">2.2 Per \"Codice sorgente\" si intendono i file del Software divulgati pubblicamente, inclusi tutti i file di script, il codice shader, le risorse e le configurazioni di build.</string>
     <string name="license_section_3">3. CONCESSIONE DI LICENZA E ACCESSIBILITÀ</string>
     <string name="license_section_3_1">3.1 Disponibilità pubblica</string>

@@ -8,7 +8,7 @@
         android:translateX="3"
         android:translateY="0">
 
-        <!-- Symmetrical bars forming a V-shape visualizer for glyph-syncronator -->
+        <!-- Symmetrical bars forming a V-shape visualizer for Glyphix -->
 
         <!-- Bar 1 (Outer Left) -->
         <path

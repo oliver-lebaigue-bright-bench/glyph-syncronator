@@ -1,6 +1,6 @@
 ---
 - # name: Feature request
-- ## about: Suggest an idea for the glyph-syncronator.
+- ## about: Suggest an idea for Glyphix.
 - ## labels: enhancement
 ---
 

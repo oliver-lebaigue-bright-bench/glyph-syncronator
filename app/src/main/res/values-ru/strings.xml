@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">Аудиовизуализатор в реальном времени активен. Ваш телефон теперь танцует под ритм! Контент не сохраняется, конфиденциальность соблюдается.</string>
     <string name="audio_description_idle">Это приложение было создано Oliver Lebaigue, rKyzen и Oliver Lebaigue.\n\nДля синхронизации интерфейса Glyph с вашей музыкой это приложение захватывает звук устройства. Мы используем Media Projection для высокоточной визуализации.\n\nПримечание о конфиденциальности: мы используем только аудиопоток. Контент экрана не записывается.</string>
     <string name="audio_warning_vizualizer">Предупреждение: этот источник использует стандартный аудиопоток Android в стиле визуализатора. Он имеет низкое качество и может работать неудовлетворительно.</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Информация и обновления</string>
-    <string name="about_intro">glyph-syncronator Музыкальный визуализатор раскрывает весь потенциал интерфейса Glyph с помощью высокоточного частотного анализа в реальном времени.</string>
+    <string name="about_intro">Glyphix Музыкальный визуализатор раскрывает весь потенциал интерфейса Glyph с помощью высокоточного частотного анализа в реальном времени.</string>
     <string name="about_section_why">Почему мы лучше реализации от Nothing:</string>
     <string name="about_why_1">• 12-битная яркость (4096 уровней) против ~2-битной стандартной (3 уровня)</string>
     <string name="about_why_2">• Плавная анимация 60 кадров в секунду против ~25 кадров в секунду в стоке</string>
@@ -171,7 +171,7 @@
     <string name="not_now">Не сейчас</string>
     <string name="downloading_update">Загрузка обновления…</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">МЫ ЦЕНИМ ВАШУ ПОДДЕРЖКУ.</string>
     <string name="youre_welcome">ПОЖАЛУЙСТА!</string>
 
@@ -206,7 +206,7 @@
     <string name="license_title">Лицензия</string>
     <string name="license_agreement">Лицензионное соглашение</string>
     <string name="read_license">Прочитать лицензию ПО</string>
-    <string name="license_agreement_title">ЛИЦЕНЗИОННОЕ СОГЛАШЕНИЕ GLYPH-SYNCRONATOR</string>
+    <string name="license_agreement_title">ЛИЦЕНЗИОННОЕ СОГЛАШЕНИЕ GLYPHIX</string>
     <string name="license_version">Версия: 1.1</string>
     <string name="license_date">Дата: 29 июня 2026 г.</string>
     <string name="license_licensor">Лицензиар</string>
@@ -216,10 +216,10 @@
     <string name="license_organization">Организация</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. ПРЕАМБУЛА</string>
-    <string name="license_preamble_1">Настоящее Лицензионное соглашение («Соглашение») является юридическим соглашением между вами («Лицензиат») и Oliver Lebaigue («Лицензиар») на использование, проверку и модификацию программного обеспечения музыкального визуализатора, известного как «glyph-syncronator» («Программное обеспечение»), проекта, основанного Oliver Lebaigue в рамках организации Luminus Labs.</string>
-    <string name="license_preamble_2">Исходный код Программного обеспечения размещен в открытом доступе по адресу https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Получая доступ к Программному обеспечению или его Исходному коду, загружая, копируя или используя их иным образом, Лицензиат соглашается быть связанным условиями настоящего Соглашения.</string>
+    <string name="license_preamble_1">Настоящее Лицензионное соглашение («Соглашение») является юридическим соглашением между вами («Лицензиат») и Oliver Lebaigue («Лицензиар») на использование, проверку и модификацию программного обеспечения музыкального визуализатора, известного как «Glyphix» («Программное обеспечение»), проекта, основанного Oliver Lebaigue в рамках организации Luminus Labs.</string>
+    <string name="license_preamble_2">Исходный код Программного обеспечения размещен в открытом доступе по адресу https://github.com/oliver-lebaigue-bright-bench/glyphix. Получая доступ к Программному обеспечению или его Исходному коду, загружая, копируя или используя их иным образом, Лицензиат соглашается быть связанным условиями настоящего Соглашения.</string>
     <string name="license_section_2">2. ОПРЕДЕЛЕНИЯ</string>
-    <string name="license_def_1">2.1 «Программное обеспечение» означает программное приложение glyph-syncronator, включая, помимо прочего, исходный код, модули обработки аудио, механизмы рендеринга, визуальные активы, графические библиотеки, сценарии конфигурации, документацию, объектные файлы, исполняемые двоичные файлы и любые связанные медиафайлы или активы.</string>
+    <string name="license_def_1">2.1 «Программное обеспечение» означает программное приложение Glyphix, включая, помимо прочего, исходный код, модули обработки аудио, механизмы рендеринга, визуальные активы, графические библиотеки, сценарии конфигурации, документацию, объектные файлы, исполняемые двоичные файлы и любые связанные медиафайлы или активы.</string>
     <string name="license_def_2">2.2 «Исходный код» означает публично раскрытые файлы Программного обеспечения, включая все файлы сценариев, код шейдеров, активы и конфигурации сборки.</string>
     <string name="license_section_3">3. ПРЕДОСТАВЛЕНИЕ ЛИЦЕНЗИИ И ДОСТУПНОСТЬ</string>
     <string name="license_section_3_1">3.1 Публичная доступность</string>

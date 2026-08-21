@@ -782,7 +782,7 @@ fun ScreenTitle(text: String, modifier: Modifier = Modifier, onLongPress: (() ->
 }
 
 @Composable
-fun GlyphSyncronatorBackground(modifier: Modifier = Modifier) {
+fun GlyphixBackground(modifier: Modifier = Modifier) {
     val isGlass = LocalIsGlassTheme.current
     val uiAmp = LocalUIAmplitude.current
     val isDark = isSystemInDarkTheme()

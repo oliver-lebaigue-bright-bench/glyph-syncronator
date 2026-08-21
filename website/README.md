@@ -1,6 +1,6 @@
-# glyph-syncronator Website
+# Glyphix Website
 
-This is a static website for the glyph-syncronator app.
+This is a static website for the Glyphix app.
 
 ## Features
 - Modern, Nothing-inspired design (Monochrome + Red accents).

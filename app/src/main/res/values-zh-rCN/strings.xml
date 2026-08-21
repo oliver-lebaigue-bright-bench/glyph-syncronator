@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">实时音频可视化工具已激活。您的手机正随节奏舞动！不保存任何内容，尊重隐私。</string>
     <string name="audio_description_idle">此应用由 Oliver Lebaigue 和 rKyzen 开发。\n\n为了使 Glyph 界面与您的音乐同步，此应用会捕捉设备音频。我们使用媒体投影进行高保真可视化。\n\n隐私提示：我们仅利用音频流。不记录任何屏幕内容。</string>
     <string name="audio_warning_vizualizer">警告：此来源使用标准的 Android 可视化器样式音频流。它是低保真的，效果可能不佳。</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">应用信息和更新</string>
-    <string name="about_intro">glyph-syncronator 音乐可视化工具通过高保真实时频率分析释放 Glyph 界面的全部潜力。</string>
+    <string name="about_intro">Glyphix 音乐可视化工具通过高保真实时频率分析释放 Glyph 界面的全部潜力。</string>
     <string name="about_section_why">为什么我们比 Nothing 的实现更好：</string>
     <string name="about_why_1">• 12 位亮度（4096 级）对标 ~2 位原生（3 级）</string>
     <string name="about_why_2">• 60 FPS 流畅动画对标 ~25 FPS 原生</string>
@@ -171,7 +171,7 @@
     <string name="not_now">暂不更新</string>
     <string name="downloading_update">正在下载更新…</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">感谢您的支持。</string>
     <string name="youre_welcome">不客气！</string>
 
@@ -206,7 +206,7 @@
     <string name="license_title">许可证</string>
     <string name="license_agreement">许可协议</string>
     <string name="read_license">阅读软件许可证</string>
-    <string name="license_agreement_title">GLYPH-SYNCRONATOR 许可协议</string>
+    <string name="license_agreement_title">GLYPHIX 许可协议</string>
     <string name="license_version">版本：1.1</string>
     <string name="license_date">日期：2026年6月29日</string>
     <string name="license_licensor">许可人</string>
@@ -216,10 +216,10 @@
     <string name="license_organization">组织</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. 前言</string>
-    <string name="license_preamble_1">本许可协议（“协议”）是您（“被许可人”）与 Oliver Lebaigue（“许可人”）之间就名为“glyph-syncronator”（“软件”）的音乐可视化软件应用的使用的法律协议。该项目由 Oliver Lebaigue 在 Luminus Labs 组织下创立。</string>
-    <string name="license_preamble_2">软件的源代码公开托管在 https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator。通过访问、下载、复制或以其他方式使用软件或其源代码，被许可人即同意受本协议条款的约束。</string>
+    <string name="license_preamble_1">本许可协议（“协议”）是您（“被许可人”）与 Oliver Lebaigue（“许可人”）之间就名为“Glyphix”（“软件”）的音乐可视化软件应用的使用的法律协议。该项目由 Oliver Lebaigue 在 Luminus Labs 组织下创立。</string>
+    <string name="license_preamble_2">软件的源代码公开托管在 https://github.com/oliver-lebaigue-bright-bench/glyphix。通过访问、下载、复制或以其他方式使用软件或其源代码，被许可人即同意受本协议条款的约束。</string>
     <string name="license_section_2">2. 定义</string>
-    <string name="license_def_1">2.1 “软件”是指 glyph-syncronator 软件应用，包括但不限于源代码、音频处理模块、渲染引擎、视觉资产、图形库、配置脚本、文档、目标文件、二进制可执行文件以及任何相关的媒体或资产。</string>
+    <string name="license_def_1">2.1 “软件”是指 Glyphix 软件应用，包括但不限于源代码、音频处理模块、渲染引擎、视觉资产、图形库、配置脚本、文档、目标文件、二进制可执行文件以及任何相关的媒体或资产。</string>
     <string name="license_def_2">2.2 “源代码”是指软件公开披露的文件，包括所有脚本文件、着色器代码、资产和构建配置。</string>
     <string name="license_section_3">3. 许可授予与可访问性</string>
     <string name="license_section_3_1">3.1 公开可用性</string>

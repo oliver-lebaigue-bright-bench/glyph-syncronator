@@ -1,4 +1,4 @@
-# glyph-syncronator - AI Coding Instructions
+# Glyphix - AI Coding Instructions
 
 ## Project Overview
 This is an Android music visualizer app for Nothing phones that enhances the stock Glyph music visualization using FFT analysis. The app captures live audio via Media Projection API and drives the phone's glyph LEDs with 60 FPS, 12-bit depth precision. A companion Python script provides offline audio file processing.

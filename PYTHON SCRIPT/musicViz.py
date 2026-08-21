@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 musicViz.py - a tool that brings better music visualization to Nothing Phones!
-https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator
+https://github.com/oliver-lebaigue-bright-bench/glyphix
 
 Copyright (C) 2024  Oliver Lebaigue and SebiAi.
 

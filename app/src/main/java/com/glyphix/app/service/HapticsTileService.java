@@ -62,7 +62,7 @@ public class HapticsTileService extends TileService {
         // Active if haptics are enabled in preferences
         t.setState(hapticsEnabled ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         
-        t.setLabel("Glyph Syncronator Haptics");
+        t.setLabel("Glyphix Haptics");
         if (!vizRunning) {
             t.setSubtitle(hapticsEnabled ? "Enabled" : "Disabled");
         } else {

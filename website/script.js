@@ -176,7 +176,7 @@ const teamMembers = {
         name: "Oliver Lebaigue",
         role: "Owner & Lead Developer",
         image: "https://github.com/oliver-lebaigue-bright-bench.png",
-        bio: "Owner, coordinator, and lead developer of glyph-syncronator. Focused on high-fidelity synchronization, modern UI, and core visualization logic.",
+        bio: "Owner, coordinator, and lead developer of Glyphix. Focused on high-fidelity synchronization, modern UI, and core visualization logic.",
         socials: [
             { platform: "GitHub", url: "https://github.com/oliver-lebaigue-bright-bench" }
         ]

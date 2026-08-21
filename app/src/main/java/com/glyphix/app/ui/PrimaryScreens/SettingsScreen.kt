@@ -364,10 +364,10 @@ internal fun SettingsScreen(
                         )
                     } else {
                         Icon(
-                            FontAwesomeIcons.Solid.BirthdayCake,
+                            painter = painterResource(R.drawable.banana),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color.Unspecified
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {
@@ -419,10 +419,10 @@ internal fun SettingsScreen(
                         )
                     } else {
                         Icon(
-                            FontAwesomeIcons.Solid.PepperHot,
+                            painter = painterResource(id = R.drawable.penis),
                             contentDescription = null,
                             modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color.Unspecified
                         )
                     }
                     Column(modifier = Modifier.weight(1f)) {

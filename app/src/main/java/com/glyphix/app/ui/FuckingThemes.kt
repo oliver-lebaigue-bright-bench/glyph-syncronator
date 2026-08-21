@@ -58,7 +58,7 @@ import com.glyphix.app.R
 import com.glyphix.app.service.GlyphNotificationListener
 
 @Composable
-fun GlyphSyncronatorTheme(
+fun GlyphixTheme(
     themeName: String = "Default",
     fontName: String = "NDot",
     m3eEnabled: Boolean = true,

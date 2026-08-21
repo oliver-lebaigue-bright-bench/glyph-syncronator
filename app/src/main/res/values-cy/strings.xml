@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">Mae\'r delweddydd sain amser real yn weithredol. Mae eich ffôn nawr yn dawnsio i\'r curiad! Ni fydd unrhyw gynnwys yn cael ei gadw, ac mae preifatrwydd yn cael ei barchu.</string>
     <string name="audio_description_idle">Crëwyd yr ap hwn gan Oliver Lebaigue, rKyzen, ac Oliver lebaigue.\n\nI gydweddu\'r Rhyngwyneb Glyph â\'ch cerddoriaeth, mae\'r ap hwn yn dal sain y ddyfais. Rydym yn defnyddio Media Projection ar gyfer delweddu manylder uchel.\n\nNodyn Preifatrwydd: Dim ond y ffrwd sain rydym yn ei defnyddio. Ni fydd unrhyw gynnwys sgrin yn cael ei recordio.</string>
     <string name="audio_warning_vizualizer">Rhybudd: mae\'r ffynhonnell hon yn defnyddio ffrwd sain arddull delweddydd safonol Android. Mae o fanylder isel ac fe allai fod yn wael.</string>
@@ -87,7 +87,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Gwybodaeth ap a diweddariadau</string>
-    <string name="about_intro">Mae glyph-syncronator yn datgloi potensial llawn y Rhyngwyneb Glyph gyda dadansoddiad amlder amser real, manylder uchel.</string>
+    <string name="about_intro">Mae Glyphix yn datgloi potensial llawn y Rhyngwyneb Glyph gyda dadansoddiad amlder amser real, manylder uchel.</string>
     <string name="about_section_why">Pam rydyn ni\'n well na gweithrediad Nothing:</string>
     <string name="about_why_1">• Disgleirdeb 12-bit (4096 lefel) vs ~2-bit stoc (3 lefel)</string>
     <string name="about_why_2">• Animeiddiadau hylif 60 FPS vs ~25 FPS stoc</string>
@@ -166,7 +166,7 @@
     <string name="not_now">Nid nawr</string>
     <string name="downloading_update">Wrthi\'n Lawrlwytho Diweddariad…</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">RYDYM YN GWERTHFAWROGI EICH CEFNOGAETH.</string>
     <string name="youre_welcome">CROESO!</string>
 
@@ -201,7 +201,7 @@
     <string name="license_title">Trwydded</string>
     <string name="license_agreement">Cytundeb Trwydded</string>
     <string name="read_license">Darllen trwydded y feddalwedd</string>
-    <string name="license_agreement_title">CYTUNDEB TRWYDDED GLYPH-SYNCRONATOR</string>
+    <string name="license_agreement_title">CYTUNDEB TRWYDDED GLYPHIX</string>
     <string name="license_version">Fersiwn: 1.1</string>
     <string name="license_date">Dyddiad: Mehefin 29, 2026</string>
     <string name="license_licensor">Trwyddedwr</string>
@@ -211,10 +211,10 @@
     <string name="license_organization">Sefydliad</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. RAGYMADRODD</string>
-    <string name="license_preamble_1">Mae\'r Cytundeb Trwydded hwn (\"Cytundeb\") yn gytundeb cyfreithiol rhyngoch chi (\"Trwyddedai\") ac Oliver Lebaigue (\"Trwyddedwr\") ar gyfer defnyddio, adolygu ac addasu\'r rhaglen feddalwedd delweddydd cerddoriaeth o\'r enw \"glyph-syncronator\" (y \"Feddalwedd\"), prosiect a sefydlwyd gan Oliver Lebaigue o dan y sefydliad Luminus Labs.</string>
+    <string name="license_preamble_1">Mae\'r Cytundeb Trwydded hwn (\"Cytundeb\") yn gytundeb cyfreithiol rhyngoch chi (\"Trwyddedai\") ac Oliver Lebaigue (\"Trwyddedwr\") ar gyfer defnyddio, adolygu ac addasu\'r rhaglen feddalwedd delweddydd cerddoriaeth o\'r enw \"Glyphix\" (y \"Feddalwedd\"), prosiect a sefydlwyd gan Oliver Lebaigue o dan y sefydliad Luminus Labs.</string>
     <string name="license_preamble_2">Mae cod ffynhonnell y Feddalwedd yn cael ei gynnal yn gyhoeddus yn https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Drwy gael mynediad, lawrlwytho, copïo, neu ddefnyddio\'r Feddalwedd neu ei Chod Ffynhonnell fel arall, mae\'r Trwyddedai yn cytuno i gael ei rwymo gan delerau\'r Cytundeb hwn.</string>
     <string name="license_section_2">2. DIFFINIADAU</string>
-    <string name="license_def_1">2.1 Bydd \"Meddalwedd\" yn golygu rhaglen feddalwedd glyph-syncronator, gan gynnwys ond heb fod yn gyfyngedig i\'r cod ffynhonnell, modiwlau prosesu sain, peiriannau rendro, asedau gweledol, llyfrgelloedd graffeg, sgriptiau ffurfweddu, dogfennaeth, ffeiliau gwrthrych, ffeiliau gweithredadwy deuaidd, ac unrhyw gyfryngau neu asedau cysylltiedig.</string>
+    <string name="license_def_1">2.1 Bydd \"Meddalwedd\" yn golygu rhaglen feddalwedd Glyphix, gan gynnwys ond heb fod yn gyfyngedig i\'r cod ffynhonnell, modiwlau prosesu sain, peiriannau rendro, asedau gweledol, llyfrgelloedd graffeg, sgriptiau ffurfweddu, dogfennaeth, ffeiliau gwrthrych, ffeiliau gweithredadwy deuaidd, ac unrhyw gyfryngau neu asedau cysylltiedig.</string>
     <string name="license_def_2">2.2 Bydd \"Cod Ffynhonnell\" yn golygu ffeiliau\'r Feddalwedd sydd wedi\'u datgelu\'n gyhoeddus, gan gynnwys pob ffeil sgript, cod cysgodol, asedau, a ffurfweddiadau adeiladu.</string>
     <string name="license_section_3">3. GRANT O DRWYDDED AC HYGYRCHEDD</string>
     <string name="license_section_3_1">3.1 Argaeledd Cyhoeddus</string>

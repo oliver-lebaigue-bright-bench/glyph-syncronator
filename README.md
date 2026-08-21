@@ -1,7 +1,7 @@
 <!-- ─── ANIMATED HERO BANNER ─── -->
 <div align="center">
 
-<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="glyph-syncronator — Music Visualizer for Nothing Phone">
+<svg viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Glyphix — Music Visualizer for Nothing Phone">
   <defs>
     <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#d71920">
@@ -95,7 +95,7 @@
   </g>
 
   <!-- Title -->
-  <text x="400" y="108" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="800" font-size="52" fill="url(#grad)" letter-spacing="-0.03em">glyph-syncronator</text>
+  <text x="400" y="108" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="800" font-size="52" fill="url(#grad)" letter-spacing="-0.03em">Glyphix</text>
   <text x="400" y="140" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="400" font-size="14" fill="#888" letter-spacing="0.04em">MUSIC VISUALIZER FOR NOTHING PHONE</text>
   <text x="400" y="180" text-anchor="middle" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="400" font-size="13" fill="#666">Glyph · Haptic · Flashlight — 60 FPS · 12-bit depth · FFT analysis</text>
 
@@ -136,13 +136,13 @@ Real-time music visualization for Nothing Phone Glyphs, haptics, and flashlight,
 
 ## Why it exists
 
-The stock glyph visualizer is limited and uniform. **glyph-syncronator** uses mathematical precision to address every single glyph zone or matrix pixel independently, utilizing every segment instead of illuminating entire strips. It supports brightness control across full 4,096 levels (12-bit depth) at 60 FPS.
+The stock glyph visualizer is limited and uniform. **Glyphix** uses mathematical precision to address every single glyph zone or matrix pixel independently, utilizing every segment instead of illuminating entire strips. It supports brightness control across full 4,096 levels (12-bit depth) at 60 FPS.
 
 ---
 
 ## What you get
 
-| Feature | Stock | **glyph-syncronator** |
+| Feature | Stock | **Glyphix** |
 |:---|:---|:---|
 | **Light depth** | ~3 levels | **4,096 levels** (12-bit) |
 | **Frame rate** | 20 FPS | **60 FPS** |
@@ -286,6 +286,6 @@ We welcome contributions! Ideas:
 
 <div align="center">
 
-Made with ❤️ by the glyph-syncronator community
+Made with ❤️ by the Glyphix community
 
 </div>

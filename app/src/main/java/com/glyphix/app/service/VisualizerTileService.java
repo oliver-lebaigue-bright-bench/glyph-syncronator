@@ -35,8 +35,8 @@ public class VisualizerTileService extends TileService {
     private void refresh(boolean on) {
         Tile t=getQsTile(); if(t==null) return;
         t.setState(on?Tile.STATE_ACTIVE:Tile.STATE_INACTIVE);
-        t.setLabel("Glyph Syncronator");
-        t.setSubtitle(on?"Running":"Glyph Syncronator");
+        t.setLabel("Glyphix");
+        t.setSubtitle(on?"Running":"Glyphix");
         t.setIcon(Icon.createWithResource(this, R.drawable.ic_launcher_monochrome));
         t.updateTile();
     }

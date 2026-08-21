@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">المصور المرئي للصوت نشط الآن. هاتفك يرقص الآن على الإيقاع! لا يتم حفظ أي محتوى صوتي.</string>
     <string name="audio_description_idle">تم تطوير هذا التطبيق بواسطة Oliver Lebaigue وrKyzen وOliver lebaigue.\n\nملاحظة الخصوصية: نحن نستخدم فقط بث الصوت. لا يتم تسجيل أي محتوى للشاشة.</string>
     <string name="audio_warning_vizualizer">تنويه: يستخدم هذا المصدر بث الصوت المرئي القياسي الخاص بنظام Android. جودته منخفضة وقد يؤدي إلى نتائج غير مرضية.</string>
@@ -97,7 +97,7 @@
 
     <!-- About Screen -->
     <string name="about_title">معلومات التطبيق والتحديثات</string>
-    <string name="about_intro">يُطلق تطبيق glyph-syncronator الإمكانات الكاملة لواجهة Glyph من خلال تحليل ترددي فوري وعالي الدقة.</string>
+    <string name="about_intro">يُطلق تطبيق Glyphix الإمكانات الكاملة لواجهة Glyph من خلال تحليل ترددي فوري وعالي الدقة.</string>
     <string name="about_section_why">لماذا نحن أفضل من مصور Nothing الأصلي:</string>
     <string name="analytics_disclaimer_title">التحليلات</string>
     <string name="analytics_disclaimer_text">يستخدم هذا التطبيق خدمة Google Analytics (Firebase) لجمع إحصاءات استخدام مجهولة الهوية وتقارير الأعطال للمساعدة في تحسين تجربة التطبيق. لا يتم جمع أي بيانات شخصية أو محتوى صوتي.</string>
@@ -238,7 +238,7 @@
     <string name="not_now">ليس الآن</string>
     <string name="downloading_update">جارٍ تنزيل التحديث...</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">نُقدّر دعمكم.</string>
     <string name="youre_welcome">على الرحب والسعة!</string>
 
@@ -273,7 +273,7 @@
     <string name="license_title">الترخيص</string>
     <string name="license_agreement">اتفاقية الترخيص</string>
     <string name="read_license">قراءة ترخيص البرنامج</string>
-    <string name="license_agreement_title">اتفاقية ترخيص GLYPH-SYNCRONATOR</string>
+    <string name="license_agreement_title">اتفاقية ترخيص GLYPHIX</string>
     <string name="license_version">الإصدار: 1.1</string>
     <string name="license_date">التاريخ: 29 يونيو 2026</string>
     <string name="license_licensor">المرخِّص</string>
@@ -283,10 +283,10 @@
     <string name="license_organization">المؤسسة</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. تمهيد</string>
-    <string name="license_preamble_1">تُعدّ اتفاقية الترخيص هذه (\"الاتفاقية\") اتفاقًا قانونيًا بينك (\"المرخَّص له\") وبين Oliver Lebaigue (\"المرخِّص\") بشأن استخدام ومراجعة وتعديل تطبيق المصور الموسيقي المرئي المعروف باسم \"glyph-syncronator\" (\"البرنامج\")، وهو مشروع أسّسه Oliver Lebaigue تحت مظلة مؤسسة Luminus Labs.</string>
+    <string name="license_preamble_1">تُعدّ اتفاقية الترخيص هذه (\"الاتفاقية\") اتفاقًا قانونيًا بينك (\"المرخَّص له\") وبين Oliver Lebaigue (\"المرخِّص\") بشأن استخدام ومراجعة وتعديل تطبيق المصور الموسيقي المرئي المعروف باسم \"Glyphix\" (\"البرنامج\")، وهو مشروع أسّسه Oliver Lebaigue تحت مظلة مؤسسة Luminus Labs.</string>
     <string name="license_preamble_2">المصدر للبرنامج مستضاف علنًا على الرابط https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. وبمجرد الوصول إلى البرنامج أو مصدره أو تنزيله أو نسخه أو استخدامه بأي شكل آخر، يوافق المرخَّص له على الالتزام بأحكام هذه الاتفاقية.</string>
     <string name="license_section_2">2. التعريفات</string>
-    <string name="license_def_1">2.1 يُقصد بـ\"البرنامج\" تطبيق glyph-syncronator، بما يشمل على سبيل المثال لا الحصر المصدر، ووحدات معالجة الصوت، ومحركات العرض، والأصول المرئية، ومكتبات الرسوميات، ونصوص الإعداد، والوثائق، وملفات الكائنات، والملفات القابلة للتشغيل، وأي وسائط أو أصول ذات صلة.</string>
+    <string name="license_def_1">2.1 يُقصد بـ\"البرنامج\" تطبيق Glyphix، بما يشمل على سبيل المثال لا الحصر المصدر، ووحدات معالجة الصوت، ومحركات العرض، والأصول المرئية، ومكتبات الرسوميات، ونصوص الإعداد، والوثائق، وملفات الكائنات، والملفات القابلة للتشغيل، وأي وسائط أو أصول ذات صلة.</string>
     <string name="license_def_2">2.2 يُقصد بـ\"المصدر\" الملفات المُفصَح عنها علنًا للبرنامج، بما يشمل جميع ملفات نصوص الأوامر، ونصوص أوامر الرسوميات، والأصول، وإعدادات البناء.</string>
     <string name="license_section_3">3. منح الترخيص وإمكانية الوصول</string>
     <string name="license_section_3_1">3.1 التوفر العام</string>

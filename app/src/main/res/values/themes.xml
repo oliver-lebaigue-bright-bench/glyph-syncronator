@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.glyph_syncronator" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.Glyphix" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/text_primary</item>
         <item name="colorOnPrimary">@color/black</item>
         <item name="android:windowBackground">@android:color/black</item>
@@ -10,7 +10,7 @@
         <item name="android:fontFamily">sans-serif</item>
     </style>
     
-    <style name="Theme.glyph_syncronator.NothingRed" parent="Theme.glyph_syncronator">
+    <style name="Theme.Glyphix.NothingRed" parent="Theme.Glyphix">
         <item name="colorPrimary">@color/nothing_red_primary</item>
         <item name="android:windowBackground">@color/nothing_red_bg</item>
         <item name="android:statusBarColor">@color/nothing_red_bg</item>

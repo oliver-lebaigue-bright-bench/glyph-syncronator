@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            GlyphSyncronatorTheme(
+            GlyphixTheme(
                 themeName = selectedTheme,
                 fontName = selectedFont,
                 bananaMode = bananaMode,
@@ -260,7 +260,7 @@ class MainActivity : ComponentActivity() {
                 val isMonsterTheme = selectedTheme.startsWith("Monster")
 
                 Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                    GlyphSyncronatorBackground()
+                    GlyphixBackground()
 
                     if (isMonsterTheme && !bananaMode && !penisMode) {
                         val clawFilter = if (selectedTheme == "Monster Ultra White") {
@@ -280,7 +280,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    GlyphSyncronatorApp(
+                    GlyphixApp(
                         viewModel = viewModel,
                         onToggleVisualizer = { toggleVisualizer() },
                         onGoogleSignIn = { launchGoogleSignIn() },
@@ -481,7 +481,7 @@ fun AudioDeviceInfo.toAudioRoute(): AudioRoute {
 val HeavyEasingSpec = tween<Float>(durationMillis = 600)
 
 @Composable
-internal fun GlyphSyncronatorApp(
+internal fun GlyphixApp(
     viewModel: MainViewModel,
     onToggleVisualizer: () -> Unit,
     onGoogleSignIn: () -> Unit,

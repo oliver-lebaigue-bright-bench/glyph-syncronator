@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">glyph-syncronator</string>
+    <string name="app_name">Glyphix</string>
 
     <!-- Audio Screen -->
-    <string name="audio_screen_title">glyph-syncronator</string>
+    <string name="audio_screen_title">Glyphix</string>
     <string name="audio_description_running">Gerçek zamanlı ses görselleştirici aktif. Telefonunuz şimdi ritme göre dans ediyor! Hiçbir içerik kaydedilmez ve gizliliğe saygı duyulur.</string>
     <string name="audio_description_idle">Bu uygulama Oliver Lebaigue ve rKyzen tarafından yapılmıştır.\n\nGlyph Arayüzünü müziğinizle senkronize etmek için bu uygulama cihaz sesini yakalar. Yüksek kaliteli görselleştirme için Media Projection kullanıyoruz.\n\nGizlilik Notu: Yalnızca ses akışını kullanıyoruz. Ekran içeriği kaydedilmez.</string>
     <string name="audio_warning_vizualizer">Uyarı: Bu kaynak standart Android görselleştirici tarzı ses akışını kullanır. Düşük sadakatlidir ve kötü olabilir.</string>
@@ -92,7 +92,7 @@
 
     <!-- About Screen -->
     <string name="about_title">Uygulama Hakkında ve Güncellemeler</string>
-    <string name="about_intro">glyph-syncronator Müzik Görselleştirici, yüksek kaliteli ve gerçek zamanlı frekans analizi ile Glyph Arayüzü\'nün tüm potansiyelini ortaya çıkarır.</string>
+    <string name="about_intro">Glyphix Müzik Görselleştirici, yüksek kaliteli ve gerçek zamanlı frekans analizi ile Glyph Arayüzü\'nün tüm potansiyelini ortaya çıkarır.</string>
     <string name="about_section_why">Neden Nothing\'in görselleştiricisinden daha iyiyiz:</string>
     <string name="about_why_1">• 12-bit parlaklık (4096 seviye) vs ~2-bit stok (3 seviye)</string>
     <string name="about_why_2">• 60 FPS akıcı animasyonlar vs ~25 FPS stok</string>
@@ -171,7 +171,7 @@
     <string name="not_now">Şimdi değil</string>
     <string name="downloading_update">Güncelleme İndiriliyor…</string>
 
-    <string name="app_name_caps">GLYPH-SYNCRONATOR</string>
+    <string name="app_name_caps">GLYPHIX</string>
     <string name="appreciate_support">DESTEĞİNİZ İÇİN TEŞEKKÜR EDERİZ.</string>
     <string name="youre_welcome">RİCA EDERİM!</string>
 
@@ -206,7 +206,7 @@
     <string name="license_title">Lisans</string>
     <string name="license_agreement">Lisans Sözleşmesi</string>
     <string name="read_license">Yazılım lisansını oku</string>
-    <string name="license_agreement_title">GLYPH-SYNCRONATOR LİSANS SÖZLEŞMESİ</string>
+    <string name="license_agreement_title">GLYPHIX LİSANS SÖZLEŞMESİ</string>
     <string name="license_version">Sürüm: 1.1</string>
     <string name="license_date">Tarih: 29 Haziran 2026</string>
     <string name="license_licensor">Lisans Veren</string>
@@ -216,10 +216,10 @@
     <string name="license_organization">Organizasyon</string>
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. BAŞLANGIÇ</string>
-    <string name="license_preamble_1">İşbu Lisans Sözleşmesi (\"Sözleşme\"), Oliver Lebaigue (\"Lisans Veren\") ile siz (\"Lisans Alan\") arasında, Oliver Lebaigue tarafından Luminus Labs organizasyonu altında kurulan \"glyph-syncronator\" (\"Yazılım\") adlı müzik görselleştirici yazılım uygulamasının kullanımı, incelenmesi ve değiştirilmesi için yapılan yasal bir sözleşmedir.</string>
+    <string name="license_preamble_1">İşbu Lisans Sözleşmesi (\"Sözleşme\"), Oliver Lebaigue (\"Lisans Veren\") ile siz (\"Lisans Alan\") arasında, Oliver Lebaigue tarafından Luminus Labs organizasyonu altında kurulan \"Glyphix\" (\"Yazılım\") adlı müzik görselleştirici yazılım uygulamasının kullanımı, incelenmesi ve değiştirilmesi için yapılan yasal bir sözleşmedir.</string>
     <string name="license_preamble_2">Yazılımın kaynak kodu https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator adresinde herkese açık olarak barındırılmaktadır. Yazılıma veya Kaynak Koduna erişerek, indirerek, kopyalayarak veya başka bir şekilde kullanarak, Lisans Alan işbu Sözleşmenin şartlarına bağlı kalmayı kabul eder.</string>
     <string name="license_section_2">2. TANIMLAR</string>
-    <string name="license_def_1">2.1 \"Yazılım\", kaynak kodu, ses işleme modülleri, oluşturma motorları, görsel varlıklar, grafik kitaplıkları, yapılandırma betikleri, dokümantasyon, nesne dosyaları, ikili yürütülebilir dosyalar ve ilgili her türlü medya veya varlığı içeren ancak bunlarla sınırlı olmayan glyph-syncronator yazılım uygulamasını ifade eder.</string>
+    <string name="license_def_1">2.1 \"Yazılım\", kaynak kodu, ses işleme modülleri, oluşturma motorları, görsel varlıklar, grafik kitaplıkları, yapılandırma betikleri, dokümantasyon, nesne dosyaları, ikili yürütülebilir dosyalar ve ilgili her türlü medya veya varlığı içeren ancak bunlarla sınırlı olmayan Glyphix yazılım uygulamasını ifade eder.</string>
     <string name="license_def_2">2.2 \"Kaynak Kodu\", tüm betik dosyaları, gölgelendirici kodları, varlıklar ve derleme yapılandırmaları dahil olmak üzere Yazılımın herkese açık olarak ifşa edilen dosyalarını ifade eder.</string>
     <string name="license_section_3">3. LİSANS VERME VE ERİŞİLEBİLİRLİK</string>
     <string name="license_section_3_1">3.1 Kamuoyuna Açıklık</string>
