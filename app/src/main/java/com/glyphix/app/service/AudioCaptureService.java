@@ -97,7 +97,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SMART_CAPTURE }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";

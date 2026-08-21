@@ -346,17 +346,17 @@ fun CaptureSourceCard(
                 )
             }
             
-            // Placeholder button
             OptionTile(
-                label = "Coming Soon...",
-                icon = FontAwesomeIcons.Solid.Plus,
-                isSelected = false,
-                enabled = false,
-                onClick = { },
+                label = "Smart Capture",
+                icon = FontAwesomeIcons.Solid.Bolt,
+                isSelected = selectedSource == AudioCaptureService.CaptureSource.SMART_CAPTURE,
+                enabled = true,
+                onClick = { onSourceSelected(AudioCaptureService.CaptureSource.SMART_CAPTURE) },
                 modifier = Modifier.height(64.dp),
                 maxLines = 2
             )
         }
+        
         if (selectedSource == AudioCaptureService.CaptureSource.VIZUALIZER) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -366,6 +366,43 @@ fun CaptureSourceCard(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+         
+        if (selectedSource == AudioCaptureService.CaptureSource.SMART_CAPTURE) {
+            Spacer(modifier = Modifier.height(16.dp))
+            androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            var useAndroidViz by remember { mutableStateOf(true) }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Use Android's built-in visualizer", style = MaterialTheme.typography.titleSmall)
+                    Text("when you play a song that was never generated before, the app will fallback to the built in visualizer for about ~15 seconds until lightshows are generated. Only applicable for first-time played songs", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                }
+                Switch(checked = useAndroidViz, onCheckedChange = { useAndroidViz = it })
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            var useWifiOnly by remember { mutableStateOf(true) }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Use Wi-Fi only", style = MaterialTheme.typography.titleSmall)
+                    Text("The app will only fetch or generate lightshows on unmetered networks to save data. Will fallback to android's built-in visualizer if enabled", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                }
+                Switch(checked = useWifiOnly, onCheckedChange = { useWifiOnly = it })
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            ExpressiveCard(modifier = Modifier.fillMaxWidth(), containerColor = MaterialTheme.colorScheme.surfaceVariant) {
+                Text(
+                    text = "Smart Capture downloads the audio of the song you're currently playing and analyzes its exact frequencies offline at high speed. This gives you a perfect, beat-matched lightshow that saves battery, because we only need to do it once per song!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
         }
     }
 }
