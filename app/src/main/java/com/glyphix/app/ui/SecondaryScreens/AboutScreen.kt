@@ -128,6 +128,7 @@ internal fun AboutScreen(
                     Icon(
                         imageVector = FontAwesomeIcons.Solid.ArrowLeft,
                         contentDescription = stringResource(R.string.back),
+                        modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -162,7 +163,7 @@ internal fun AboutScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_launcher_foreground),
                             contentDescription = null,
-                            modifier = Modifier.size(56.dp),
+                            modifier = Modifier.size(40.dp),
                             tint = Color.Unspecified
                         )
                     }
@@ -275,6 +276,7 @@ internal fun AboutScreen(
                         Icon(
                             FontAwesomeIcons.Solid.ChevronRight,
                             null,
+                            modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
                     }
@@ -339,7 +341,7 @@ internal fun AboutScreen(
                                 Icon(
                                     FontAwesomeIcons.Solid.ChevronRight,
                                     null,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(20.dp),
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                                 )
                             }
@@ -366,7 +368,7 @@ private fun StatRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
         )
         Text(
@@ -421,7 +423,7 @@ private fun InfoRow(
             modifier = Modifier.size(40.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, null, modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             }
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -431,7 +433,7 @@ private fun InfoRow(
         if (trailingContent != null) {
             trailingContent()
         } else if (onClick != null) {
-            Icon(FontAwesomeIcons.Solid.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+            Icon(FontAwesomeIcons.Solid.ChevronRight, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
         }
     }
 }

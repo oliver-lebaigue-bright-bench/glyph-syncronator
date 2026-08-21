@@ -4,6 +4,7 @@ build/
 .idea/
 .codex
 .vscode/
+.artifacts
 app/build/*
 
 app/build/

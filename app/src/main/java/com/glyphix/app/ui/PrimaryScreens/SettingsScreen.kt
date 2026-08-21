@@ -1343,7 +1343,7 @@ fun LinkCard(
                 modifier = Modifier.size(40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(24.dp))
                 }
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
@@ -1353,7 +1353,7 @@ fun LinkCard(
                     Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Icon(imageVector = FontAwesomeIcons.Solid.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Icon(imageVector = FontAwesomeIcons.Solid.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
         }
     }
 }
