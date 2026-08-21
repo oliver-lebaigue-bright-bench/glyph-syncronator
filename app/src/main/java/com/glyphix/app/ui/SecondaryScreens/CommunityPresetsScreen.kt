@@ -29,6 +29,7 @@ fun CommunityPresetsScreen(
     error: String?,
     onDownload: (CommunityPreset) -> Unit,
     onDelete: (CommunityPreset) -> Unit,
+    onShowLeaderboard: () -> Unit,
     onDismiss: () -> Unit
 ) {
     BackHandler { onDismiss() }
@@ -39,6 +40,11 @@ fun CommunityPresetsScreen(
                 navigationIcon = {
                     IconButton(onClick = onDismiss) {
                         Icon(FontAwesomeIcons.Solid.ArrowLeft, contentDescription = stringResource(R.string.back), tint = Color.White)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onShowLeaderboard) {
+                        Icon(FontAwesomeIcons.Solid.Trophy, contentDescription = "Leaderboard", tint = MaterialTheme.colorScheme.primary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)

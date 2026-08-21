@@ -38,6 +38,7 @@ internal fun CommunityOverlays(
                 // Add logic to actually apply/download the preset
             },
             onDelete = { preset -> viewModel.deleteCustomPreset(preset.id) },
+            onShowLeaderboard = { viewModel.showLeaderboard() },
             onDismiss = { viewModel.hideCommunity() }
         )
     }

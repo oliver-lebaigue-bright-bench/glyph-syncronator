@@ -1128,20 +1128,26 @@ internal fun SettingsScreen(
     // ── Links & Info ────────────────────────────────────────────────────
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        maxItemsInEachRow = 3,
+        maxItemsInEachRow = 2,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         LinkCard(
-            title = stringResource(R.string.discord_server),
-            icon = FontAwesomeIcons.Solid.Users,
-            onClick = { uriHandler.openUri("https://discord.gg/DBGX7evmy6") },
+            title = "Leaderboard",
+            icon = FontAwesomeIcons.Solid.Trophy,
+            onClick = { viewModel.showLeaderboard() },
             modifier = Modifier.weight(1f)
         )
         LinkCard(
-            title = "Vizualizer Stats",
+            title = "Usage Stats",
             icon = FontAwesomeIcons.Solid.ChartBar,
             onClick = { viewModel.showStats() },
+            modifier = Modifier.weight(1f)
+        )
+        LinkCard(
+            title = stringResource(R.string.discord_server),
+            icon = FontAwesomeIcons.Solid.Users,
+            onClick = { uriHandler.openUri("https://discord.gg/DBGX7evmy6") },
             modifier = Modifier.weight(1f)
         )
         LinkCard(
