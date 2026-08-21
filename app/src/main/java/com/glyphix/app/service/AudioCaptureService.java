@@ -4,6 +4,11 @@ import com.glyphix.app.model.DeviceProfile;
 import com.glyphix.app.model.HapticMode;
 import com.glyphix.app.model.TorchMode;
 import com.glyphix.app.model.AudioRouteInfo;
+import com.glyphix.app.logic.smartcapture.SmartCaptureOrchestrator;
+import com.glyphix.app.logic.smartcapture.SmartCapturePlaybackEngine;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import kotlin.Unit;
 import com.glyphix.app.logic.AudioProcessor;
 import com.glyphix.app.logic.GlyphRenderer;
 import com.glyphix.app.logic.AudioDeviceManager;
@@ -251,6 +256,44 @@ public class AudioCaptureService extends Service {
     private HandlerThread mWorkerThread;
     private Handler mWorkerHandler;
     private AudioManager mAudioManager;
+
+    
+    private SmartCapturePlaybackEngine mPlaybackEngine;
+    private SmartCaptureOrchestrator mSmartCaptureOrchestrator;
+    private boolean mVisualizerFallbackActive = false;
+
+    private final BroadcastReceiver mMediaReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (mCaptureSource != CaptureSource.SMART_CAPTURE) return;
+            
+            String action = intent.getAction();
+            if ("com.glyphix.app.action.SONG_CHANGED".equals(action)) {
+                String title = intent.getStringExtra("title");
+                String artist = intent.getStringExtra("artist");
+                long duration = intent.getLongExtra("duration", 0);
+                long position = intent.getLongExtra("position", 0);
+                
+                if (title != null && artist != null) {
+                    if (!mVisualizerFallbackActive) {
+                        mVisualizerFallbackActive = true;
+                        setupVisualizerCapture();
+                    }
+                    if (mSmartCaptureOrchestrator != null && mVisualizerConfig != null) {
+                        mSmartCaptureOrchestrator.onSongChanged(artist, title, duration, position, mVisualizerConfig);
+                    }
+                }
+            } else if ("com.glyphix.app.action.STATE_CHANGED".equals(action)) {
+                boolean isPlaying = intent.getBooleanExtra("is_playing", false);
+                long position = intent.getLongExtra("position", 0);
+                
+                if (mSmartCaptureOrchestrator != null) {
+                    if (!isPlaying) mSmartCaptureOrchestrator.onPlaybackPaused();
+                    else mSmartCaptureOrchestrator.updatePlaybackPosition(position);
+                }
+            }
+        }
+    };
 
     private GlyphManager mGM;
     private GlyphMatrixManager mGMM;
@@ -516,6 +559,30 @@ public class AudioCaptureService extends Service {
         mFlashlightEngine = new FlashlightEngine(this);
         mAudioProcessor = new AudioProcessor();
         mAudioDeviceManager = new AudioDeviceManager(this, this::refreshLatencyForCurrentAudioRoute);
+        mPlaybackEngine = new SmartCapturePlaybackEngine(intensities -> {
+            if (mVisualizerFallbackActive) {
+                mVisualizerFallbackActive = false;
+                releaseVisualizer(); // Turn off live visualizer listening
+            }
+            
+            int[] colors = mGlyphRenderer.renderFrameFromIntensities(intensities);
+            ensureGlyphSession();
+            if (mGMM != null) mGMM.setAppMatrixFrame(colors);
+            else if (mGM != null) mGM.setFrameColors(colors);
+            
+            return Unit.INSTANCE;
+        });
+        mSmartCaptureOrchestrator = new SmartCaptureOrchestrator(this, mPlaybackEngine);
+        
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.glyphix.app.action.SONG_CHANGED");
+        filter.addAction("com.glyphix.app.action.STATE_CHANGED");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(mMediaReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(mMediaReceiver, filter);
+        }
+
         mSelectedDevice = DeviceProfile.detectDevice();
         if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) mSelectedDevice = DeviceProfile.DEVICE_NP2;
         mLatencyCompensationMs = loadLatencyCompensationMs(this, mSelectedDevice);
@@ -607,6 +674,8 @@ public class AudioCaptureService extends Service {
 
     @Override
     public void onDestroy() {
+        try { unregisterReceiver(mMediaReceiver); } catch (Exception ignored) {}
+
         sInstance = null; stopCapture(); clearGlyphSession();
         if (mGM != null) mGM.unInit(); if (mGMM != null) mGMM.unInit();
         if (mAudioManager != null) mAudioManager.unregisterAudioDeviceCallback(mAudioDeviceCallback);
@@ -940,7 +1009,7 @@ public class AudioCaptureService extends Service {
     public void startMicCapture() { startCaptureInternal(CaptureSource.MIC, 0, null); }
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
-    public void startSmartCapture() { startCaptureInternal(CaptureSource.SMART_CAPTURE, 0, null); }
+    public void startSmartCapture() { mVisualizerFallbackActive = true; startCaptureInternal(CaptureSource.SMART_CAPTURE, 0, null); }
 
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
@@ -972,7 +1041,7 @@ public class AudioCaptureService extends Service {
                                 localRecord = new AudioRecord.Builder().setAudioPlaybackCaptureConfig(config).setAudioFormat(new AudioFormat.Builder().setSampleRate(captureSampleRate).setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build()).setBufferSizeInBytes(bufSize).build();
                             }
                         }
-                    } else if (source == CaptureSource.VIZUALIZER || source == CaptureSource.SMART_CAPTURE) { setupVisualizerCapture(); return; }
+                    } else if (source == CaptureSource.VIZUALIZER || (source == CaptureSource.SMART_CAPTURE && mVisualizerFallbackActive)) { setupVisualizerCapture(); return; } else if (source == CaptureSource.SMART_CAPTURE) { return; }
                     else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
                     if (localRecord != null && localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
                         synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
