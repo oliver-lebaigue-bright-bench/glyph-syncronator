@@ -557,16 +557,31 @@ internal fun GlyphixApp(
     val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
     val isMonster = selectedTheme.startsWith("Monster")
 
+    val spatialNavEnabled by viewModel.spatialNavEnabled.collectAsStateWithLifecycle()
+
     Scaffold(
         bottomBar = {
-            NativeBottomBar(
-                selectedTab = selectedTab,
-                visibleTabs = visibleTabs,
-                onTabSelected = { viewModel.selectTab(it) }
-            )
+            if (spatialNavEnabled) {
+                SpatialBottomBar(
+                    selectedTab = selectedTab,
+                    visibleTabs = visibleTabs,
+                    onTabSelected = { viewModel.selectTab(it) },
+                    isRunning = isRunning,
+                    onToggleVisualizer = onToggleVisualizer,
+                    modifier = Modifier.navigationBarsPadding()
+                )
+            } else {
+                NativeBottomBar(
+                    selectedTab = selectedTab,
+                    visibleTabs = visibleTabs,
+                    onTabSelected = { viewModel.selectTab(it) }
+                )
+            }
         },
         floatingActionButton = {
-            StartStopButton(running = isRunning, onClick = onToggleVisualizer)
+            if (!spatialNavEnabled) {
+                StartStopButton(running = isRunning, onClick = onToggleVisualizer)
+            }
         },
         containerColor = if (isGlass || bananaMode || penisMode || isMonster) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -198,6 +199,43 @@ internal fun SettingsScreen(
                         text = stringResource(R.string.typography_help_text),
                         size = 12.sp
                     )
+
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    )
+
+                    // Spatial Navigation Setting
+                    val spatialNavEnabled by viewModel.spatialNavEnabled.collectAsStateWithLifecycle()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Spatial Navigation Bar",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Use the new floating Android XR style navigation",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                        Switch(
+                            checked = spatialNavEnabled,
+                            onCheckedChange = { viewModel.setSpatialNavEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            ),
+                            modifier = Modifier.size(height = 24.dp, width = 48.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
