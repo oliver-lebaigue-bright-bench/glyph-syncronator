@@ -235,8 +235,13 @@ class MainActivity : ComponentActivity() {
                             }
                             
                             // Collect network diagnostic if applicable
-                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK) {
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
                                 viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
+                            }
+                            
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
+                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
                             }
 
                             // Use the magnitudes already computed by the service instead of re-calculating
@@ -335,6 +340,7 @@ class MainActivity : ComponentActivity() {
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
         }
     }
@@ -615,6 +621,8 @@ internal fun GlyphixApp(
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
                         val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
+                        val bluetoothDeviceName by viewModel.bluetoothDeviceName.collectAsStateWithLifecycle()
+                        val bluetoothDeviceAddress by viewModel.bluetoothDeviceAddress.collectAsStateWithLifecycle()
 
                         AudioScreen(
                             isRunning = isRunning,
@@ -631,6 +639,8 @@ internal fun GlyphixApp(
                             captureSource = captureSource,
                             onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
                             networkPacketsReceived = networkPacketsReceived,
+                            bluetoothDeviceName = bluetoothDeviceName,
+                            bluetoothDeviceAddress = bluetoothDeviceAddress,
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },

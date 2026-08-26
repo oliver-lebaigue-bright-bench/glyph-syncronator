@@ -84,6 +84,7 @@ import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Brands
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.brands.Android
+import compose.icons.fontawesomeicons.brands.Bluetooth
 import compose.icons.fontawesomeicons.solid.*
 import androidx.core.content.ContextCompat
 import com.glyphix.app.R
@@ -118,6 +119,8 @@ fun AudioScreen(
     captureSource: AudioCaptureService.CaptureSource = AudioCaptureService.CaptureSource.INTERNAL,
     onCaptureSourceChanged: (AudioCaptureService.CaptureSource) -> Unit = {},
     networkPacketsReceived: Int = 0,
+    bluetoothDeviceName: String = "",
+    bluetoothDeviceAddress: String = "",
     latencyWizardState: LatencyWizard.State = LatencyWizard.State.Idle,
     onRunLatencyWizard: () -> Unit = {},
     onResetLatencyWizard: () -> Unit = {},
@@ -137,6 +140,16 @@ fun AudioScreen(
     }
 
     var pendingCaptureSource by remember { mutableStateOf<AudioCaptureService.CaptureSource?>(null) }
+    
+    val btPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        if (results.values.all { it }) {
+            pendingCaptureSource?.let { onCaptureSourceChanged(it) }
+        }
+        pendingCaptureSource = null
+    }
+
     val recordAudioLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -205,6 +218,8 @@ fun AudioScreen(
         CaptureSourceCard(
             selectedSource = captureSource,
             networkPacketsReceived = networkPacketsReceived,
+            bluetoothDeviceName = bluetoothDeviceName,
+            bluetoothDeviceAddress = bluetoothDeviceAddress,
             onSourceSelected = { source ->
                 if (source == AudioCaptureService.CaptureSource.MIC || source == AudioCaptureService.CaptureSource.VIZUALIZER) {
                     val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
@@ -213,6 +228,27 @@ fun AudioScreen(
                     } else {
                         pendingCaptureSource = source
                         recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                } else if (source == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        arrayOf(
+                            Manifest.permission.BLUETOOTH_CONNECT,
+                            Manifest.permission.BLUETOOTH_ADVERTISE,
+                            Manifest.permission.BLUETOOTH_SCAN
+                        )
+                    } else {
+                        arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
+                    }
+                    
+                    val allGranted = permissions.all {
+                        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+                    }
+                    
+                    if (allGranted) {
+                        onCaptureSourceChanged(source)
+                    } else {
+                        pendingCaptureSource = source
+                        btPermissionLauncher.launch(permissions)
                     }
                 } else {
                     onCaptureSourceChanged(source)
@@ -304,6 +340,8 @@ fun AudioScreen(
 fun CaptureSourceCard(
     selectedSource: AudioCaptureService.CaptureSource,
     networkPacketsReceived: Int = 0,
+    bluetoothDeviceName: String = "",
+    bluetoothDeviceAddress: String = "",
     onSourceSelected: (AudioCaptureService.CaptureSource) -> Unit
 ) {
     ExpressiveCard(modifier = Modifier.fillMaxWidth()) {
@@ -328,6 +366,11 @@ fun CaptureSourceCard(
                 AudioCaptureService.CaptureSource.NETWORK,
                 "Desktop Companion (UDP)",
                 FontAwesomeIcons.Solid.NetworkWired
+            ),
+            Triple(
+                AudioCaptureService.CaptureSource.BLUETOOTH,
+                "Desktop Companion (BT)",
+                FontAwesomeIcons.Brands.Bluetooth
             )
         )
 
@@ -372,7 +415,7 @@ fun CaptureSourceCard(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Send 16-bit PCM (44.1kHz, Mono) to:",
+                    text = "Send 16-bit PCM (48kHz, Mono) to:",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
@@ -388,6 +431,58 @@ fun CaptureSourceCard(
                         text = "Packets Received: $networkPacketsReceived",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+
+        if (selectedSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Ready to receive audio!",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                if (bluetoothDeviceName.isNotEmpty()) {
+                    Text(
+                        text = "Device: $bluetoothDeviceName",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    if (bluetoothDeviceAddress.isNotEmpty()) {
+                        Text(
+                            text = "MAC: $bluetoothDeviceAddress",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                Text(
+                    text = "Pair your PC and run companion with --bt",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "UUID: ...7e45",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                )
+
+                if (networkPacketsReceived > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Data link established!",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.secondary
                     )
                 }
             }

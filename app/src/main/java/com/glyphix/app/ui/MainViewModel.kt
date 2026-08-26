@@ -107,6 +107,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _networkPacketsReceived = MutableStateFlow(0)
     val networkPacketsReceived = _networkPacketsReceived.asStateFlow()
 
+    val _bluetoothDeviceName = MutableStateFlow("")
+    val bluetoothDeviceName = _bluetoothDeviceName.asStateFlow()
+
+    val _bluetoothDeviceAddress = MutableStateFlow("")
+    val bluetoothDeviceAddress = _bluetoothDeviceAddress.asStateFlow()
+
     val _totalIdleTime = MutableStateFlow(0L)
     val totalIdleTime = _totalIdleTime.asStateFlow()
 
@@ -1616,6 +1622,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setNetworkPacketsReceived(count: Int) {
         _networkPacketsReceived.value = count
+    }
+
+    fun setBluetoothDeviceName(name: String) {
+        _bluetoothDeviceName.value = name
+    }
+
+    fun setBluetoothDeviceAddress(addr: String) {
+        _bluetoothDeviceAddress.value = addr
     }
 
     val _selectedPreset = MutableStateFlow("Default")

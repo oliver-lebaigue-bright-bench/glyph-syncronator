@@ -48,6 +48,16 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.service.quicksettings.TileService;
 import android.util.Log;
+import androidx.core.app.ActivityCompat;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.le.AdvertiseData;
+import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.os.ParcelUuid;
+import java.util.UUID;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.graphics.PixelFormat;
@@ -97,7 +107,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, NETWORK }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, NETWORK, BLUETOOTH }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";
@@ -131,6 +141,8 @@ public class AudioCaptureService extends Service {
     private static volatile boolean sIsRunning = false;
     private static final MutableStateFlow<Boolean> sIsRunningFlow = StateFlowKt.MutableStateFlow(false);
     private static final MutableStateFlow<Integer> sNetworkPacketsReceived = StateFlowKt.MutableStateFlow(0);
+    private static final MutableStateFlow<String> sBluetoothDeviceName = StateFlowKt.MutableStateFlow("");
+    private static final MutableStateFlow<String> sBluetoothDeviceAddress = StateFlowKt.MutableStateFlow("");
     
     public StateFlow<Boolean> isRunningFlow() {
         return sIsRunningFlow;
@@ -138,6 +150,14 @@ public class AudioCaptureService extends Service {
 
     public StateFlow<Integer> networkPacketsReceivedFlow() {
         return sNetworkPacketsReceived;
+    }
+
+    public StateFlow<String> bluetoothDeviceNameFlow() {
+        return sBluetoothDeviceName;
+    }
+
+    public StateFlow<String> bluetoothDeviceAddressFlow() {
+        return sBluetoothDeviceAddress;
     }
 
     private void setRunning(boolean running) {
@@ -630,6 +650,7 @@ public class AudioCaptureService extends Service {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
         else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
+        else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -643,6 +664,7 @@ public class AudioCaptureService extends Service {
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
             else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
+            else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
         });
     }
 
@@ -954,19 +976,41 @@ public class AudioCaptureService extends Service {
 
     public void startNetworkCapture() { startCaptureInternal(CaptureSource.NETWORK, 0, null); }
 
+    public void startBluetoothCapture() { startCaptureInternal(CaptureSource.BLUETOOTH, 0, null); }
+
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
         if (source == CaptureSource.INTERNAL) projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         synchronized (mCaptureLock) {
             stopCaptureLocked();
+            
+            int fgsType = 0;
             if (source == CaptureSource.INTERNAL) {
                 if (projectionManager == null) return;
-                if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION); else startForeground(NOTIF_ID, buildNotification());
+                if (Build.VERSION.SDK_INT >= 29) {
+                    fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION;
+                    if (Build.VERSION.SDK_INT >= 34) fgsType |= ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
+                }
+                startForegroundSafe(NOTIF_ID, buildNotification(), fgsType);
                 mProjection = projectionManager.getMediaProjection(resultCode, data);
                 if (mProjection == null) { stopForeground(STOP_FOREGROUND_REMOVE); setRunning(false); return; }
                 mProjection.registerCallback(mProjectionCallback, mWorkerHandler);
-            } else if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE); else startForeground(NOTIF_ID, buildNotification());
+            } else {
+                if (Build.VERSION.SDK_INT >= 29) {
+                    if (source == CaptureSource.MIC) fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+                    else if (Build.VERSION.SDK_INT >= 34) {
+                         if (source == CaptureSource.BLUETOOTH) fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE;
+                         else fgsType = ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
+                    }
+                }
+                startForegroundSafe(NOTIF_ID, buildNotification(), fgsType);
+            }
+            
+            if (source == CaptureSource.BLUETOOTH) {
+                startBleAdvertisement();
+            }
+
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
@@ -1005,6 +1049,7 @@ public class AudioCaptureService extends Service {
                         }
                     } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
                     else if (source == CaptureSource.NETWORK) { setupNetworkCapture(); return; }
+                    else if (source == CaptureSource.BLUETOOTH) { setupBluetoothCapture(); return; }
                     else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                         localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
                     }
@@ -1042,9 +1087,15 @@ public class AudioCaptureService extends Service {
         mSessionGlyphMs = 0; mSessionHapticMs = 0; mSessionFlashlightMs = 0;
 
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
+        stopBleAdvertisement();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
-    private void releaseAudioRecord() { if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; } if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; } stopDiscoveryResponder(); }
+    private void releaseAudioRecord() {
+        if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; }
+        if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
+        releaseBluetoothSockets();
+        stopDiscoveryResponder();
+    }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
     private void ensureCaptureExecutor() { if (mCaptureExecutor == null || mCaptureExecutor.isShutdown()) mCaptureExecutor = Executors.newSingleThreadExecutor(); }
@@ -1212,8 +1263,27 @@ public class AudioCaptureService extends Service {
     }
 
     private java.net.DatagramSocket mNetworkSocket;
+    private BluetoothServerSocket mBtServerSocket;
+    private BluetoothSocket mBtSocket;
     private static final int UDP_PORT = 12347;
     private static final int DISCOVERY_PORT = 12348;
+    private static final UUID BT_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e45");
+    private static final UUID BLE_SERVICE_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e46");
+    
+    private BluetoothLeAdvertiser mAdvertiser;
+    private final AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
+        @Override
+        public void onStartSuccess(AdvertiseSettings settingsInEffect) {
+            super.onStartSuccess(settingsInEffect);
+            Log.i(TAG, "BLE Advertisement started successfully");
+        }
+
+        @Override
+        public void onStartFailure(int errorCode) {
+            super.onStartFailure(errorCode);
+            Log.e(TAG, "BLE Advertisement failed with error: " + errorCode);
+        }
+    };
 
     public String getLocalIpAddress() {
         try {
@@ -1329,6 +1399,174 @@ public class AudioCaptureService extends Service {
 
     private void showNetworkDebugToast(int packetSize) {
          mMainHandler.post(() -> android.widget.Toast.makeText(this, "Received packet: " + packetSize + " bytes", android.widget.Toast.LENGTH_SHORT).show());
+    }
+
+    private void setupBluetoothCapture() {
+        sNetworkPacketsReceived.setValue(0);
+        
+        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter btAdapter = btManager != null ? btManager.getAdapter() : null;
+        
+        if (btAdapter == null) {
+            showToast("Bluetooth not supported on this device");
+            return;
+        }
+
+        if (!btAdapter.isEnabled()) {
+            showToast("Please turn on Bluetooth");
+            return;
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            showToast("Bluetooth permission missing");
+            return;
+        }
+
+        // Start listening in a background thread to prevent ANR
+        new Thread(() -> {
+            Log.i(TAG, "Starting Bluetooth Capture Background Thread. UUID: " + BT_UUID);
+            try {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return;
+                
+                mBtServerSocket = btAdapter.listenUsingRfcommWithServiceRecord("Glyphix Companion", BT_UUID);
+                mCurrentSampleRate = 48000;
+                mAudioProcessor.updateFFTSize(mCurrentSampleRate);
+                mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+                mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+
+                showToast("Waiting for Bluetooth Companion...");
+                mBtSocket = mBtServerSocket.accept(); // Blocking call, now in background thread
+                
+                if (mBtSocket != null) {
+                    showToast("Bluetooth link established!");
+                    Log.i(TAG, "Bluetooth Audio: Connection received from " + mBtSocket.getRemoteDevice().getName());
+
+                    java.io.InputStream inputStream = mBtSocket.getInputStream();
+                    byte[] buffer = new byte[8192];
+                    short[] pcm = new short[4096];
+                    int packetsReceived = 0;
+
+                    while (mCapturing && mBtSocket != null && mBtSocket.isConnected()) {
+                        int read = inputStream.read(buffer);
+                        if (read <= 0) break;
+
+                        packetsReceived++;
+                        sNetworkPacketsReceived.setValue(packetsReceived);
+
+                        int samples = read / 2;
+                        for (int i = 0; i < samples; i++) {
+                            pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
+                        }
+
+                        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(pcm, samples, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
+                        if (result != null) {
+                            PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
+                            synchronized (mVisualizerPendingFrames) {
+                                mVisualizerPendingFrames.addLast(frame);
+                                dispatchDueFrames(mVisualizerPendingFrames);
+                            }
+                        }
+                    }
+                }
+                Log.i(TAG, "Bluetooth capture loop exiting.");
+            } catch (Exception e) {
+                Log.e(TAG, "Bluetooth capture error", e);
+                if (mCapturing) showToast("Bluetooth error: " + e.getMessage());
+            } finally {
+                releaseBluetoothSockets();
+            }
+        }, "BT-Capture-Thread").start();
+    }
+
+    private void releaseBluetoothSockets() {
+        if (mBtSocket != null) { try { mBtSocket.close(); } catch (Exception ignored) {} mBtSocket = null; }
+        if (mBtServerSocket != null) { try { mBtServerSocket.close(); } catch (Exception ignored) {} mBtServerSocket = null; }
+    }
+
+    private void startBleAdvertisement() {
+        stopBleAdvertisement();
+
+        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter adapter = btManager != null ? btManager.getAdapter() : null;
+        
+        if (adapter == null) {
+            showToast("Bluetooth adapter missing");
+            return;
+        }
+
+        if (!adapter.isMultipleAdvertisementSupported()) {
+            showToast("BLE Peripheral mode not supported - Use manual IP/MAC");
+            Log.e(TAG, "BLE Advertising not supported");
+            return;
+        }
+
+        mAdvertiser = adapter.getBluetoothLeAdvertiser();
+        if (mAdvertiser == null) {
+            Log.e(TAG, "Failed to get BLE Advertiser");
+            return;
+        }
+
+        AdvertiseSettings settings = new AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                .setConnectable(true)
+                .setTimeout(0)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                .build();
+
+        AdvertiseData data = new AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .setIncludeTxPowerLevel(true)
+                .addServiceUuid(new ParcelUuid(BLE_SERVICE_UUID))
+                .build();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Missing BLUETOOTH_ADVERTISE permission");
+            return;
+        }
+        
+        mAdvertiser.startAdvertising(settings, data, mAdvertiseCallback);
+        String deviceName = adapter.getName();
+        sBluetoothDeviceName.setValue(deviceName);
+        sBluetoothDeviceAddress.setValue("See in System Settings");
+        showToast("Bluetooth Discovery ON\nDevice: " + deviceName);
+        Log.i(TAG, "BLE Advertisement requested with UUID: " + BLE_SERVICE_UUID);
+    }
+
+    private void stopBleAdvertisement() {
+        if (mAdvertiser != null) {
+            try {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED) {
+                    mAdvertiser.stopAdvertising(mAdvertiseCallback);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping BLE advertisement", e);
+            }
+            mAdvertiser = null;
+        }
+    }
+
+    private void startForegroundSafe(int id, Notification notification, int type) {
+        if (Build.VERSION.SDK_INT >= 34) {
+            try {
+                // On Android 14+, a type is MANDATORY. Fall back to SPECIAL_USE if needed.
+                int effectiveType = (type == 0) ? ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE : type;
+                startForeground(id, notification, effectiveType);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start foreground with type " + type + ", trying SPECIAL_USE fallback", e);
+                try {
+                    startForeground(id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } catch (Exception e2) {
+                    Log.e(TAG, "Critical failure starting FGS", e2);
+                    showToast("Error: Background service restricted by system");
+                    stopSelf();
+                }
+            }
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            if (type != 0) startForeground(id, notification, type);
+            else startForeground(id, notification);
+        } else {
+            startForeground(id, notification);
+        }
     }
 
     private Thread mDiscoveryThread;

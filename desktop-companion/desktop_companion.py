@@ -6,12 +6,15 @@ import argparse
 import sys
 import threading
 import queue
+import asyncio
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 
 # Config
 UDP_PORT = 12347
 DISCOVERY_PORT = 12348
+RFCOMM_UUID = "7d9c63c0-37b1-4122-861f-36655c687e45"
+BLE_SERVICE_UUID = "7d9c63c0-37b1-4122-861f-36655c687e46"
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 TARGET_RATE = 48000
@@ -106,6 +109,154 @@ def discover_phone_cli():
     
     print("\nDiscovery timed out.")
     return None
+
+def discover_phone_bt():
+    """Universal BLE discovery. Returns list of (address, name, is_match)."""
+    try:
+        from bleak import BleakScanner
+    except Exception:
+        return []
+
+    async def scan():
+        devices = []
+        
+        def detection_callback(device, advertisement_data):
+            # Check service UUIDs
+            uuids = [s.lower() for s in advertisement_data.service_uuids]
+            sd_uuids = [s.lower() for s in advertisement_data.service_data.keys()]
+            
+            target = BLE_SERVICE_UUID.lower()
+            is_match = (target in uuids or target in sd_uuids)
+            
+            # Update or add device
+            for i, (addr, name, _) in enumerate(devices):
+                if addr == device.address:
+                    # Update name if it was previously unknown
+                    if name == "Unknown" and device.name:
+                         devices[i] = (device.address, device.name, is_match)
+                    return
+            devices.append((device.address, device.name or "Unknown", is_match))
+
+        scanner = BleakScanner(detection_callback)
+        await scanner.start()
+        # Scan for 15 seconds
+        for _ in range(15):
+            await asyncio.sleep(1.0)
+        await scanner.stop()
+        return devices
+
+    try:
+        # Use a new event loop to avoid issues with running from thread
+        return asyncio.run(scan())
+    except Exception as e:
+        print(f"BLE Scan error: {e}")
+        return []
+    except Exception:
+        return []
+
+def discover_phone_bt_cli():
+    """Universal BLE discovery for CLI."""
+    print(f"Searching for Glyphix app via BLE (Target Service: {BLE_SERVICE_UUID})...")
+    print("TIP: Make sure 'Desktop Companion (BT)' is selected in the app and Bluetooth is ON.")
+    
+    devices = discover_phone_bt()
+    if not devices:
+        print("\nNo devices found. Ensure 'bleak' is installed.")
+        return None
+
+    # Look for a match
+    for addr, name, is_match in devices:
+        if is_match:
+            print(f"\n[MATCH] Found Glyphix at {addr} ({name})")
+            return addr
+    
+    # Show nearby if no match
+    print("\nNo exact Glyphix match found. Nearby devices:")
+    for i, (addr, name, _) in enumerate(devices[:10]):
+        print(f" {i+1}. {addr} ({name})")
+    print("\nTIP: If you see your phone above, use its MAC address with --mac YOUR_MAC")
+    return None
+
+def run_companion_bt_cli(mac):
+    p = pyaudio.PyAudio()
+    try:
+        wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
+        default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
+        if not default_speakers["isLoopbackDevice"]:
+            for loopback in p.get_loopback_device_info_generator():
+                if default_speakers["name"] in loopback["name"]:
+                    default_speakers = loopback
+                    break
+    except Exception as e:
+        print(f"Audio error: {e}")
+        return
+
+    native_rate = int(default_speakers["defaultSampleRate"])
+    channels = int(default_speakers["maxInputChannels"])
+    
+    print(f"\nBluetooth Capturing from: {default_speakers['name']}")
+
+    try:
+        stream = p.open(format=FORMAT, channels=channels, rate=TARGET_RATE,
+                        input=True, input_device_index=default_speakers["index"],
+                        frames_per_buffer=CHUNK)
+        actual_rate = TARGET_RATE
+    except Exception:
+        stream = p.open(format=FORMAT, channels=channels, rate=native_rate,
+                        input=True, input_device_index=default_speakers["index"],
+                        frames_per_buffer=CHUNK)
+        actual_rate = native_rate
+
+    # Connect via RFCOMM with port probing
+    sock = None
+    connected_port = -1
+    for port in range(1, 21):
+        print(f"Connecting to {mac} on port {port}...")
+        try:
+            temp_sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+            temp_sock.settimeout(2.0)
+            temp_sock.connect((mac, port))
+            sock = temp_sock
+            connected_port = port
+            print(f"[SUCCESS] Connected on port {port}!")
+            break
+        except Exception as e:
+            print(f"  Port {port} failed: {e}")
+            continue
+
+    if not sock:
+        print("\n[ERROR] Could not connect to any Bluetooth port. Make sure:")
+        print("1. Your phone is paired with this PC.")
+        print("2. 'Desktop Companion (BT)' is ACTIVE on the phone (waiting for connection).")
+        stream.close()
+        p.terminate()
+        return
+
+    interp_indices = None
+    if actual_rate != TARGET_RATE:
+        interp_indices = np.linspace(0, CHUNK - 1, int(CHUNK * TARGET_RATE / actual_rate))
+
+    try:
+        sock.settimeout(None) # Remove timeout for streaming
+        while True:
+            raw_data = stream.read(CHUNK, exception_on_overflow=False)
+            samples = np.frombuffer(raw_data, dtype=np.int16)
+            if channels > 1:
+                samples = samples.reshape(-1, channels).mean(axis=1).astype(np.int16)
+            
+            if interp_indices is not None:
+                data_to_send = np.interp(interp_indices, np.arange(len(samples)), samples).astype(np.int16).tobytes()
+            else:
+                data_to_send = samples.tobytes()
+                
+            sock.sendall(data_to_send)
+    except Exception as e:
+        print(f"\nStream error: {e}")
+    finally:
+        sock.close()
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
 
 def run_companion_cli(ip):
     p = pyaudio.PyAudio()
@@ -215,6 +366,8 @@ class CompanionGUI:
         self.stop_discovery_event = threading.Event()
         self.stream_thread = None
         self.discovery_thread = None
+        
+        self.conn_type = tk.StringVar(value="UDP") # "UDP" or "BT"
 
         # Message queues for thread safety
         self.log_queue = queue.Queue()
@@ -280,12 +433,28 @@ class CompanionGUI:
         self.device_combo = ttk.Combobox(device_row, state="readonly", width=55, style="TCombobox")
         self.device_combo.pack(side="left", padx=10, fill="x", expand=True)
         
-        # 2. IP Address Row
+        # 1.5 Connection Type Row
+        conn_row = ttk.Frame(card_frame, style="Card.TFrame")
+        conn_row.pack(fill="x", padx=15, pady=5)
+        
+        ttk.Label(conn_row, text="Connection:", style="Muted.TLabel").pack(side="left", padx=5)
+        
+        rb_udp = tk.Radiobutton(conn_row, text="Network (UDP)", variable=self.conn_type, value="UDP",
+                                bg=BG_CARD, fg=FG_TEXT, selectcolor=BG_MAIN, activebackground=BG_CARD,
+                                activeforeground=COLOR_ACCENT, font=("Segoe UI", 9), command=self.update_conn_labels)
+        rb_udp.pack(side="left", padx=10)
+        
+        rb_bt = tk.Radiobutton(conn_row, text="Bluetooth (RFCOMM)", variable=self.conn_type, value="BT",
+                               bg=BG_CARD, fg=FG_TEXT, selectcolor=BG_MAIN, activebackground=BG_CARD,
+                               activeforeground=COLOR_ACCENT, font=("Segoe UI", 9), command=self.update_conn_labels)
+        rb_bt.pack(side="left", padx=10)
+
+        # 2. IP / MAC Address Row
         ip_row = ttk.Frame(card_frame, style="Card.TFrame")
         ip_row.pack(fill="x", padx=15, pady=10)
         
-        lbl_ip = ttk.Label(ip_row, text="Phone IP Address:", style="Muted.TLabel")
-        lbl_ip.pack(side="left", padx=5)
+        self.lbl_addr = ttk.Label(ip_row, text="Phone IP Address:", style="Muted.TLabel")
+        self.lbl_addr.pack(side="left", padx=5)
         
         self.ip_entry = tk.Entry(ip_row, bg=BG_ENTRY, fg=FG_TEXT, insertbackground=FG_TEXT, 
                                  relief="flat", font=("Segoe UI", 11), width=18)
@@ -374,6 +543,14 @@ class CompanionGUI:
         if vals:
             self.device_combo.current(default_index)
 
+    def update_conn_labels(self):
+        if self.conn_type.get() == "BT":
+            self.lbl_addr.configure(text="Phone MAC Address:")
+            self.discover_btn.configure(state="normal") # BT discovery might work
+        else:
+            self.lbl_addr.configure(text="Phone IP Address:")
+            self.discover_btn.configure(state="normal")
+
     def toggle_discovery(self):
         if self.is_discovering:
             self.stop_discovery_event.set()
@@ -388,6 +565,12 @@ class CompanionGUI:
             self.discovery_thread.start()
 
     def discovery_worker(self):
+        if self.conn_type.get() == "BT":
+            self.log(f"Scanning for BLE devices (Service: {BLE_SERVICE_UUID})...")
+            devices = discover_phone_bt()
+            self.root.after(0, self.on_discovery_complete, devices)
+            return
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.settimeout(0.5)
@@ -420,30 +603,99 @@ class CompanionGUI:
         # Notify the UI thread
         self.root.after(0, self.on_discovery_complete, found_ip)
 
-    def on_discovery_complete(self, ip):
+    def on_discovery_complete(self, result):
         self.is_discovering = False
         self.discover_btn.configure(text="Auto-Discover")
         
-        if ip:
-            self.ip_entry.delete(0, tk.END)
-            self.ip_entry.insert(0, ip)
-            self.log(f"Discovery Success: Found Glyphix app at {ip}")
-            self.status_badge.configure(text="FOUND DEVICE", foreground=COLOR_SUCCESS)
-        else:
-            if self.stop_discovery_event.is_set():
-                self.log("Discovery cancelled by user.")
+        if self.conn_type.get() == "BT":
+            devices = result # result is a list of (addr, name, is_match)
+            if not devices:
+                self.log("No Bluetooth devices found. Ensure 'bleak' is installed and BT is ON.")
+                self.status_badge.configure(text="IDLE", foreground=FG_MUTED)
+                return
+
+            # Filter matches
+            matches = [d for d in devices if d[2]]
+            if len(matches) == 1:
+                addr, name, _ = matches[0]
+                self.ip_entry.delete(0, tk.END)
+                self.ip_entry.insert(0, addr)
+                self.log(f"Discovery Success: Found Glyphix at {addr} ({name})")
+                self.status_badge.configure(text="FOUND DEVICE", foreground=COLOR_SUCCESS)
             else:
-                self.log("Discovery timed out. Please enter target IP address manually.")
-            self.status_badge.configure(text="IDLE", foreground=FG_MUTED)
+                # Show selection popup for multiple matches or nearby devices
+                self.show_device_selection(devices)
+        else:
+            ip = result # result is a string
+            if ip:
+                self.ip_entry.delete(0, tk.END)
+                self.ip_entry.insert(0, ip)
+                self.log(f"Discovery Success: Found Glyphix app at {ip}")
+                self.status_badge.configure(text="FOUND DEVICE", foreground=COLOR_SUCCESS)
+            else:
+                if self.stop_discovery_event.is_set():
+                    self.log("Discovery cancelled by user.")
+                else:
+                    self.log("Discovery timed out. Please enter target IP address manually.")
+                self.status_badge.configure(text="IDLE", foreground=FG_MUTED)
+
+    def show_device_selection(self, devices):
+        popup = tk.Toplevel(self.root)
+        popup.title("Select Bluetooth Device")
+        popup.geometry("400x450")
+        popup.configure(bg=BG_CARD)
+        popup.transient(self.root)
+        popup.grab_set()
+
+        ttk.Label(popup, text="Select your phone from the list:", style="Muted.TLabel", background=BG_CARD).pack(pady=15)
+
+        list_frame = ttk.Frame(popup, style="Card.TFrame")
+        list_frame.pack(fill="both", expand=True, padx=20, pady=5)
+
+        scrollbar = ttk.Scrollbar(list_frame)
+        scrollbar.pack(side="right", fill="y")
+
+        lb = tk.Listbox(list_frame, bg=BG_ENTRY, fg=FG_TEXT, selectbackground=COLOR_ACCENT, 
+                        relief="flat", borderwidth=0, font=("Segoe UI", 10), yscrollcommand=scrollbar.set)
+        
+        # Prioritize matches
+        matches = [d for d in devices if d[2]]
+        others = [d for d in devices if not d[2]]
+        
+        for addr, name, _ in matches:
+            lb.insert(tk.END, f"⭐ {name} ({addr})")
+        for addr, name, _ in others:
+            lb.insert(tk.END, f"  {name} ({addr})")
+            
+        lb.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=lb.yview)
+
+        def on_select():
+            selection = lb.curselection()
+            if selection:
+                idx = selection[0]
+                # Map listbox index back to device list
+                all_sorted = matches + others
+                selected_addr = all_sorted[idx][0]
+                self.ip_entry.delete(0, tk.END)
+                self.ip_entry.insert(0, selected_addr)
+                self.log(f"Selected device: {selected_addr}")
+                self.status_badge.configure(text="FOUND DEVICE", foreground=COLOR_SUCCESS)
+                popup.destroy()
+
+        btn_select = tk.Button(popup, text="Select Device", font=("Segoe UI Bold", 10),
+                               bg=COLOR_ACCENT, fg=BG_MAIN, relief="flat", command=on_select)
+        btn_select.pack(fill="x", padx=30, pady=20)
 
     def toggle_streaming(self):
         if self.is_streaming:
             self.log("Stopping stream...")
             self.stop_stream_event.set()
         else:
-            ip = self.ip_entry.get().strip()
-            if not ip:
-                messagebox.showerror("Error", "Please discover or enter the Phone IP Address.")
+            addr = self.ip_entry.get().strip()
+            if not addr:
+                msg = "Phone MAC Address" if self.conn_type.get() == "BT" else "Phone IP Address"
+                messagebox.showerror("Error", f"Please discover or enter the {msg}.")
                 return
 
             device_idx = self.device_combo.current()
@@ -461,12 +713,12 @@ class CompanionGUI:
             # Start streaming worker
             self.stream_thread = threading.Thread(
                 target=self.stream_worker, 
-                args=(ip, selected_device), 
+                args=(addr, selected_device), 
                 daemon=True
             )
             self.stream_thread.start()
 
-    def stream_worker(self, ip, device):
+    def stream_worker(self, addr, device):
         self.log(f"Opening Stream: {device['name']}")
         p = pyaudio.PyAudio()
         
@@ -499,11 +751,39 @@ class CompanionGUI:
 
         self.log(f"Audio open: {actual_rate}Hz, {channels} channels.")
         
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
-        except:
-            pass
+        # Connection Setup
+        conn_type = self.conn_type.get()
+        if conn_type == "BT":
+            self.log(f"Connecting to Bluetooth: {addr}")
+            sock = None
+            for port in range(1, 21):
+                self.log(f"Probing Bluetooth Port {port}...")
+                try:
+                    temp_sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
+                    temp_sock.settimeout(2.0)
+                    temp_sock.connect((addr, port))
+                    sock = temp_sock
+                    self.log(f"Connected on Port {port}!")
+                    break
+                except Exception as e:
+                    self.log(f"Port {port} failed: {e}")
+                    continue
+            
+            if not sock:
+                self.log("[Error] Bluetooth Connection Failed on all ports.")
+                self.root.after(0, self.on_stream_stopped, "BT Connection Failed. Pair device and try again.")
+                stream.close()
+                p.terminate()
+                return
+            
+            sock.settimeout(None)
+        else:
+            self.log(f"Streaming to UDP: {addr}")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            try:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
+            except:
+                pass
 
         interp_indices = None
         if actual_rate != TARGET_RATE:
@@ -559,8 +839,11 @@ class CompanionGUI:
                     data_to_send = resampled_samples.tobytes()
                 else:
                     data_to_send = samples.tobytes()
-                    
-                sock.sendto(data_to_send, (ip, UDP_PORT))
+                
+                if conn_type == "BT":
+                    sock.sendall(data_to_send)
+                else:
+                    sock.sendto(data_to_send, (addr, UDP_PORT))
                 packet_count += 1
                 
         except Exception as e:
@@ -614,22 +897,36 @@ class CompanionGUI:
 def main():
     parser = argparse.ArgumentParser(description="Glyphix Desktop Companion")
     parser.add_argument("--ip", help="Force a specific IP address (CLI mode)")
+    parser.add_argument("--mac", help="Force a specific Bluetooth MAC address (CLI mode)")
+    parser.add_argument("--bt", action="store_true", help="Use Bluetooth instead of UDP")
     parser.add_argument("--cli", action="store_true", help="Launch in CLI mode")
     args = parser.parse_args()
 
     # Determine if CLI mode is requested or needed
-    if args.cli or args.ip:
-        print("Glyphix Desktop Companion v1.2 (CLI)")
-        target_ip = args.ip
-        if not target_ip:
-            target_ip = discover_phone_cli()
-        
-        if target_ip:
-            run_companion_cli(target_ip)
+    if args.cli or args.ip or args.mac or args.bt:
+        print("Glyphix Desktop Companion v1.3 (CLI)")
+        if args.bt or args.mac:
+            target_mac = args.mac
+            if not target_mac:
+                target_mac = discover_phone_bt_cli()
+            
+            if target_mac:
+                run_companion_bt_cli(target_mac)
+            else:
+                print("\nCould not find your phone via Bluetooth.")
+                print("Try running with --mac YOUR_MAC")
+                sys.exit(1)
         else:
-            print("\nCould not find your phone automatically.")
-            print("Try running with --ip YOUR_IP")
-            sys.exit(1)
+            target_ip = args.ip
+            if not target_ip:
+                target_ip = discover_phone_cli()
+            
+            if target_ip:
+                run_companion_cli(target_ip)
+            else:
+                print("\nCould not find your phone automatically.")
+                print("Try running with --ip YOUR_IP")
+                sys.exit(1)
     else:
         # GUI mode is default
         try:
