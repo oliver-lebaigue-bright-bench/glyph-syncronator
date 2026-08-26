@@ -201,6 +201,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showProfileSetup() { _isShowingProfileSetup.value = true }
     fun hideProfileSetup() { _isShowingProfileSetup.value = false }
 
+    private val _isShowingProfile = MutableStateFlow(false)
+    val isShowingProfile = _isShowingProfile.asStateFlow()
+    fun showProfile() { _isShowingProfile.value = true }
+    fun hideProfile() { _isShowingProfile.value = false }
+
+    fun updateDisplayName(name: String) {
+        val current = _userProfile.value
+        val updated = current?.copy(displayName = name) ?: UserProfile(
+            userId = userId.value ?: "anon",
+            displayName = name,
+            createdAt = System.currentTimeMillis()
+        )
+        _userProfile.value = updated
+        _userNickname.value = name
+        viewModelScope.launch(Dispatchers.IO) {
+            userRepository.saveUserProfile(updated)
+        }
+    }
+
+    fun updateProfile(name: String) = updateDisplayName(name)
+
+    private val _isHamburgerMenuOpen = MutableStateFlow(false)
+    val isHamburgerMenuOpen = _isHamburgerMenuOpen.asStateFlow()
+    fun setHamburgerMenuOpen(open: Boolean) { _isHamburgerMenuOpen.value = open }
+    fun toggleHamburgerMenu() { _isHamburgerMenuOpen.value = !_isHamburgerMenuOpen.value }
+
+    private val _isFabMenuExpanded = MutableStateFlow(false)
+    val isFabMenuExpanded = _isFabMenuExpanded.asStateFlow()
+    fun setFabMenuExpanded(expanded: Boolean) { _isFabMenuExpanded.value = expanded }
+    fun toggleFabMenu() { _isFabMenuExpanded.value = !_isFabMenuExpanded.value }
+
 
     private val _flashlightMultiIntensityForced = MutableStateFlow(false)
     val flashlightMultiIntensityForced = _flashlightMultiIntensityForced.asStateFlow()
@@ -253,16 +284,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
                 .edit { putBoolean("penis_mode_enabled", enabled) }
-        }
-    }
-
-    private val _spatialNavEnabled = MutableStateFlow(true)
-    val spatialNavEnabled = _spatialNavEnabled.asStateFlow()
-    fun setSpatialNavEnabled(enabled: Boolean) {
-        _spatialNavEnabled.value = enabled
-        viewModelScope.launch(Dispatchers.IO) {
-            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
-                .edit { putBoolean("spatial_nav_enabled", enabled) }
         }
     }
 
@@ -1230,7 +1251,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
         _penisModeEnabled.value = prefs.getBoolean("penis_mode_enabled", false)
-        _spatialNavEnabled.value = prefs.getBoolean("spatial_nav_enabled", true)
 
         _totalVisualizedTime.value = prefs.getLong("total_visualized_time", 0L)
         _totalIdleTime.value = prefs.getLong("total_idle_time", 0L)

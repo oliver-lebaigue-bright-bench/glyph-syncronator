@@ -9,23 +9,42 @@ import com.glyphix.app.model.UserProfile
 import com.glyphix.app.ui.SecondaryScreens.AboutScreen
 import com.glyphix.app.ui.SecondaryScreens.CustomPresetEditorScreen
 import com.glyphix.app.ui.SecondaryScreens.LicenseScreen
+import com.glyphix.app.ui.SecondaryScreens.ProfileScreen
 import com.glyphix.app.ui.SecondaryScreens.StatsScreen
 
 @Composable
 internal fun MainOverlays(
     viewModel: MainViewModel,
-    selectedDevice: Int
+    selectedDevice: Int,
+    onGoogleSignIn: () -> Unit = {}
 ) {
     val isShowingEditor by viewModel.isShowingEditor.collectAsStateWithLifecycle()
     val isShowingAbout by viewModel.isShowingAbout.collectAsStateWithLifecycle()
     val isShowingLicense by viewModel.isShowingLicense.collectAsStateWithLifecycle()
     val isShowingStats by viewModel.isShowingStats.collectAsStateWithLifecycle()
+    val isShowingProfile by viewModel.isShowingProfile.collectAsStateWithLifecycle()
     val isShowingProfileSetup by viewModel.isShowingProfileSetup.collectAsStateWithLifecycle()
 
     val expansionSpec = spring<Float>(
         dampingRatio = Spring.DampingRatioLowBouncy,
         stiffness = Spring.StiffnessLow
     )
+
+    AnimatedVisibility(
+        visible = isShowingProfile,
+        enter = scaleIn(animationSpec = expansionSpec, initialScale = 0.85f) + fadeIn(),
+        exit = scaleOut(animationSpec = expansionSpec, targetScale = 0.85f) + fadeOut()
+    ) {
+        ProfileScreen(
+            viewModel = viewModel,
+            onDismiss = { viewModel.hideProfile() },
+            onOpenLeaderboard = {
+                viewModel.hideProfile()
+                viewModel.showLeaderboard()
+            },
+            onGoogleSignIn = onGoogleSignIn
+        )
+    }
 
     AnimatedVisibility(
         visible = isShowingEditor,
@@ -66,7 +85,14 @@ internal fun MainOverlays(
         enter = scaleIn(animationSpec = expansionSpec, initialScale = 0.8f) + fadeIn(),
         exit = scaleOut(animationSpec = expansionSpec, targetScale = 0.8f) + fadeOut()
     ) {
-        StatsScreen(viewModel = viewModel, onDismiss = { viewModel.hideStats() })
+        StatsScreen(
+            viewModel = viewModel,
+            onDismiss = { viewModel.hideStats() },
+            onOpenProfile = {
+                viewModel.hideStats()
+                viewModel.showProfile()
+            }
+        )
     }
 
     if (isShowingProfileSetup) {

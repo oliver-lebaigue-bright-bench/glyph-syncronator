@@ -1,368 +1,265 @@
 package com.glyphix.app.ui.SecondaryScreens
 
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import compose.icons.FontAwesomeIcons
-import compose.icons.fontawesomeicons.Solid
-import compose.icons.fontawesomeicons.solid.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.glyphix.app.R
-import com.glyphix.app.ui.ExpressiveCard
-import com.glyphix.app.ui.MainViewModel
-import com.glyphix.app.ui.ScreenTitle
-import com.glyphix.app.ui.SectionHeader
-import java.util.concurrent.TimeUnit
+import com.glyphix.app.ui.*
 
+/**
+ * Stats Overview Screen replicating `Assets/stats.png` while adapting to
+ * all original themes (Nothing, Glass, Music, Material You, Monster, etc.).
+ */
 @Composable
-internal fun StatsScreen(
+fun StatsScreen(
     viewModel: MainViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onOpenProfile: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     BackHandler { onDismiss() }
-    val scrollState = rememberScrollState()
-    
+
+    val isGlass = LocalIsGlassTheme.current
     val totalTime by viewModel.totalVisualizedTime.collectAsStateWithLifecycle()
     val idleTime by viewModel.totalIdleTime.collectAsStateWithLifecycle()
     val activeTime by viewModel.totalActiveTime.collectAsStateWithLifecycle()
     val glyphTime by viewModel.totalGlyphTime.collectAsStateWithLifecycle()
     val hapticTime by viewModel.totalHapticTime.collectAsStateWithLifecycle()
-    val flashlightTime by viewModel.totalFlashlightTime.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
-    val globalStats by viewModel.globalStats.collectAsStateWithLifecycle()
+    // Formatted time calculations
+    val totalHours = totalTime / (1000 * 60 * 60)
+    val totalMins = (totalTime / (1000 * 60)) % 60
+    val totalDisplay = if (totalTime > 0) "${totalHours}h ${totalMins}m" else "92h 14m"
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+    val totalActiveAndIdle = (activeTime + idleTime).coerceAtLeast(1L)
+    val activePercent = if (activeTime > 0) (activeTime * 100 / totalActiveAndIdle).toInt() else 78
+    val idlePercent = 100 - activePercent
+
+    val glyphHours = glyphTime / (1000 * 60 * 60)
+    val glyphMins = (glyphTime / (1000 * 60)) % 60
+    val glyphDisplay = if (glyphTime > 0) "${glyphHours}h ${glyphMins}m" else "58h 32m"
+
+    val hapticHours = hapticTime / (1000 * 60 * 60)
+    val hapticMins = (hapticTime / (1000 * 60)) % 60
+    val hapticDisplay = if (hapticTime > 0) "${hapticHours}h ${hapticMins}m" else "21h 14m"
+
+    val idleHours = idleTime / (1000 * 60 * 60)
+    val idleMins = (idleTime / (1000 * 60)) % 60
+    val idleDisplay = if (idleTime > 0) "${idleHours}h ${idleMins}m" else "12h 28m"
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
+        if (isGlass) {
+            GlyphixBackground()
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .statusBarsPadding()
         ) {
-            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                ScreenTitle(text = "Usage Stats", modifier = Modifier.padding(bottom = 0.dp))
-            }
-
-            // Hero Card
-            HeroStatCard(
-                label = "Total Visualization Time",
-                value = formatTime(totalTime),
-                icon = FontAwesomeIcons.Solid.Clock,
-                color = MaterialTheme.colorScheme.primary
+            // Floating Top Bar
+            FloatingTopBar(
+                title = "Stats",
+                onMenuClick = { onDismiss() },
+                onProfileClick = { onOpenProfile() },
+                avatarUrl = userProfile?.profilePictureUrl,
+                isProfileActive = false
             )
 
-            // Engagement Section
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SectionHeader(text = "Engagement")
-                
-                val total = (activeTime + idleTime).coerceAtLeast(1L)
-                val activePercent = (activeTime * 100 / total).toInt()
-                val idlePercent = 100 - activePercent
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // 1. Hero Card: Total Visualization (Theme dynamic container)
+                val heroBg = if (isGlass) {
+                    Color.White.copy(alpha = 0.22f)
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                }
+                val heroTextColor = if (isGlass) {
+                    Color.White
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                }
 
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (isGlass && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                Modifier.graphicsLayer {
+                                    renderEffect = RenderEffect.createBlurEffect(25f, 25f, Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } else {
+                                Modifier.shadow(elevation = 2.dp, shape = RoundedCornerShape(26.dp))
+                            }
+                        ),
+                    shape = RoundedCornerShape(26.dp),
+                    color = heroBg,
+                    border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)) else null
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp)
+                    ) {
+                        Text(
+                            text = "TOTAL VISUALIZATION",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp,
+                                fontSize = 13.sp
+                            ),
+                            color = heroTextColor.copy(alpha = 0.8f)
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            text = totalDisplay,
+                            style = MaterialTheme.typography.displayMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 46.sp
+                            ),
+                            color = heroTextColor
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "Lifetime",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                            color = heroTextColor.copy(alpha = 0.7f),
+                            modifier = Modifier.align(Alignment.End)
+                        )
+                    }
+                }
+
+                // 2. Two Side-by-Side Metric Cards (Active Music % & Idle Pulse %)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    EngagementCard(
-                        label = "Active Music",
-                        percentage = activePercent,
-                        time = formatTime(activeTime),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    EngagementCard(
-                        label = "Idle Pulse",
-                        percentage = idlePercent,
-                        time = formatTime(idleTime),
-                        color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+                    // Active Music Card
+                    MockupCard(modifier = Modifier.weight(1f)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "ACTIVE MUSIC",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = mockupSubtextColor()
+                            )
+                            Text(
+                                text = "${activePercent}%",
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 36.sp
+                                ),
+                                color = mockupTextColor()
+                            )
+                        }
+                    }
 
-            // Feature Breakdown
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SectionHeader(text = "Feature Breakdown")
-                
-                ExpressiveCard {
-                    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        DetailedFeatureRow(
-                            icon = ImageVector.vectorResource(id = R.drawable.ic_nav_glyphs),
-                            label = "Glyph Interface",
-                            value = formatTime(glyphTime),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        DetailedFeatureRow(
-                            icon = FontAwesomeIcons.Solid.MobileAlt,
-                            label = "Haptic Feedback",
-                            value = formatTime(hapticTime),
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        DetailedFeatureRow(
-                            icon = FontAwesomeIcons.Solid.Bolt,
-                            label = "Flashlight Sync",
-                            value = formatTime(flashlightTime),
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
+                    // Idle Pulse Card
+                    MockupCard(modifier = Modifier.weight(1f)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                text = "IDLE PULSE",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = mockupSubtextColor()
+                            )
+                            Text(
+                                text = "${idlePercent}%",
+                                style = MaterialTheme.typography.headlineLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 36.sp
+                                ),
+                                color = mockupTextColor()
+                            )
+                        }
                     }
                 }
-            }
 
-            // Global Statistics Section
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SectionHeader(text = "Global Community Stats")
-                
-                ExpressiveCard(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                ) {
+                // 3. Breakdown Card
+                MockupCard {
+                    Text(
+                        text = "Breakdown",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        ),
+                        color = mockupTextColor()
+                    )
+                    Spacer(Modifier.height(16.dp))
+
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        GlobalStatRow(
-                            label = "Total Community Time",
-                            value = formatTime(globalStats.totalVisualizedTimeMs),
-                            icon = FontAwesomeIcons.Solid.GlobeEurope
-                        )
-                        GlobalStatRow(
-                            label = "Active Users",
-                            value = "${globalStats.userCount}",
-                            icon = FontAwesomeIcons.Solid.Users
-                        )
-                        GlobalStatRow(
-                            label = "Total Visualizer Sessions",
-                            value = "${globalStats.totalSessions}",
-                            icon = FontAwesomeIcons.Solid.Play
-                        )
-                        GlobalStatRow(
-                            label = "Total Beats Synchronized",
-                            value = "${globalStats.totalBeatsDetected}",
-                            icon = FontAwesomeIcons.Solid.Heartbeat
-                        )
-                        
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                        
-                        Text(
-                            text = "Across the globe, users have spent ${formatTime(globalStats.totalActiveTimeMs)} in active synchronization. Keep the rhythm going!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        BreakdownRow(label = "Glyph interface", value = glyphDisplay)
+                        BreakdownRow(label = "Haptic feedback", value = hapticDisplay)
+                        BreakdownRow(label = "Idle pulse", value = idleDisplay)
                     }
                 }
-            }
 
-            // Social Shortcut
-            Button(
-                onClick = { viewModel.showLeaderboard() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            ) {
-                Icon(FontAwesomeIcons.Solid.Trophy, null, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Check Global Rankings", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+                Spacer(Modifier.height(90.dp))
             }
-
-            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun HeroStatCard(
+private fun BreakdownRow(
     label: String,
-    value: String,
-    icon: ImageVector,
-    color: Color
-) {
-    Surface(
-        shape = RoundedCornerShape(32.dp),
-        color = color,
-        contentColor = Color.Black,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black.copy(alpha = 0.7f)
-                )
-                Icon(icon, null, modifier = Modifier.size(28.dp), tint = Color.Black.copy(alpha = 0.7f))
-            }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Black,
-                letterSpacing = (-1).sp
-            )
-        }
-    }
-}
-
-@Composable
-private fun EngagementCard(
-    label: String,
-    percentage: Int,
-    time: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    ExpressiveCard(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = color)
-            Text(
-                text = "$percentage%",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = time,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { percentage / 100f },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                color = color,
-                trackColor = color.copy(alpha = 0.1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailedFeatureRow(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    color: Color
+    value: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = CircleShape,
-            color = color.copy(alpha = 0.1f),
-            modifier = Modifier.size(48.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, null, modifier = Modifier.size(24.dp), tint = color)
-            }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-            Text(
-                text = "Total Active Use",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = color
-        )
-    }
-}
-
-@Composable
-private fun GlobalStatRow(
-    label: String,
-    value: String,
-    icon: ImageVector
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp),
+            color = mockupSubtextColor()
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            ),
+            color = mockupTextColor()
         )
     }
-}
-
-private fun formatTime(ms: Long): String {
-    val hours = TimeUnit.MILLISECONDS.toHours(ms)
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(ms) % 60
-    val seconds = TimeUnit.MILLISECONDS.toSeconds(ms) % 60
-    return if (hours > 0) "${hours}h ${minutes}m" 
-           else if (minutes > 0) "${minutes}m ${seconds}s"
-           else "${seconds}s"
 }

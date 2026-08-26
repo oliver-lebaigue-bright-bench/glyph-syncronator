@@ -118,19 +118,10 @@ internal fun GlyphsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = LocalAppSpacing.current.edge)
-            .verticalScroll(mainScrollState),
+            .verticalScroll(mainScrollState)
+            .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-        ScreenTitle(
-            text = stringResource(
-                R.string.glyph_controls
-            )
-        )
-
         // Header with external toggle for glyph visualization
         val hapticsLocal = androidx.compose.ui.platform.LocalHapticFeedback.current
         val DEFAULT_BR = 4095
@@ -450,7 +441,7 @@ internal fun GlyphsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(85.dp))
+        Spacer(modifier = Modifier.height(110.dp))
     }
 }
 
