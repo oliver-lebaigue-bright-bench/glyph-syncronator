@@ -117,6 +117,7 @@ fun AudioScreen(
     fftData: FloatArray = floatArrayOf(),
     captureSource: AudioCaptureService.CaptureSource = AudioCaptureService.CaptureSource.INTERNAL,
     onCaptureSourceChanged: (AudioCaptureService.CaptureSource) -> Unit = {},
+    networkPacketsReceived: Int = 0,
     latencyWizardState: LatencyWizard.State = LatencyWizard.State.Idle,
     onRunLatencyWizard: () -> Unit = {},
     onResetLatencyWizard: () -> Unit = {},
@@ -203,6 +204,7 @@ fun AudioScreen(
 
         CaptureSourceCard(
             selectedSource = captureSource,
+            networkPacketsReceived = networkPacketsReceived,
             onSourceSelected = { source ->
                 if (source == AudioCaptureService.CaptureSource.MIC || source == AudioCaptureService.CaptureSource.VIZUALIZER) {
                     val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
@@ -301,6 +303,7 @@ fun AudioScreen(
 @OptIn(ExperimentalLayoutApi::class)
 fun CaptureSourceCard(
     selectedSource: AudioCaptureService.CaptureSource,
+    networkPacketsReceived: Int = 0,
     onSourceSelected: (AudioCaptureService.CaptureSource) -> Unit
 ) {
     ExpressiveCard(modifier = Modifier.fillMaxWidth()) {
@@ -320,6 +323,11 @@ fun CaptureSourceCard(
                 AudioCaptureService.CaptureSource.VIZUALIZER,
                 stringResource(R.string.capture_vizualizer),
                 FontAwesomeIcons.Brands.Android
+            ),
+            Triple(
+                AudioCaptureService.CaptureSource.NETWORK,
+                "Desktop Companion (UDP)",
+                FontAwesomeIcons.Solid.NetworkWired
             )
         )
 
@@ -345,18 +353,46 @@ fun CaptureSourceCard(
                     maxLines = 2
                 )
             }
-            
-            // Placeholder button
-            OptionTile(
-                label = "Coming Soon...",
-                icon = FontAwesomeIcons.Solid.Plus,
-                isSelected = false,
-                enabled = false,
-                onClick = { },
-                modifier = Modifier.height(64.dp),
-                maxLines = 2
-            )
         }
+        
+        if (selectedSource == AudioCaptureService.CaptureSource.NETWORK) {
+            val ip = AudioCaptureService.sInstance?.getLocalIpAddress() ?: "Unknown"
+            Spacer(modifier = Modifier.height(12.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Ready to receive audio!",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Send 16-bit PCM (44.1kHz, Mono) to:",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "$ip:12347",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                if (networkPacketsReceived > 0) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Packets Received: $networkPacketsReceived",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
+
         if (selectedSource == AudioCaptureService.CaptureSource.VIZUALIZER) {
             Spacer(modifier = Modifier.height(12.dp))
             Text(

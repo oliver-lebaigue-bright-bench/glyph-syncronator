@@ -97,7 +97,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, NETWORK }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";
@@ -130,9 +130,14 @@ public class AudioCaptureService extends Service {
 
     private static volatile boolean sIsRunning = false;
     private static final MutableStateFlow<Boolean> sIsRunningFlow = StateFlowKt.MutableStateFlow(false);
+    private static final MutableStateFlow<Integer> sNetworkPacketsReceived = StateFlowKt.MutableStateFlow(0);
     
     public StateFlow<Boolean> isRunningFlow() {
         return sIsRunningFlow;
+    }
+
+    public StateFlow<Integer> networkPacketsReceivedFlow() {
+        return sNetworkPacketsReceived;
     }
 
     private void setRunning(boolean running) {
@@ -145,6 +150,10 @@ public class AudioCaptureService extends Service {
             mMainHandler.post(mIdlePulseRunnable);
         }
     }
+    public CaptureSource getCaptureSource() {
+        return mCaptureSource;
+    }
+
     public static AudioCaptureService sInstance = null;
 
     private GlobalStatsRepository mGlobalStatsRepository;
@@ -445,7 +454,7 @@ public class AudioCaptureService extends Service {
                 }
 
                 if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
-                if (mCaptureSource == CaptureSource.VIZUALIZER) {
+                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
                     // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
                     // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
@@ -620,6 +629,7 @@ public class AudioCaptureService extends Service {
     public void startVisualizer() {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+        else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -632,6 +642,7 @@ public class AudioCaptureService extends Service {
             stopCapture();
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+            else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
         });
     }
 
@@ -941,6 +952,8 @@ public class AudioCaptureService extends Service {
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
 
+    public void startNetworkCapture() { startCaptureInternal(CaptureSource.NETWORK, 0, null); }
+
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
@@ -991,6 +1004,7 @@ public class AudioCaptureService extends Service {
                             Log.e(TAG, "MediaProjection is null or SDK < Q for internal capture");
                         }
                     } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
+                    else if (source == CaptureSource.NETWORK) { setupNetworkCapture(); return; }
                     else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                         localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
                     }
@@ -1030,7 +1044,7 @@ public class AudioCaptureService extends Service {
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
-    private void releaseAudioRecord() { if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; } }
+    private void releaseAudioRecord() { if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; } if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; } stopDiscoveryResponder(); }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
     private void ensureCaptureExecutor() { if (mCaptureExecutor == null || mCaptureExecutor.isShutdown()) mCaptureExecutor = Executors.newSingleThreadExecutor(); }
@@ -1097,7 +1111,7 @@ public class AudioCaptureService extends Service {
                 clearGlyphSession();
             }
             
-            if (now - mLastSendMs < MIN_SEND_INTERVAL_MS) return;
+            if (now - mLastSendMs < (mCaptureSource == CaptureSource.NETWORK ? 8L : MIN_SEND_INTERVAL_MS)) return;
 
             // Reuse boosted buffer
             if (uniqueMagnitudes != null) {
@@ -1195,6 +1209,154 @@ public class AudioCaptureService extends Service {
             }, Visualizer.getMaxCaptureRate(), true, false);
             mVisualizer.setEnabled(true);
         } catch (Exception e) { Log.e(TAG, "Failed to start Visualizer capture", e); releaseVisualizer(); }
+    }
+
+    private java.net.DatagramSocket mNetworkSocket;
+    private static final int UDP_PORT = 12347;
+    private static final int DISCOVERY_PORT = 12348;
+
+    public String getLocalIpAddress() {
+        try {
+            ArrayList<String> addresses = new ArrayList<>();
+            for (java.util.Enumeration<java.net.NetworkInterface> en = java.net.NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                java.net.NetworkInterface intf = en.nextElement();
+                for (java.util.Enumeration<java.net.InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    java.net.InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof java.net.Inet4Address) {
+                        String ip = inetAddress.getHostAddress();
+                        if (ip != null) addresses.add(ip);
+                    }
+                }
+            }
+            
+            // Prioritize standard home network ranges
+            for (String addr : addresses) {
+                if (addr.startsWith("192.168.") || addr.startsWith("10.0.") || addr.startsWith("172.")) {
+                    return addr;
+                }
+            }
+            
+            if (!addresses.isEmpty()) return addresses.get(0);
+        } catch (Exception ex) {
+            Log.e(TAG, "IP Address error", ex);
+        }
+        return "Unknown";
+    }
+
+    private void setupNetworkCapture() {
+        if (mNetworkSocket != null) { mNetworkSocket.close(); mNetworkSocket = null; }
+        sNetworkPacketsReceived.setValue(0);
+        showToast("Network Thread Started");
+        Log.i(TAG, "Starting Network Capture. Local IP displayed: " + getLocalIpAddress());
+        try {
+            mNetworkSocket = new java.net.DatagramSocket(UDP_PORT);
+            mNetworkSocket.setReceiveBufferSize(128 * 1024);
+            Log.i(TAG, "Network socket opened on port " + UDP_PORT);
+            mCurrentSampleRate = 44100;
+            mAudioProcessor.updateFFTSize(mCurrentSampleRate);
+            mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+            mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+            
+            byte[] buffer = new byte[4096];
+            short[] pcm = new short[2048];
+            int packetsReceived = 0;
+            Log.i(TAG, "Network capture loop started. Listening for UDP packets on port " + UDP_PORT);
+            
+            startDiscoveryResponder();
+
+            while (mCapturing && mNetworkSocket != null) {
+                try {
+                    java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                    mNetworkSocket.receive(packet);
+                    packetsReceived++;
+                    sNetworkPacketsReceived.setValue(packetsReceived);
+                    
+                    int len = packet.getLength();
+                    if (packetsReceived == 1) {
+                        showToast("Audio link established!");
+                        Log.i(TAG, "Network Audio: First packet received from " + packet.getAddress().getHostAddress());
+                    }
+                    if (packetsReceived <= 5 || packetsReceived % 100 == 0) {
+                        Log.d(TAG, "Network Audio: Received packet #" + packetsReceived + ", size: " + len + " bytes");
+                    }
+                    
+                    int samples = len / 2;
+                    for (int i = 0; i < samples; i++) {
+                        pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
+                    }
+                    
+                    AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(java.util.Arrays.copyOf(pcm, samples), mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
+                    if (result != null) {
+                        PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
+                        synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
+                    }
+                } catch (Exception e) {
+                    if (mCapturing && mNetworkSocket != null && !mNetworkSocket.isClosed()) {
+                        Log.e(TAG, "Network capture loop error", e);
+                        Thread.sleep(10); // Prevent tight error loop
+                    } else {
+                        break; // Socket closed or capturing stopped
+                    }
+                }
+            }
+            Log.i(TAG, "Network capture loop exiting. Total packets received: " + packetsReceived);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to setup network capture", e);
+            showToast("Failed to open network port: " + e.getMessage());
+        }
+    }
+
+    private void showNetworkDebugToast(int packetSize) {
+         mMainHandler.post(() -> android.widget.Toast.makeText(this, "Received packet: " + packetSize + " bytes", android.widget.Toast.LENGTH_SHORT).show());
+    }
+
+    private Thread mDiscoveryThread;
+    private void startDiscoveryResponder() {
+        stopDiscoveryResponder();
+        mDiscoveryThread = new Thread(() -> {
+            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes();
+            Log.d(TAG, "Discovery responder started on port " + DISCOVERY_PORT);
+            
+            try (java.net.DatagramSocket socket = new java.net.DatagramSocket(DISCOVERY_PORT)) {
+                socket.setSoTimeout(5000);
+                byte[] buffer = new byte[1024];
+                
+                while (mCapturing && mCaptureSource == CaptureSource.NETWORK) {
+                    try {
+                        java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                        socket.receive(packet);
+                        
+                        Log.d(TAG, "Discovery Port: Received " + packet.getLength() + " bytes from " + packet.getAddress().getHostAddress());
+                        
+                        String message = new String(packet.getData(), 0, packet.getLength());
+                        if ("GLYPHIX_DISCOVERY_REQUEST".equals(message)) {
+                            Log.d(TAG, "Discovery request received from " + packet.getAddress().getHostAddress());
+                            java.net.DatagramPacket response = new java.net.DatagramPacket(
+                                    responseData, responseData.length, packet.getAddress(), packet.getPort());
+                            socket.send(response);
+                        }
+                    } catch (java.net.SocketTimeoutException e) {
+                        // Just check mCapturing again
+                    } catch (Exception e) {
+                        if (mCapturing) {
+                            Log.e(TAG, "Discovery responder error", e);
+                            Thread.sleep(2000);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Could not start discovery responder", e);
+            }
+            Log.d(TAG, "Discovery responder stopped");
+        }, "DiscoveryResponder");
+        mDiscoveryThread.start();
+    }
+
+    private void stopDiscoveryResponder() {
+        if (mDiscoveryThread != null) {
+            mDiscoveryThread.interrupt();
+            mDiscoveryThread = null;
+        }
     }
 
     private short[] mWaveformHopBuffer = new short[0];

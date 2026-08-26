@@ -104,6 +104,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _totalVisualizedTime = MutableStateFlow(0L)
     val totalVisualizedTime = _totalVisualizedTime.asStateFlow()
 
+    val _networkPacketsReceived = MutableStateFlow(0)
+    val networkPacketsReceived = _networkPacketsReceived.asStateFlow()
+
     val _totalIdleTime = MutableStateFlow(0L)
     val totalIdleTime = _totalIdleTime.asStateFlow()
 
@@ -1609,6 +1612,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             saveStatsLocally()
             updateLeaderboard()
         }
+    }
+
+    fun setNetworkPacketsReceived(count: Int) {
+        _networkPacketsReceived.value = count
     }
 
     val _selectedPreset = MutableStateFlow("Default")

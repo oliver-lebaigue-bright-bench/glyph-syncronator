@@ -234,19 +234,23 @@ class MainActivity : ComponentActivity() {
                                 viewModel.setVisualizerState(it)
                             }
                             
+                            // Collect network diagnostic if applicable
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK) {
+                                viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
+                            }
+
                             // Use the magnitudes already computed by the service instead of re-calculating
                             val latestMags = s.latestMagnitudes
                             if (latestMags != null && latestMags.size == 512) {
-                                // We still need to pass new arrays to StateFlow to trigger recomposition if it uses reference equality
-                                // But we can at least avoid the manual loop and division
-                                viewModel.setFftState(latestMags, latestMags) // Using same for both to reduce work if raw isn't strictly needed
+                                viewModel.setFftState(latestMags, latestMags) 
                             }
                         }
-                        delay(16.milliseconds) // Target 60fps for smoother UI
+                        delay(16.milliseconds) 
                     }
                 } else {
                     viewModel.setFftStateEmpty()
                     viewModel.setVisualizerState(floatArrayOf())
+                    viewModel.setNetworkPacketsReceived(0)
                 }
             }
 
@@ -330,6 +334,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
             }
         }
     }
@@ -609,6 +614,7 @@ internal fun GlyphixApp(
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
+                        val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
 
                         AudioScreen(
                             isRunning = isRunning,
@@ -624,6 +630,7 @@ internal fun GlyphixApp(
                             fftData = fftData,
                             captureSource = captureSource,
                             onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
+                            networkPacketsReceived = networkPacketsReceived,
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
