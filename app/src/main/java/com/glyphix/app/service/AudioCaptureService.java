@@ -964,18 +964,52 @@ public class AudioCaptureService extends Service {
                     mCurrentSampleRate = (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000;
                     int captureSampleRate = mCurrentSampleRate;
                     int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 4096);
+                    Log.d(TAG, "Starting capture for source: " + source + " @ " + captureSampleRate + "Hz, bufSize: " + bufSize);
+                    
                     if (source == CaptureSource.INTERNAL) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && mProjection != null) {
                             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                                AudioPlaybackCaptureConfiguration config = new AudioPlaybackCaptureConfiguration.Builder(mProjection).addMatchingUsage(AudioAttributes.USAGE_MEDIA).addMatchingUsage(AudioAttributes.USAGE_GAME).build();
-                                localRecord = new AudioRecord.Builder().setAudioPlaybackCaptureConfig(config).setAudioFormat(new AudioFormat.Builder().setSampleRate(captureSampleRate).setChannelMask(AudioFormat.CHANNEL_IN_MONO).setEncoding(AudioFormat.ENCODING_PCM_16BIT).build()).setBufferSizeInBytes(bufSize).build();
+                                AudioPlaybackCaptureConfiguration config = new AudioPlaybackCaptureConfiguration.Builder(mProjection)
+                                        .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
+                                        .addMatchingUsage(AudioAttributes.USAGE_GAME)
+                                        .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN)
+                                        .build();
+                                Log.d(TAG, "AudioPlaybackCaptureConfiguration built with MediaProjection");
+                                localRecord = new AudioRecord.Builder()
+                                        .setAudioPlaybackCaptureConfig(config)
+                                        .setAudioFormat(new AudioFormat.Builder()
+                                                .setSampleRate(captureSampleRate)
+                                                .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
+                                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                                .build())
+                                        .setBufferSizeInBytes(bufSize)
+                                        .build();
+                            } else {
+                                Log.e(TAG, "RECORD_AUDIO permission missing for internal capture");
                             }
+                        } else {
+                            Log.e(TAG, "MediaProjection is null or SDK < Q for internal capture");
                         }
                     } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
-                    else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
-                    if (localRecord != null && localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                        synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
-                        localRecord.startRecording(); runCaptureLoop(localRecord);
+                    else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                    }
+                    
+                    if (localRecord != null) {
+                        if (localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
+                            synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
+                            localRecord.startRecording();
+                            if (localRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                                Log.d(TAG, "AudioRecord started recording successfully");
+                                runCaptureLoop(localRecord);
+                            } else {
+                                Log.e(TAG, "AudioRecord failed to start recording (RecordingState: " + localRecord.getRecordingState() + ")");
+                            }
+                        } else {
+                            Log.e(TAG, "AudioRecord failed to initialize (State: " + localRecord.getState() + ")");
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to create AudioRecord instance");
                     }
                 } catch (Exception e) { Log.e(TAG, "Capture failed", e); stopSelf(); }
                 finally { synchronized (mCaptureLock) { releaseAudioRecord(); } }
@@ -1187,13 +1221,24 @@ public class AudioCaptureService extends Service {
 
     private void runCaptureLoop(AudioRecord record) {
         int hopSize = Math.round(record.getSampleRate() / (float) FPS); short[] hop = new short[hopSize];
+        Log.d(TAG, "Entering capture loop with hopSize: " + hopSize);
         while (mCapturing) {
-            int read = record.read(hop, 0, hopSize, AudioRecord.READ_BLOCKING); if (read <= 0) continue;
+            int read = record.read(hop, 0, hopSize, AudioRecord.READ_BLOCKING);
+            if (read < 0) {
+                Log.e(TAG, "AudioRecord.read() error: " + read);
+                if (read == AudioRecord.ERROR_INVALID_OPERATION || read == AudioRecord.ERROR_BAD_VALUE) {
+                    break;
+                }
+                continue;
+            }
+            if (read == 0) continue;
+            
             AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
             if (result == null) continue;
             PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
             synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
         }
+        Log.d(TAG, "Exited capture loop");
     }
 
     private void turnOffGlyphs() {
