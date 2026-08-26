@@ -1,0 +1,66 @@
+name: Update zones.config version
+
+on:
+  push:
+    paths:
+      - 'zones.config'
+
+permissions:
+  contents: write
+
+jobs:
+  update-version:
+    if: "!contains(github.event.head_commit.message, '[skip-version]')"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Update version
+        run: |
+          BASE_VERSION=$(date -u +"%Y.%m.%d")
+
+          if ! grep -q '"version"' zones.config; then
+            echo "No version field found"
+            exit 1
+          fi
+
+          CURRENT_VERSION=$(grep -oP '"version"[[:space:]]*:[[:space:]]*"\K[^"]+' zones.config)
+
+          VERSION="$BASE_VERSION"
+
+          if [[ "$CURRENT_VERSION" == "$BASE_VERSION" ]]; then
+            VERSION="${BASE_VERSION}.b"
+          elif [[ "$CURRENT_VERSION" =~ ^${BASE_VERSION}\.([a-z])$ ]]; then
+            LAST_SUFFIX="${BASH_REMATCH[1]}"
+
+            NEXT_SUFFIX=$(printf "%b" "$(printf '\\%03o' "$(( $(printf '%d' "'$LAST_SUFFIX") + 1 ))")")
+
+            VERSION="${BASE_VERSION}.${NEXT_SUFFIX}"
+          fi
+
+          BEFORE=$(sha256sum zones.config)
+
+          sed -i "s/\"version\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/\"version\" : \"$VERSION\"/" zones.config
+
+          AFTER=$(sha256sum zones.config)
+
+          if [ "$BEFORE" = "$AFTER" ]; then
+            echo "No changes made"
+            exit 0
+          fi
+
+          echo "Updated zones.config version to $VERSION"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add zones.config
+          git commit -m "Auto-update zones.config version [skip-version]"
+          git push

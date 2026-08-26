@@ -1,0 +1,16 @@
+Input/
+Output/
+Nglyph/
+GlyphModder.py
+venv/
+.venv/
+venv3/
+.venv3/
+env/
+.env/
+env3/
+.env3/
+.vscode/
+vscode/
+.idea/
+zones.config

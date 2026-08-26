@@ -1,0 +1,13 @@
+local.properties
+build/
+.gradle/
+.idea/
+.codex
+.vscode/
+.artifacts
+app/build/*
+
+app/build/
+app/build/outputs/*
+app/build/outputs/
+app/build/outputs/apk/

@@ -1,0 +1,77 @@
+# BETTER-NOTHING-MUSIC-VISUALIZER  LICENSE AGREEMENT
+
+Version: 1.2
+
+Date: May 16, 2026
+
+Licensors: Oliver Lebaigue
+
+Project Founder and Owner: Aleks Levet
+
+Organization: Luminus Labs
+
+# 1. PREAMBLE
+
+This License Agreement ("Agreement") is a legal agreement between you ("Licensee") and Oliver Lebaigue ("Licensor") for the use, review, and modification of the music visualizer software application known as "better-nothing-music-visualizer" (the "Software"), a project founded by Aleks Levet under the organization Luminus Labs.
+
+The Software's source code is hosted publicly at https://github.com/aleks-levet/better-nothing-music-visualizer. By accessing, downloading, copying, or otherwise using the Software or its Source Code, Licensee agrees to be bound by the terms of this Agreement.
+
+# 2. DEFINITIONS
+
+### 2.1 "Software" shall mean the better-nothing-music-visualizer software application, including but not limited to the source code, audio processing modules, rendering engines, visual assets, graphics libraries, configuration scripts, documentation, object files, binary executables, and any associated media or assets.
+
+### 2.2 "Source Code" shall mean the publicly disclosed files of the Software, including all script files, shader code, assets, and build configurations.
+
+# 3. GRANT OF LICENSE & ACCESSIBILITY
+
+## 3.1 Public Availability.
+
+Licensor acknowledges that the Source Code is public. Licensee is granted a non-exclusive, non-transferable, revocable license to download, view, and modify the Source Code for personal, educational, and non-commercial evaluation purposes only.
+
+## 3.2 Restrictions.
+
+Licensee may NOT:
+
+* (a) Redistribute the Software or modified versions of it to third parties, except via standard repository forks on GitHub, provided those forks remain bound by this exact License.
+
+* (b) Use the Software or any derivative works for commercial purposes, public performances, commercial streaming, or any revenue-generating activities without separate written authorization.
+
+* (c) Remove, alter, or obscure any copyright, trademark, patent, or proprietary rights notices placed on or within the Software, including references to Aleks Levet, Luminus Labs, or Licensor.
+
+* (d) Use the Software to develop any competing commercial music visualization software or platform.
+
+# 4. INTELLECTUAL PROPERTY RIGHTS
+
+## 4.1 Ownership.
+
+Licensor, Aleks Levet, and Luminus Labs retain all respective right, title, and interest in and to the Software, including all intellectual property rights therein. Public disclosure of the Source Code does not constitute a waiver of copyright or ownership.
+
+# 5. NO WARRANTY
+
+## 5.1 Disclaimer.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND "WITH ALL FAULTS." TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, LICENSOR DISCLAIMS ALL OTHER WARRANTIES AND CONDITIONS, EITHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+## 5.2 No Technical Support.
+
+Licensor, Aleks Levet, and Luminus Labs are under no obligation to provide technical support, updates, upgrades, or modifications to the Software.
+
+# 6. LIMITATION OF LIABILITY
+
+## 6.1 Cap on Liability.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR, ALEKS LEVET, OR LUMINUS LABS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES WHATSOEVER (INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+# 7. TERMINATION
+
+## 7.1 Automatic Termination.
+
+Licensee's rights under this Agreement will terminate automatically without notice from Licensor if Licensee fails to comply with any term(s) of this Agreement. Upon termination, Licensee shall cease all use and destroy all local copies of the Software.
+
+# 8. MISCELLANEOUS
+
+## 8.1 Governing Law.
+
+This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Oliver Lebaigue resides, without regard to its conflict of law principles.
+
+END OF LICENSE AGREEMENT
