@@ -47,6 +47,14 @@
         </activity>
 
         <activity
+            android:name=".ui.AodActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Glyphix" />
+
+        <activity
             android:name=".util.PermissionTrampolineActivity"
             android:theme="@style/Theme.Transparent"
             android:taskAffinity=""

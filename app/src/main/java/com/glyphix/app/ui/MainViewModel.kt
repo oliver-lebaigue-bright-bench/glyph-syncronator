@@ -872,6 +872,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val _aodEnabled = MutableStateFlow(false)
+    val aodEnabled = _aodEnabled.asStateFlow()
+
+    fun setAodEnabled(enabled: Boolean) {
+        _aodEnabled.value = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit { putBoolean("aod_enabled", enabled) }
+        }
+    }
+
     val _idlePattern = MutableStateFlow("pulse")
     val idlePattern = _idlePattern.asStateFlow()
 
@@ -1218,6 +1229,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _captureSource.value = AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
 
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
+        _aodEnabled.value = prefs.getBoolean("aod_enabled", false)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
         _penisModeEnabled.value = prefs.getBoolean("penis_mode_enabled", false)
 

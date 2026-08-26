@@ -1,7 +1,10 @@
 package com.glyphix.app.ui.PrimaryScreens
 
 import android.provider.Settings
+import android.content.Intent
+import com.glyphix.app.ui.AodActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -67,6 +70,41 @@ fun VisualsScreen(
         Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
         ScreenTitle(text = stringResource(R.string.tab_visuals))
+
+        val aodEnabled by viewModel.aodEnabled.collectAsStateWithLifecycle()
+
+        AnimatedVisibility(visible = aodEnabled) {
+            ExpressiveCard(
+                modifier = Modifier.clickable {
+                    context.startActivity(Intent(context, AodActivity::class.java))
+                }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            FontAwesomeIcons.Solid.Play,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.aod_launch_button),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
 
         ExpressiveCard {
             Row(

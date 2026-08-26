@@ -763,6 +763,7 @@ internal fun GlyphixApp(
                     }
                     Tab.Settings -> {
                         val idleBreathingEnabled by viewModel.idleBreathingEnabled.collectAsStateWithLifecycle()
+                        val aodEnabled by viewModel.aodEnabled.collectAsStateWithLifecycle()
                         val idlePattern by viewModel.idlePattern.collectAsStateWithLifecycle()
                         val strobeEnabled by viewModel.strobeEnabled.collectAsStateWithLifecycle()
                         val disableGlyphsWhenSilent by viewModel.disableGlyphsWhenSilent.collectAsStateWithLifecycle()
@@ -785,6 +786,8 @@ internal fun GlyphixApp(
                                     it
                                 )
                             },
+                            aodEnabled = aodEnabled,
+                            onAodEnabledChanged = { viewModel.setAodEnabled(it) },
                             onGoogleSignIn = onGoogleSignIn,
                             padding = padding
                         )
