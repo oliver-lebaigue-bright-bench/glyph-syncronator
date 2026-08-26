@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glyphix</string>
+
+    <!-- Audio Screen -->
+    <string name="audio_screen_title">Glyphix</string>
+    <string name="audio_description_running">Real time audio visualizer is active. Your phone is now dancing to the beat! No audio content is saved.</string>
+    <string name="audio_description_idle">This app was made by Oliver Lebaigue and rKyzen.\n\nPrivacy Note: We only utilize the audio stream. No screen content is recorded.</string>
+    <string name="audio_warning_vizualizer">Warning: this source uses the standard Android visualizer-style audio stream. It is low fidelity and may suck.</string>
+    <string name="auto_memorize_device">Auto-Memorize Device</string>
+    <string name="saving_latency_for">Saving latency for: %s</string>
+    <string name="internal_speaker">Internal Speaker</string>
+    <string name="manual_mode_global_latency">Manual mode (Global latency)</string>
+    <string name="latency_compensation_description">Latency compensation ensures Glyphs hit exactly on the beat, especially useful for Bluetooth devices.</string>
+    <string name="latency_compensation">Latency Compensation</string>
+    <string name="live_spectrum">Live Audio Spectrum</string>
+
+    <!-- Glyph Screen -->
+    <string name="glyph_controls">Glyph controls</string>
+    <string name="gamma_control">Gamma control</string>
+    <string name="gamma_description">A higher gamma value gives a more punchy look, but with less subtle details and overall brightness. A lower one is brighter but less punchy.</string>
+    <string name="light_gamma">Light Gamma:</string>
+    <string name="visualizer_presets">Visualizer presets</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="app_theme">App Theme</string>
+    <string name="theme_normal">Default</string>
+    <string name="theme_liquorice">Liquorice Black</string>
+    <string name="theme_nothing">Nothing</string>
+    <string name="theme_nothing_red">Nothing Red</string>
+    <string name="theme_material_you">Material You</string>
+    <string name="theme_music">Music (Fetches Album Art)</string>
+    <string name="theme_help_text">Changes apply after app restart.</string>
+    <string name="typography">Typography</string>
+    <string name="font_ndot">NDot</string>
+    <string name="font_ntype">NType</string>
+    <string name="typography_help_text">Toggle between NDot and NType fonts app-wide.</string>
+    <string name="more_settings_coming">More settings coming soon…</string>
+    <string name="banana_mode">Banana Mode</string>
+    <string name="banana_mode_description">Enable banana visualizer style</string>
+    <string name="penis_mode">Penis Mode</string>
+    <string name="penis_mode_description">Enable penis visualizer style</string>
+
+    <!-- Haptics Screen -->
+    <string name="haptics_title">Haptics</string>
+    <string name="haptics_header">Haptic controls</string>
+    <string name="haptics_mode_label">Haptic Engine Mode</string>
+    <string name="haptics_mode_bass">Bass Amplitude</string>
+    <string name="haptics_mode_beat">Beat Detection</string>
+    <string name="haptics_beat_detection_desc">Vibrates on detected beats within the selected frequency range. Smoother but sometimes not as stable. It\'s a beta feature.</string>
+    <string name="haptics_motor_title">Haptic visualisation</string>
+    <string name="haptics_frequency_label">Frequency: %1$d - %2$d Hz</string>
+    <string name="haptics_frequency_desc">Vibrates based on audio amplitude in this range.</string>
+    <string name="haptics_amplitude_label">Motor Gain: %.1fx</string>
+    <string name="haptics_audio_gain_label">Audio Gain: %.1fx</string>
+    <string name="haptics_gamma_label">Gamma: %.1f</string>
+    <string name="haptics_decay_label">Decay: %.2f</string>
+    <string name="haptics_speed_label">Speed: %.1f</string>
+    <string name="haptics_sensitivity_label">Sensitivity: %.1f</string>
+    <string name="haptics_motor_multiplier_desc">Global motor output strength multiplier.</string>
+    <string name="haptics_decay_instant">No smoothing (Instant)</string>
+    <string name="haptics_decay_smooth">Smoothing active</string>
+    <!-- Flashlight Screen -->
+    <string name="flashlight_title">Flashlight</string>
+    <string name="flashlight_header">Flashlight visualizer</string>
+    <string name="flashlight_sync_title">Flashlight Sync</string>
+    <string name="flashlight_mode_label">Flashlight Engine Mode</string>
+    <string name="flashlight_mode_amplitude">Amplitude</string>
+    <string name="flashlight_mode_beat">Beat Detection</string>
+    <string name="flashlight_intensity_label">Torch levels: %1$d</string>
+    <string name="flashlight_frequency_label">Frequency: %1$d - %2$d Hz</string>
+    <string name="flashlight_frequency_desc">The Hz range that the flashlight will react to. Lower for bass, higher for snare/vocals.</string>
+    <string name="flashlight_threshold_label">Threshold: %.2f</string>
+    <string name="flashlight_threshold_desc">If your torch only has one level, this turns it on and off.</string>
+    <string name="flashlight_beat_sensitivity_label">Beat Sensitivity: %.1f</string>
+    <string name="flashlight_beat_sensitivity_desc">Higher values ignore weaker transients.</string>
+    <string name="flashlight_speed_label">Speed: %.0f ms</string>
+    <string name="flashlight_speed_desc">Lower values flash faster. 40 ms is the fastest supported limit.</string>
+    <string name="flashlight_monitor_label">Flashlight Monitor</string>
+
+    <string name="experimental_features">Experimental Features</string>
+    <string name="developer_mode">Developer Mode</string>
+    <string name="developer_mode_description">Enable advanced testing and device spoofing features.</string>
+    <string name="spoof_device">Spoof Device</string>
+    <string name="spoof_device_description">Forces the app to behave as if it\'s running on the selected device.</string>
+    <string name="spoof_locale">Spoof Locale</string>
+    <string name="spoof_locale_description">Force the app to use a specific language for testing.</string>
+    <string name="idle_breathing_title">Idle Breathing</string>
+    <string name="idle_breathing_desc">Glyphs pulse subtly when the visualizer is active but no audio is playing.</string>
+    <string name="disable_glyphs_when_silent_title">Disable Glyphs when silent</string>
+    <string name="disable_glyphs_when_silent_desc">Completely turn off Glyphs and release the session when no audio is detected.</string>
+    <string name="start_visualizer">Start</string>
+    <string name="stop_visualizer">Stop</string>
+    <string name="glyph_no_config">No configuration loaded. Please check for updates in Settings to download the latest visualizer presets.</string>
+    <string name="glyph_debug_title">Nothing Phone (1) on Android 15</string>
+    <string name="glyph_debug_desc_adb_enabled">Glyph features need the Nothing glyph debug interface enabled through ADB on this device.</string>
+    <string name="glyph_debug_desc_dev_options">Glyph features need Developer options enabled first on Nothing Phone (1) running Android 15. After that, run this ADB command:</string>
+    <string name="glyph_debug_command">adb shell settings put global nt_glyph_interface_debug_enable 1</string>
+    <string name="glyph_debug_instruction">Run the command once from a computer with ADB, then reopen the app if the Glyphs still do not respond.</string>
+
+    <!-- About Screen -->
+    <string name="about_title">App info and updates</string>
+    <string name="about_intro">Glyphix unlocks the full potential of the Glyph Interface with high-fidelity, real-time frequency analysis.</string>
+    <string name="about_section_why">Why are we better than Nothing\'s implementation:</string>
+    <string name="analytics_disclaimer_title">Analytics</string>
+    <string name="analytics_disclaimer_text">This app uses Google Analytics (Firebase) to collect anonymous usage statistics and crash reports to help improve the app experience. No personal data or audio content is collected.</string>
+    <string name="about_why_1">• 12-bit brightness (4096 levels) vs ~2-bit stock (3 levels)</string>
+    <string name="about_why_2">• 60 FPS fluid animations vs ~25 FPS stock</string>
+    <string name="about_why_3">• Precise FFT sync vs semi-random response</string>
+    <string name="about_why_4">• Independent sub-zone control</string>
+    <string name="github_repository">GitHub Repository</string>
+    <string name="view_source">View Source</string>
+    <string name="version_info">Version %s</string>
+    <string name="zones_config_version">Config Version: %s</string>
+    <string name="media_projection_info">MediaProjection is used only to power the real-time visualizer. No unnecessary recording or data storage is performed.</string>
+    <string name="credits">Credits</string>
+    <string name="open_github_profile">Open GitHub profile</string>
+    <string name="check_for_app_updates">Check for App Updates</string>
+    <string name="discord_server">Discord Server</string>
+    <string name="join_discord">Join our community on Discord</string>
+    <string name="checking_for_updates">Checking for updates…</string>
+    <string name="app_up_to_date">App is up to date</string>
+    
+    <!-- Capture Source Labels -->
+    <string name="capture_media_projection">Media Projection\n(default, best)</string>
+    <string name="capture_microphone">Microphone</string>
+    <string name="capture_vizualizer">Android built-in vizualizer</string>
+    <string name="update_available">Update available: %s</string>
+    <string name="update_now">Update Now</string>
+    <string name="credit_owner_role">Founder, coordinator, main idea, owner</string>
+    <string name="credit_rkyzen_role">Android app developer (real-time music stream)</string>
+    <string name="credit_oliver_role">Co-developer of this amazing app</string>
+    <string name="credit_nicouschulas_role">Readme &amp; Wiki enhancements</string>
+    <string name="credit_sebiai_role">Glyph modding and support</string>
+    <string name="credit_earnedel_role">Readme enhancements</string>
+    <string name="credit_ake_role">Developer working on a music app with integration</string>
+    <string name="credit_interlastic_role">Discord bot for testing the script (deprecated)</string>
+
+    <string name="app_news">App News</string>
+    <string name="music_theme_notification_access">Music theme requires Notification Access. Please enable it for this app.</string>
+    <string name="idle_pattern">Idle Pattern</string>
+    <string name="idle_pattern_pulse">Pulse</string>
+    <string name="idle_pattern_wave">Wave</string>
+    <string name="idle_pattern_cylon">Cylon</string>
+    <string name="idle_pattern_zebra">Zebra</string>
+    <string name="idle_pattern_heartbeat">Heartbeat</string>
+    <string name="idle_pattern_orbit">Orbit</string>
+    <string name="idle_pattern_rain">Rain</string>
+    <string name="strobe_mode">Strobe Mode</string>
+    <string name="strobe_mode_desc">Alternating flash pattern for Glyphs</string>
+    <string name="developer_access">Developer Access</string>
+    <string name="developer_access_desc">Please enter the developer password to access administrative tools.</string>
+    <string name="password">Password</string>
+    <string name="unlock">Unlock</string>
+    <string name="incorrect_password">Incorrect Password</string>
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="visual_preset_editor">Visual Preset Editor</string>
+    <string name="share">Share</string>
+    <string name="save">Save</string>
+    <string name="community_presets">Community Presets</string>
+    <string name="share_to_community">Share to Community</string>
+    <string name="share_preset_desc">Share your preset with other users.</string>
+    <string name="author_name">Author Name</string>
+    <string name="preset_name">Preset Name</string>
+    <string name="segments_selected">Segments (%d selected)</string>
+    <string name="multi_select">Multi-select</string>
+    <string name="bulk_actions">Bulk Actions</string>
+    <string name="bulk_actions_desc">Apply settings to all selected segments</string>
+    <string name="auto_distribute">Auto-Distribute</string>
+    <string name="editing_segment">Editing Segment #%d</string>
+    <string name="editing_segments_count">Editing %d Segments</string>
+    <string name="frequency_range_label">Frequency Range: %1$dHz - %2$dHz</string>
+    <string name="no_presets_found">No presets found. Be the first to share one!</string>
+    <string name="preset_by_author">by %1$s • %2$s</string>
+    <string name="downloads_count">%1$s • %2$d downloads</string>
+    <string name="clear">Clear</string>
+    <string name="global_announcements">Global Announcements</string>
+    <string name="global_announcements_desc">Notify all users about updates or news</string>
+    <string name="create">Create</string>
+    <string name="expressive_ui">Expressive UI</string>
+    <string name="sync_ui_to_beat">Sync UI to the beat</string>
+    <string name="nav_overlay">Nav Overlay</string>
+    <string name="lens_visualizer">Lens Visualizer</string>
+    <string name="lens_radius">Lens Radius</string>
+    <string name="lens_bar_width">Bar Width</string>
+    <string name="lens_max_height">Max Bar Height</string>
+    <string name="lens_bar_count">Bar Count</string>
+    <string name="lens_x_position">Horizontal Position (X)</string>
+    <string name="lens_y_position">Vertical Position (Y)</string>
+    <string name="lens_sensitivity">Lens Sensitivity</string>
+    <string name="overlay_width">Overlay Width</string>
+    <string name="overlay_height">Overlay Height</string>
+    <string name="overlay_height_bottom">Bottom Height</string>
+    <string name="overlay_sensitivity">Overlay Sensitivity</string>
+    <string name="overlay_sensitivity_bottom">Bottom Sensitivity</string>
+    <string name="overlay_top_segment">Top Segment</string>
+    <string name="overlay_bottom_segment">Bottom Segment</string>
+    <string name="vertical_position">Vertical Position</string>
+    <string name="dynamic_gain">Dynamic Gain</string>
+    <string name="audio_pipeline_title">Audio Pipeline</string>
+    <string name="freq_detection_method">Frequency Detection Method</string>
+    <string name="freq_detection_desc">Choose how frequencies are detected from the audio stream.</string>
+    <string name="flashlight_multi_intensity_forced_title">Flashlight Multi-Intensity</string>
+    <string name="flashlight_multi_intensity_forced_desc">Forces the flashlight to use multiple brightness levels even if not officially supported by the hardware. (Experimental)</string>
+
+    <string name="notification_controls_title">Notification Controls</string>
+    <string name="notification_controls_desc">Choose which buttons appear in the persistent notification.</string>
+    <string name="notification_button_set_presets">Presets</string>
+    <string name="notification_button_set_quick_controls">Quick Controls</string>
+
+    <string name="profile">Profile</string>
+    <string name="leaderboard_nickname">Leaderboard Nickname</string>
+    <string name="profile_picture">Profile Picture</string>
+    <string name="profile_help_text">Your profile picture and nickname will be visible to others on the leaderboard.</string>
+    <string name="failed_to_upload_image">Failed to upload image: %s</string>
+
+    <!-- Auth -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="email">Email</string>
+    <string name="sign_in_with_google">Sign In with Google</string>
+    <string name="already_have_account">Already have an account? Sign In</string>
+    <string name="dont_have_account">Don\'t have an account? Sign Up</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="sync_account_desc">Sign in with Google to keep your presets and stats synced across devices.</string>
+    <string name="account_linked">Account synced successfully!</string>
+    <string name="default_web_client_id">252304807982-ubtpig2ddtukmjfa7cp21lj1mjgnr968.apps.googleusercontent.com</string>
+    <string name="auth_failed">Authentication failed: %s</string>
+    <string name="anonymous_user">Guest User</string>
+    <string name="authenticated_user">Verified Account</string>
+
+    <string name="tab_audio">Audio</string>
+    <string name="tab_glyphs">Glyphs</string>
+    <string name="tab_visuals">Visuals</string>
+    <string name="tab_haptics">Haptics</string>
+    <string name="tab_flashlight">Flashlight</string>
+    <string name="tab_settings">Settings</string>
+
+    <string name="update_available_title">Update Available: %s</string>
+    <string name="update_available_msg">A new version is available. What\'s new:</string>
+    <string name="no_changelog">No changelog available.</string>
+    <string name="install">Install</string>
+    <string name="download">Download</string>
+    <string name="not_now">Not now</string>
+    <string name="downloading_update">Downloading Update...</string>
+
+    <string name="app_name_caps">GLYPHIX</string>
+    <string name="appreciate_support">WE APPRECIATE YOUR SUPPORT.</string>
+    <string name="youre_welcome">YOU\'RE WELCOME!</string>
+
+    <string name="mediaprojection_permission">MediaProjection permission</string>
+    <string name="mediaprojection_description">This permission lets the app access the device audio stream through Android\'s capture system so the Glyph visualizer can react in real time. No unnecessary recordings are stored, and the app does not save your media or private data.</string>
+    <string name="continue_label">Continue</string>
+
+    <string name="announcement_posted">Announcement posted!</string>
+    <string name="failed_to_post">Failed to post: %s</string>
+    <string name="audio_permission_required">Audio recording permission is required</string>
+    <string name="screen_capture_denied">Screen capture permission denied</string>
+    <string name="notifications_required">Notifications are required while the visualizer is active</string>
+    <string name="overlay_permission_denied">Overlay permission denied</string>
+    <string name="notification_access_required">Please enable notification access for this feature</string>
+
+    <string name="thanks_downloading">thanks for downloading</string>
+    <string name="thanks_installing">thanks for installing</string>
+    <string name="thanks_using">thanks for using the app</string>
+    <string name="thanks_nothing">thanks for nothing</string>
+    <string name="thanks_participating">thanks for participating to the community</string>
+
+    <string name="config_update_success">Successfully updated zones.config</string>
+    <string name="config_import_success">Successfully imported zones.config</string>
+    <string name="config_import_error">Failed to read selected file</string>
+    <string name="config_download_error">Failed to download: %d</string>
+    <string name="config_error_updating">Error updating: %s</string>
+    <string name="config_error_importing">Error importing: %s</string>
+
+    <!-- License Screen -->
+    <string name="license_title">License</string>
+    <string name="license_agreement">License Agreement</string>
+    <string name="read_license">Read the software license</string>
+    <string name="license_agreement_title">GLYPHIX LICENSE AGREEMENT</string>
+    <string name="license_version">Version: 1.1</string>
+    <string name="license_date">Date: June 29, 2026</string>
+    <string name="license_licensor">Licensor</string>
+    <string name="license_licensor_name">Oliver Lebaigue</string>
+    <string name="license_founder">Founder</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
+    <string name="license_organization">Organization</string>
+    <string name="license_organization_name">Luminus Labs</string>
+    <string name="license_section_1">1. PREAMBLE</string>
+    <string name="license_preamble_1">This License Agreement (\"Agreement\") is a legal agreement between you (\"Licensee\") and Oliver Lebaigue (\"Licensor\") for the use, review, and modification of the music visualizer software application known as \"Glyphix\" (the \"Software\"), a project founded by Oliver Lebaigue under the organization Luminus Labs.</string>
+    <string name="license_preamble_2">The Software\'s source code is hosted publicly at https://github.com/oliver-lebaigue-bright-bench/glyphix. By accessing, downloading, copying, or otherwise using the Software or its Source Code, Licensee agrees to be bound by the terms of this Agreement.</string>
+    <string name="license_section_2">2. DEFINITIONS</string>
+    <string name="license_def_1">2.1 \"Software\" shall mean the Glyphix software application, including but not limited to the source code, audio processing modules, rendering engines, visual assets, graphics libraries, configuration scripts, documentation, object files, binary executables, and any associated media or assets.</string>
+    <string name="license_def_2">2.2 \"Source Code\" shall mean the publicly disclosed files of the Software, including all script files, shader code, assets, and build configurations.</string>
+    <string name="license_section_3">3. GRANT OF LICENSE &amp; ACCESSIBILITY</string>
+    <string name="license_section_3_1">3.1 Public Availability</string>
+    <string name="license_grant_3_1">Licensor acknowledges that the Source Code is public. Licensee is granted a non-exclusive, non-transferable, revocable license to download, view, and modify the Source Code for personal, educational, and non-commercial evaluation purposes only.</string>
+    <string name="license_section_3_2">3.2 Restrictions</string>
+    <string name="license_grant_3_2">Licensee may NOT:</string>
+    <string name="license_restriction_a">* (a) Redistribute the Software or modified versions of it to third parties, except via standard repository forks on GitHub, provided those forks remain bound by this exact License.</string>
+    <string name="license_restriction_b">* (b) Use the Software or any derivative works for commercial purposes, public performances, commercial streaming, or any revenue-generating activities without separate written authorization.</string>
+    <string name="license_restriction_c">* (c) Remove, alter, or obscure any copyright, trademark, patent, or proprietary rights notices placed on or within the Software, including references to Oliver Lebaigue, Luminus Labs, or Licensor.</string>
+    <string name="license_restriction_d">* (d) Use the Software to develop any competing commercial music visualization software or platform.</string>
+    <string name="license_section_4">4. INTELLECTUAL PROPERTY RIGHTS</string>
+    <string name="license_section_4_1">4.1 Ownership</string>
+    <string name="license_ownership">Licensor, Oliver Lebaigue, and Luminus Labs retain all respective right, title, and interest in and to the Software, including all intellectual property rights therein. Public disclosure of the Source Code does not constitute a waiver of copyright or ownership.</string>
+    <string name="license_section_5">5. NO WARRANTY</string>
+    <string name="license_section_5_1">5.1 Disclaimer</string>
+    <string name="license_warranty_disclaimer">THE SOFTWARE IS PROVIDED \"AS IS\" AND \"WITH ALL FAULTS.\" TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, LICENSOR DISCLAIMS ALL OTHER WARRANTIES AND CONDITIONS, EITHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.</string>
+    <string name="license_section_5_2">5.2 No Technical Support</string>
+    <string name="license_technical_support">Licensor, Oliver Lebaigue, and Luminus Labs are under no obligation to provide technical support, updates, upgrades, or modifications to the Software.</string>
+    <string name="license_section_6">6. LIMITATION OF LIABILITY</string>
+    <string name="license_section_6_1">6.1 Cap on Liability</string>
+    <string name="license_liability_cap">TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR, ALEKS LEVET, OR LUMINUS LABS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES WHATSOEVER (INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.</string>
+    <string name="license_section_7">7. TERMINATION</string>
+    <string name="license_section_7_1">7.1 Automatic Termination</string>
+    <string name="license_termination">Licensee\'s rights under this Agreement will terminate automatically without notice from Licensor if Licensee fails to comply with any term(s) of this Agreement. Upon termination, Licensee shall cease all use and destroy all local copies of the Software.</string>
+    <string name="license_section_8">8. MISCELLANEOUS</string>
+    <string name="license_section_8_1">8.1 Governing Law</string>
+    <string name="license_governing_law">This Agreement shall be governed by and construed in accordance with the laws of the jurisdiction in which Oliver Lebaigue resides, without regard to its conflict of law principles.</string>
+    <string name="end_of_license">END OF LICENSE AGREEMENT</string>
+    <string name="haptics_richtap_freq_label">h</string>
+    <string name="haptics_mode_richtap">h</string>
+    <string name="flashlight_sensitivity_desc">h</string>
+    <string name="flashlight_smoothing_label">h</string>
+    <string name="flashlight_smoothing_desc">h</string>
+    <string name="flashlight_gamma_label">h</string>
+    <string name="notification_flash_title">h</string>
+    <string name="notification_flash_desc">h</string>
+    <string name="flashlight_sensitivity_label">h</string>
+</resources>
+
+
+
+

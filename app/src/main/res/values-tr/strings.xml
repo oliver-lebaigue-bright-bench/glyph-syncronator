@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glyphix</string>
+
+    <!-- Audio Screen -->
+    <string name="audio_screen_title">Glyphix</string>
+    <string name="audio_description_running">Gerçek zamanlı ses görselleştirici aktif. Telefonunuz şimdi ritme göre dans ediyor! Hiçbir içerik kaydedilmez ve gizliliğe saygı duyulur.</string>
+    <string name="audio_description_idle">Bu uygulama Oliver Lebaigue ve rKyzen tarafından yapılmıştır.\n\nGlyph Arayüzünü müziğinizle senkronize etmek için bu uygulama cihaz sesini yakalar. Yüksek kaliteli görselleştirme için Media Projection kullanıyoruz.\n\nGizlilik Notu: Yalnızca ses akışını kullanıyoruz. Ekran içeriği kaydedilmez.</string>
+    <string name="audio_warning_vizualizer">Uyarı: Bu kaynak standart Android görselleştirici tarzı ses akışını kullanır. Düşük sadakatlidir ve kötü olabilir.</string>
+    <string name="auto_memorize_device">Cihazı Otomatik Hatırla</string>
+    <string name="saving_latency_for">Şunun için gecikme kaydediliyor: %s</string>
+    <string name="internal_speaker">Dahili Hoparlör</string>
+    <string name="manual_mode_global_latency">Manuel mod (Genel gecikme)</string>
+    <string name="latency_compensation_description">Gecikme telafisi, özellikle Bluetooth cihazları için kullanışlıdır ve Glyphlerin tam olarak ritme göre yanmasını sağlar.</string>
+    <string name="latency_compensation">Gecikme Telafisi</string>
+    <string name="live_spectrum">Canlı Ses Spektrumu</string>
+
+    <!-- Glyph Screen -->
+    <string name="glyph_controls">Glyph Ayarları</string>
+    <string name="gamma_control">Gama seviyesi</string>
+    <string name="gamma_description">Daha yüksek bir gama değeri, daha az ayrıntı fakat daha keskin vuruşlar sağlar. Daha düşük bir değer daha fazla parlaklık ve ayrıntı sağlarken pek keskin vuruşlar elde edemez..</string>
+    <string name="light_gamma">Işık Gaması:</string>
+    <string name="visualizer_presets">Görselleştirici Önayarları</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="app_theme">Uygulama Teması</string>
+    <string name="theme_normal">Varsayılan</string>
+    <string name="theme_liquorice">Meyan Kökü</string>
+    <string name="theme_nothing">Nothing</string>
+    <string name="theme_nothing_red">Nothing Kırmızı</string>
+    <string name="theme_material_you">Material You</string>
+    <string name="theme_music">Müzik (Albüm Kapağı)</string>
+    <string name="theme_help_text">Değişiklikler uygulama yeniden başlatıldıktan sonra uygulanır.</string>
+    <string name="typography">Başlık Fontu</string>
+    <string name="font_ndot">NDot</string>
+    <string name="font_ntype">NType</string>
+    <string name="typography_help_text">Uygulamanın fontları arasında geçiş yapın.</string>
+    <string name="more_settings_coming">Daha fazla ayar çok yakında sizlerle…</string>
+
+    <!-- Haptics Screen -->
+    <string name="haptics_title">Dokunsal</string>
+    <string name="haptics_header">Dokunsal kontroller</string>
+    <string name="haptics_mode_label">Titreşim Motoru Modu</string>
+    <string name="haptics_mode_bass">Basa Duyarlı</string>
+    <string name="haptics_mode_beat">Ritme Ayak Uydur!</string>
+    <string name="haptics_beat_detection_desc">Seçilen frekans aralığında algılanan ritimlere göre titreşir. Daha pürüzsüzdür ancak bazen o kadar kararlı değildir. Beta özelliğidir.</string>
+    <string name="haptics_motor_title">Dokunsal görselleştirme</string>
+    <string name="haptics_frequency_label">Frekans: %1$d - %2$d Hz</string>
+    <string name="haptics_frequency_desc">Bu aralıktaki ses genliğine göre titreşir.</string>
+    <string name="haptics_amplitude_label">Yoğunluk: %.1fx</string>
+    <string name="haptics_gamma_label">Gama: %.1f</string>
+    <string name="haptics_decay_label">Sönümlenme: %.2f</string>
+    <string name="haptics_speed_label">Hız: %.1f</string>
+    <string name="haptics_sensitivity_label">Hassasiyet: %.1f</string>
+    <string name="haptics_motor_multiplier_desc">Genel titreşim gücü çarpanı.</string>
+    <string name="haptics_decay_instant">Yumuşatma yok (Anlık)</string>
+    <string name="haptics_decay_smooth">Yumuşatma aktif</string>
+
+    <!-- Flashlight Screen -->
+    <string name="flashlight_title">Fener</string>
+    <string name="flashlight_header">Fener görselleştirici</string>
+    <string name="flashlight_sync_title">Fener Senkronizasyonu</string>
+    <string name="flashlight_frequency_label">Frekans: %1$d - %2$d Hz</string>
+    <string name="flashlight_frequency_desc">Fenerin tepki vereceği Hz aralığı. Bas için düşük, trampet/vokal için yüksek.</string>
+    <string name="flashlight_sensitivity_label">Hassasiyet Eşiği: %.2f</string>
+    <string name="flashlight_sensitivity_desc">Daha yüksek eşik, arka plan gürültüsünü/davulları filtreler.</string>
+    <string name="flashlight_smoothing_label">Yumuşatma: %.2f</string>
+    <string name="flashlight_smoothing_desc">Daha yüksek yumuşatma, ışığın titremek yerine yumuşakça yanıp sönmesini sağlar.</string>
+    <string name="flashlight_gamma_label">Yoğunluk Gaması: %.1f</string>
+    <string name="flashlight_monitor_label">Fener Monitörü</string>
+
+    <string name="experimental_features">Deneysel Özellikler</string>
+    <string name="developer_mode">Geliştirici Modu</string>
+    <string name="developer_mode_description">Gelişmiş test ve cihaz taklidi (spoofing) özelliklerini etkinleştirin.</string>
+    <string name="spoof_device">Cihazı Taklit Et</string>
+    <string name="spoof_device_description">Uygulamayı seçilen cihazda çalışıyormuş gibi davranmaya zorlar.</string>
+    <string name="idle_breathing_title">Boşta (idle) Animasyonu</string>
+    <string name="idle_breathing_desc">Görselleştirici aktif fakat herhangi bir medya oynamaz iken Glyphler seçili önayara göre parlar..</string>
+    <string name="notification_flash_title">Bildirim Flaşı</string>
+    <string name="notification_flash_desc">Görselleştirici çalışırken yeni bir bildirim geldiğinde tüm Glyphleri kısa süreliğine yakıp söndürür.</string>
+    <string name="disable_glyphs_when_silent_title">Cihaz sessizdeyken Glyphleri deaktive et.</string>
+    <string name="disable_glyphs_when_silent_desc">Ses algılanmadığında Glifleri tamamen kapatın ve oturumu serbest bırakın.</string>
+    <string name="start_visualizer">Başlat</string>
+    <string name="stop_visualizer">Durdur</string>
+    <string name="glyph_no_config">Henüz bir önayar yüklenmedi. En son görselleştirici önayarlarını indirmek için lütfen Ayarlar\'dan güncellemeleri kontrol edin.</string>
+    <string name="glyph_debug_title">Android 15 yüklü Nothing Phone (1)</string>
+    <string name="glyph_debug_desc_adb_enabled">Glyph özelliklerinin bu cihazda ADB üzerinden Nothing Glyph hata ayıklama arayüzünün etkinleştirilmesine ihtiyacı var.</string>
+    <string name="glyph_debug_desc_dev_options">Android 15 yüklü Nothing Phone (1) cihazında öncelikle Geliştirici seçeneklerinin etkinleştirilmesi gerekir. Ardından bu ADB komutunu çalıştırın:</string>
+    <string name="glyph_debug_command">adb shell settings put global nt_glyph_interface_debug_enable 1</string>
+    <string name="glyph_debug_instruction">Komutu ADB yüklü bir bilgisayardan bir kez çalıştırın, eğer Glyphler hala yanıt vermiyorsa uygulamayı kapatıp açın.</string>
+
+    <!-- About Screen -->
+    <string name="about_title">Uygulama Hakkında ve Güncellemeler</string>
+    <string name="about_intro">Glyphix Müzik Görselleştirici, yüksek kaliteli ve gerçek zamanlı frekans analizi ile Glyph Arayüzü\'nün tüm potansiyelini ortaya çıkarır.</string>
+    <string name="about_section_why">Neden Nothing\'in görselleştiricisinden daha iyiyiz:</string>
+    <string name="about_why_1">• 12-bit parlaklık (4096 seviye) vs ~2-bit stok (3 seviye)</string>
+    <string name="about_why_2">• 60 FPS akıcı animasyonlar vs ~25 FPS stok</string>
+    <string name="about_why_3">• Hassas FFT senkronizasyonu vs yarı-rastgele tepki</string>
+    <string name="about_why_4">• Bağımsız alt bölge kontrolü</string>
+    <string name="github_repository">GitHub Sayfası</string>
+    <string name="view_source">Kaynağı Görüntüle</string>
+    <string name="version_info">Sürüm %s</string>
+    <string name="zones_config_version">Yapılandırma Sürümü: %s</string>
+    <string name="media_projection_info">MediaProjection yalnızca gerçek zamanlı görselleştiriciyi çalıştırmak için kullanılır. Ekranınız veya verileriniz gereksizce kaydedilmez.</string>
+    <string name="credits">Emeği Geçenler</string>
+    <string name="open_github_profile">GitHub profiline git</string>
+    <string name="check_for_app_updates">Uygulama Güncellemelerini Kontrol Et</string>
+    <string name="discord_server">Discord Sunucumuz</string>
+    <string name="join_discord">Discord\'daki topluluğumuza katılın</string>
+    <string name="checking_for_updates">Güncellemeler kontrol ediliyor…</string>
+    <string name="app_up_to_date">Uygulamanız güncel</string>
+
+    <!-- Capture Source Labels -->
+    <string name="capture_media_projection">Media Projection(varsayılan, en iyisi)</string>
+    <string name="capture_microphone">Mikrofon</string>
+    <string name="capture_vizualizer">Android\'in Yerleşik Görselleştiricisi</string>
+    <string name="capture_shizuku">Shizuku</string>
+    <string name="update_available">Güncelleme mevcut: %s</string>
+    <string name="update_now">Şimdi Güncelle</string>
+    <string name="credit_owner_role">Kurucu, koordinatör, ana fikir, sahip</string>
+    <string name="credit_rkyzen_role">Android uygulama geliştiricisi (gerçek zamanlı müzik akışı)</string>
+    <string name="credit_oliver_role">Bu harika uygulamanın yardımcı geliştiricisi</string>
+    <string name="credit_nicouschulas_role">README ve Wiki geliştirmeleri</string>
+    <string name="credit_sebiai_role">Glyph modlamaları ve destek</string>
+    <string name="credit_earnedel_role">README geliştirmeleri</string>
+    <string name="credit_ake_role">Entegrasyonlu bir müzik uygulaması üzerinde çalışan geliştirici</string>
+    <string name="credit_interlastic_role">Script testleri için Discord botu (Tarih oldu)</string>
+
+    <string name="app_news">Uygulama Haberleri</string>
+    <string name="music_theme_notification_access">Müzik teması Bildirim Erişimi gerektirir. Lütfen bu uygulama için gerekli izinleri verin.</string>
+    <string name="idle_pattern">Boşta Deseni</string>
+    <string name="idle_pattern_pulse">Nabız</string>
+    <string name="idle_pattern_wave">Dalga</string>
+    <string name="idle_pattern_cylon">Cylon</string>
+    <string name="idle_pattern_zebra">Zebra</string>
+    <string name="idle_pattern_heartbeat">Kalp Atışı</string>
+    <string name="idle_pattern_orbit">Yörünge</string>
+    <string name="idle_pattern_rain">Yağmur</string>
+    <string name="strobe_mode">Disko! Modu</string>
+    <string name="strobe_mode_desc">Glifler için alternatif flaş deseni</string>
+    <string name="developer_access">Geliştirici Erişimi</string>
+    <string name="developer_access_desc">Gelişmiş özellikleri ve cihaz taklidini etkinleştirmek için lütfen geliştirici şifresini girin.</string>
+    <string name="password">Şifre</string>
+    <string name="unlock">Kilidi Aç</string>
+    <string name="incorrect_password">Yanlış Şifre</string>
+    <string name="cancel">İptal</string>
+    <string name="global_announcements">Global Duyurular</string>
+    <string name="global_announcements_desc">Tüm kullanıcıları güncellemeler veya haberler hakkında bilgilendirin</string>
+    <string name="create">Oluştur</string>
+    <string name="unlock_shizuku_source">Shizuku Kaynağının Kilidini Aç</string>
+    <string name="unlock_shizuku_source_desc">Deneysel yüksek isabetli yakalama</string>
+    <string name="expressive_ui">MD3E Arayüz</string>
+    <string name="nav_overlay">NavBar Spektrum</string>
+    <string name="overlay_width">Spektrum Genişliği</string>
+    <string name="overlay_height">Spektrum Yüksekliği</string>
+    <string name="vertical_position">Dikey Konum</string>
+    <string name="dynamic_gain">Dinamik Kazanç</string>
+
+    <string name="tab_audio">Ses</string>
+    <string name="tab_glyphs">Glyphler</string>
+    <string name="tab_haptics">Dokunsal</string>
+    <string name="tab_flashlight">Fener</string>
+    <string name="tab_settings">Ayarlar</string>
+
+    <string name="update_available_title">Güncelleme Mevcut: %s</string>
+    <string name="update_available_msg">Yeni bir sürüm mevcut. Yenilikler:</string>
+    <string name="no_changelog">Değişiklik günlüğü mevcut değil.</string>
+    <string name="install">Yükle</string>
+    <string name="download">İndir</string>
+    <string name="not_now">Şimdi değil</string>
+    <string name="downloading_update">Güncelleme İndiriliyor…</string>
+
+    <string name="app_name_caps">GLYPHIX</string>
+    <string name="appreciate_support">DESTEĞİNİZ İÇİN TEŞEKKÜR EDERİZ.</string>
+    <string name="youre_welcome">RİCA EDERİM!</string>
+
+    <string name="mediaprojection_permission">MediaProjection izni</string>
+    <string name="mediaprojection_description">Bu izin, Glyph görselleştiricinin gerçek zamanlı olarak tepki verebilmesi için uygulamanın Android\'in yakalama sistemi aracılığıyla cihazın ses akışına erişmesine olanak tanır. Gereksiz kayıtlar saklanmaz ve uygulama medyanızı veya özel verilerinizi kaydetmez.</string>
+    <string name="continue_label">Devam Et</string>
+
+    <string name="shizuku_permission_required">Bu kaynak için Shizuku izni gereklidir</string>
+    <string name="shizuku_not_running">Shizuku çalışmıyor veya yüklü değil</string>
+    <string name="announcement_posted">Duyuru yayınlandı!</string>
+    <string name="failed_to_post">Yayınlanamadı: %s</string>
+    <string name="audio_permission_required">Ses kaydı izni gereklidir</string>
+    <string name="screen_capture_denied">Ekran yakalama izni reddedildi</string>
+    <string name="notifications_required">Görselleştirici aktifken bildirimler gereklidir</string>
+    <string name="overlay_permission_denied">Bindirme izni reddedildi</string>
+    <string name="notification_access_required">Lütfen bu özellik için bildirim erişimini etkinleştirin</string>
+
+    <string name="thanks_downloading">indirdiğiniz için teşekkürler</string>
+    <string name="thanks_installing">yüklediğiniz için teşekkürler</string>
+    <string name="thanks_using">uygulamayı kullandığınız için teşekkürler</string>
+    <string name="thanks_nothing">NOTHING®\'e Teşekkürler</string>
+    <string name="thanks_participating">topluluğa katıldığınız için teşekkürler</string>
+
+    <string name="config_update_success">zones.config başarıyla güncellendi</string>
+    <string name="config_import_success">zones.config başarıyla içe aktarıldı</string>
+    <string name="config_import_error">Seçilen dosya okunamadı</string>
+    <string name="config_download_error">İndirme başarısız oldu: %d</string>
+    <string name="config_error_updating">Güncelleme hatası: %s</string>
+    <string name="config_error_importing">İçe aktarma hatası: %s</string>
+
+    <!-- License Screen -->
+    <string name="license_title">Lisans</string>
+    <string name="license_agreement">Lisans Sözleşmesi</string>
+    <string name="read_license">Yazılım lisansını oku</string>
+    <string name="license_agreement_title">GLYPHIX LİSANS SÖZLEŞMESİ</string>
+    <string name="license_version">Sürüm: 1.1</string>
+    <string name="license_date">Tarih: 29 Haziran 2026</string>
+    <string name="license_licensor">Lisans Veren</string>
+    <string name="license_licensor_name">Oliver Lebaigue</string>
+    <string name="license_founder">Kurucu</string>
+    <string name="license_founder_name">Oliver Lebaigue</string>
+    <string name="license_organization">Organizasyon</string>
+    <string name="license_organization_name">Luminus Labs</string>
+    <string name="license_section_1">1. BAŞLANGIÇ</string>
+    <string name="license_preamble_1">İşbu Lisans Sözleşmesi (\"Sözleşme\"), Oliver Lebaigue (\"Lisans Veren\") ile siz (\"Lisans Alan\") arasında, Oliver Lebaigue tarafından Luminus Labs organizasyonu altında kurulan \"Glyphix\" (\"Yazılım\") adlı müzik görselleştirici yazılım uygulamasının kullanımı, incelenmesi ve değiştirilmesi için yapılan yasal bir sözleşmedir.</string>
+    <string name="license_preamble_2">Yazılımın kaynak kodu https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator adresinde herkese açık olarak barındırılmaktadır. Yazılıma veya Kaynak Koduna erişerek, indirerek, kopyalayarak veya başka bir şekilde kullanarak, Lisans Alan işbu Sözleşmenin şartlarına bağlı kalmayı kabul eder.</string>
+    <string name="license_section_2">2. TANIMLAR</string>
+    <string name="license_def_1">2.1 \"Yazılım\", kaynak kodu, ses işleme modülleri, oluşturma motorları, görsel varlıklar, grafik kitaplıkları, yapılandırma betikleri, dokümantasyon, nesne dosyaları, ikili yürütülebilir dosyalar ve ilgili her türlü medya veya varlığı içeren ancak bunlarla sınırlı olmayan Glyphix yazılım uygulamasını ifade eder.</string>
+    <string name="license_def_2">2.2 \"Kaynak Kodu\", tüm betik dosyaları, gölgelendirici kodları, varlıklar ve derleme yapılandırmaları dahil olmak üzere Yazılımın herkese açık olarak ifşa edilen dosyalarını ifade eder.</string>
+    <string name="license_section_3">3. LİSANS VERME VE ERİŞİLEBİLİRLİK</string>
+    <string name="license_section_3_1">3.1 Kamuoyuna Açıklık</string>
+    <string name="license_grant_3_1">Lisans Veren, Kaynak Kodunun herkese açık olduğunu kabul eder. Lisans Alan\'a, Kaynak Kodunu yalnızca kişisel, eğitimsel ve ticari olmayan değerlendirme amaçlarıyla indirmesi, görüntülemesi ve değiştirmesi için münhasır olmayan, devredilemez ve iptal edilebilir bir lisans verilir.</string>
+    <string name="license_section_3_2">3.2 Kısıtlamalar</string>
+    <string name="license_grant_3_2">Lisans Alan ŞUNLARI YAPAMAZ:</string>
+    <string name="license_restriction_a">* (a) Yazılımı veya değiştirilmiş versiyonlarını, GitHub üzerindeki standart depo çatalları (fork) hariç olmak üzere, üçüncü taraflara yeniden dağıtamaz; bu çatalların da tam olarak bu Lisansa bağlı kalması şarttır.</string>
+    <string name="license_restriction_b">* (b) Yazılımı veya herhangi bir türev çalışmasını ticari amaçlarla, halka açık performanslarda, ticari yayınlarda veya herhangi bir gelir getirici faaliyette ayrı bir yazılı izin olmaksızın kullanamaz.</string>
+    <string name="license_restriction_c">* (c) Yazılımın üzerine veya içine yerleştirilmiş olan Oliver Lebaigue, Luminus Labs veya Lisans Veren\'e yapılan atıflar da dahil olmak üzere hiçbir telif hakkı, ticari marka, patent veya mülkiyet hakkı bildirimini kaldıramaz, değiştiremez veya gizleyemez.</string>
+    <string name="license_restriction_d">* (d) Yazılımı, rakip bir ticari müzik görselleştirme yazılımı veya platformu geliştirmek için kullanamaz.</string>
+    <string name="license_section_4">4. FİKRİ MÜLKİYET HAKLARI</string>
+    <string name="license_section_4_1">4.1 Mülkiyet</string>
+    <string name="license_ownership">Lisans Veren, Oliver Lebaigue ve Luminus Labs, Yazılım üzerindeki ve Yazılıma ilişkin tüm fikri mülkiyet hakları dahil olmak üzere ilgili tüm hak, unvan ve menfaatleri saklı tutar. Kaynak Kodunun kamuya açıklanması, telif hakkından veya mülkiyetten feragat edildiği anlamına gelmez.</string>
+    <string name="license_section_5">5. GARANTİ YOKTUR</string>
+    <string name="license_section_5_1">5.1 Sorumluluk Reddi</string>
+    <string name="license_warranty_disclaimer">YAZILIM \"OLDUĞU GİBİ\" VE \"TÜM HATALARIYLA\" SUNULMAKTADIR. YÜRÜRLÜKTEKİ YASALARIN İZİN VERDİĞİ AZAMİ ÖLÇÜDE, LİSANS VEREN, TİCARİ ELVERİŞLİLİK, BELİRLİ BİR AMACA UYGUNLUK, MÜLKİYET VE İHLAL ETMEME DAHİL ANCAK BUNLARLA SINIRLI OLMAMAK ÜZERE, AÇIK, ZIMNİ VEYA YASAL DİĞER TÜM GARANTİ VE KOŞULLARI REDDEDER.</string>
+    <string name="license_section_5_2">5.2 Teknik Destek Yoktur</string>
+    <string name="license_technical_support">Lisans Veren, Oliver Lebaigue ve Luminus Labs, Yazılım için teknik destek, güncelleme, yükseltme veya değişiklik sağlama yükümlülüğü altında değildir.</string>
+    <string name="license_section_6">6. SORUMLULUĞUN SINIRLANDIRILMASI</string>
+    <string name="license_section_6_1">6.1 Sorumluluk Üst Sınırı</string>
+    <string name="license_liability_cap">YÜRÜRLÜKTEKİ YASALARIN İZİN VERDİĞİ AZAMİ ÖLÇÜDE, LİSANS VEREN, ALEKS LEVET VEYA LUMINUS LABS, YAZILIMIN KULLANIMINDAN VEYA KULLANILAMAMASINDAN KAYNAKLANAN HİÇBİR DOLAYLI, ARIZİ, ÖZEL, SONUÇSAL VEYA CEZAİ ZARARDAN (KAR KAYBI, İŞİN KESİNTİYE UĞRAMASI VEYA DİĞER MADDİ KAYIPLAR DAHİL ANCAK BUNLARLA SINIRLI OLMAMAK ÜZERE), BU TÜR ZARARLARIN OLASILIĞI KONUSUNDA BİLGİLENDİRİLMİŞ OLSALAR DAHİ, HİÇBİR DURUMDA SORUMLU TUTULAMAZ.</string>
+    <string name="license_section_7">7. FESİH</string>
+    <string name="license_section_7_1">7.1 Otomatik Fesih</string>
+    <string name="license_termination">Lisans Alan\'ın işbu Sözleşme kapsamındaki hakları, Lisans Alan\'ın işbu Sözleşmenin herhangi bir şartına uymaması durumunda, Lisans Veren\'den herhangi bir bildirim gelmeksizin otomatik olarak sona erecektir. Fesih üzerine, Lisans Alan tüm kullanımı durdurmalı ve Yazılımın tüm yerel kopyalarını imha etmelidir.</string>
+    <string name="license_section_8">8. ÇEŞİTLİ HÜKÜMLER</string>
+    <string name="license_section_8_1">8.1 Uygulanacak Hukuk</string>
+    <string name="license_governing_law">İşbu Sözleşme, kanunlar ihtilafı ilkelerine bakılmaksızın, Oliver Lebaigue\'in ikamet ettiği yargı bölgesinin kanunlarına tabi olacak ve bu kanunlara göre yorumlanacaktır.</string>
+    <string name="end_of_license">LİSANS SÖZLEŞMESİNİN SONU</string>
+
+    <string name="back">Geri</string>
+    <string name="visual_preset_editor">Görsel Önayar Editörü</string>
+    <string name="share">Paylaş</string>
+    <string name="save">Kaydet</string>
+    <string name="community_presets">Topluluk Önayarları</string>
+    <string name="share_to_community">Toplulukla Paylaş</string>
+    <string name="share_preset_desc">Önayar(lar)ınızi diğer kullanıcılarla paylaşın!</string>
+    <string name="author_name">Hazırlayan</string>
+    <string name="preset_name">Önayar Adı</string>
+    <string name="segments_selected">Segmentler (%d seçildi)</string>
+    <string name="multi_select">Çoklu seçim</string>
+    <string name="bulk_actions">Toplu İşlemler</string>
+    <string name="bulk_actions_desc">Ayarları tüm seçili segmentlere uygula</string>
+    <string name="auto_distribute">Otomatik Dağıt</string>
+    <string name="editing_segment">Segment #%d Düzenleniyor</string>
+    <string name="editing_segments_count">%d Segment Düzenleniyor</string>
+    <string name="frequency_range_label">Frekans Aralığı: %1$dHz - %2$dHz</string>
+    <string name="no_presets_found">Hazır ayar bulunamadı. İlk paylaşan siz olun!</string>
+    <string name="preset_by_author">%1$s • %2$s tarafından</string>
+    <string name="downloads_count">%1$s • %2$d indirme</string>
+    <string name="clear">Temizle</string>
+</resources>
+
+
+
+

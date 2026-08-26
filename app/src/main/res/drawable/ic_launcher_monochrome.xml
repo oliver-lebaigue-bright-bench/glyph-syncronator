@@ -1,0 +1,56 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:translateX="3"
+        android:translateY="0">
+
+        <!-- Symmetrical bars forming a V-shape visualizer for Glyphix (Monochrome) -->
+
+        <!-- Bar 1 (Outer Left) -->
+        <path
+            android:fillColor="#66FFFFFF"
+            android:pathData="M10,48 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v12 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Bar 2 -->
+        <path
+            android:fillColor="#99FFFFFF"
+            android:pathData="M22,38 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v32 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Bar 3 -->
+        <path
+            android:fillColor="#CCFFFFFF"
+            android:pathData="M34,28 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v52 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Center Bar (Vibe Peak) -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M46,18 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v72 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Bar 5 -->
+        <path
+            android:fillColor="#CCFFFFFF"
+            android:pathData="M58,28 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v52 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Bar 6 -->
+        <path
+            android:fillColor="#99FFFFFF"
+            android:pathData="M70,38 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v32 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Bar 7 (Outer Right) -->
+        <path
+            android:fillColor="#66FFFFFF"
+            android:pathData="M82,48 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v12 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+
+        <!-- Sync Pulse Line (Centered to match peak bar) -->
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:pathData="M11,54 Q31,34 51,54 T91,54" />
+
+    </group>
+</vector>
