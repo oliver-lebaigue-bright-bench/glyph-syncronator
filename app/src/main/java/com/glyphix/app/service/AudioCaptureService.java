@@ -1250,15 +1250,16 @@ public class AudioCaptureService extends Service {
         Log.i(TAG, "Starting Network Capture. Local IP displayed: " + getLocalIpAddress());
         try {
             mNetworkSocket = new java.net.DatagramSocket(UDP_PORT);
-            mNetworkSocket.setReceiveBufferSize(128 * 1024);
+            mNetworkSocket.setReceiveBufferSize(256 * 1024);
+            mNetworkSocket.setSoTimeout(500); // 500ms timeout for responsiveness
             Log.i(TAG, "Network socket opened on port " + UDP_PORT);
-            mCurrentSampleRate = 44100;
+            mCurrentSampleRate = 48000;
             mAudioProcessor.updateFFTSize(mCurrentSampleRate);
             mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
             mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
             
-            byte[] buffer = new byte[4096];
-            short[] pcm = new short[2048];
+            byte[] buffer = new byte[8192];
+            short[] pcm = new short[4096];
             int packetsReceived = 0;
             Log.i(TAG, "Network capture loop started. Listening for UDP packets on port " + UDP_PORT);
             
@@ -1267,29 +1268,49 @@ public class AudioCaptureService extends Service {
             while (mCapturing && mNetworkSocket != null) {
                 try {
                     java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                    
+                    // Blocking receive for the first packet in a burst
                     mNetworkSocket.receive(packet);
-                    packetsReceived++;
-                    sNetworkPacketsReceived.setValue(packetsReceived);
                     
-                    int len = packet.getLength();
-                    if (packetsReceived == 1) {
-                        showToast("Audio link established!");
-                        Log.i(TAG, "Network Audio: First packet received from " + packet.getAddress().getHostAddress());
+                    // Burst processing: catch up if multiple packets are waiting
+                    int burstCount = 0;
+                    while (true) {
+                        packetsReceived++;
+                        sNetworkPacketsReceived.setValue(packetsReceived);
+                        
+                        int len = packet.getLength();
+                        if (packetsReceived == 1) {
+                            showToast("Audio link established!");
+                            Log.i(TAG, "Network Audio: First packet received from " + packet.getAddress().getHostAddress());
+                        }
+                        
+                        int samples = len / 2;
+                        for (int i = 0; i < samples; i++) {
+                            pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
+                        }
+                        
+                        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(pcm, samples, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
+                        if (result != null) {
+                            PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
+                            synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
+                        }
+
+                        // Try to get another packet immediately without blocking too much
+                        if (burstCount++ < 10) { // Limit burst to prevent starvation
+                            try {
+                                mNetworkSocket.setSoTimeout(1); // Near-instant check
+                                mNetworkSocket.receive(packet);
+                                continue;
+                            } catch (java.net.SocketTimeoutException ste) {
+                                mNetworkSocket.setSoTimeout(500); // Restore normal timeout
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
-                    if (packetsReceived <= 5 || packetsReceived % 100 == 0) {
-                        Log.d(TAG, "Network Audio: Received packet #" + packetsReceived + ", size: " + len + " bytes");
-                    }
-                    
-                    int samples = len / 2;
-                    for (int i = 0; i < samples; i++) {
-                        pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
-                    }
-                    
-                    AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(java.util.Arrays.copyOf(pcm, samples), mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
-                    if (result != null) {
-                        PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
-                        synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
-                    }
+                } catch (java.net.SocketTimeoutException e) {
+                    // Just check mCapturing and try again
                 } catch (Exception e) {
                     if (mCapturing && mNetworkSocket != null && !mNetworkSocket.isClosed()) {
                         Log.e(TAG, "Network capture loop error", e);

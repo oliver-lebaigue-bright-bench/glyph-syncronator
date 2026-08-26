@@ -21,6 +21,12 @@ public class EdgeVisualizerView extends View {
     private float[] mSmoothedLeft = new float[0];
     private float[] mSmoothedRight = new float[0];
     
+    private float[] mTargetTop = new float[0];
+    private float[] mTargetBottom = new float[0];
+    private float[] mTargetLeft = new float[0];
+    private float[] mTargetRight = new float[0];
+
+    private long mLastDrawTime = 0;
     private int mColor = Color.WHITE;
     private float mSensitivity = 1.0f;
     private int mBarHeightPx = 0;
@@ -84,6 +90,10 @@ public class EdgeVisualizerView extends View {
         this.mSmoothedBottom = new float[horiz];
         this.mSmoothedLeft = new float[vert];
         this.mSmoothedRight = new float[vert];
+        this.mTargetTop = new float[horiz];
+        this.mTargetBottom = new float[horiz];
+        this.mTargetLeft = new float[vert];
+        this.mTargetRight = new float[vert];
         invalidate();
     }
 
@@ -91,42 +101,76 @@ public class EdgeVisualizerView extends View {
         if (magnitudes == null || magnitudes.length == 0) return;
         this.mMagnitudes = magnitudes;
         
-        // magnitudes is now 512 log-spaced bins (20Hz - 20kHz)
         for (int i = 0; i < mBarCountHoriz; i++) {
             float center = (mBarCountHoriz - 1) / 2.0f;
             float normDist = Math.abs(i - center) / (mBarCountHoriz / 2f);
             float val = getMagnitudeAt(magnitudes, normDist);
-            float current = val * 1.5f * mSensitivity;
-            mSmoothedTop[i] = mSmoothedTop[i] * 0.7f + current * 0.3f;
-            mSmoothedBottom[i] = mSmoothedBottom[i] * 0.7f + current * 0.3f;
+            mTargetTop[i] = val;
+            mTargetBottom[i] = val;
         }
 
         for (int i = 0; i < mBarCountVert; i++) {
             float normPos = 1.0f - ((float) i / (mBarCountVert - 1));
             float val = getMagnitudeAt(magnitudes, normPos);
-            float current = val * 1.5f * mSensitivity;
-            mSmoothedRight[i] = mSmoothedRight[i] * 0.7f + current * 0.3f;
+            mTargetRight[i] = val;
         }
 
         for (int i = 0; i < mBarCountVert; i++) {
             float normPos = (float) i / (mBarCountVert - 1);
             float val = getMagnitudeAt(magnitudes, normPos);
-            float current = val * 1.5f * mSensitivity;
-            mSmoothedLeft[i] = mSmoothedLeft[i] * 0.7f + current * 0.3f;
+            mTargetLeft[i] = val;
         }
         
         postInvalidateOnAnimation();
     }
 
     private float getMagnitudeAt(float[] magnitudes, float normalizedIndex) {
-        int idx = (int) (normalizedIndex * (magnitudes.length - 1));
-        return magnitudes[Math.max(0, Math.min(magnitudes.length - 1, idx))];
+        if (magnitudes == null || magnitudes.length == 0) return 0f;
+        
+        // Sample a smaller window around the target frequency for sharper edge visuals
+        int centerIdx = (int) (normalizedIndex * (magnitudes.length - 1));
+        int windowSize = Math.max(1, magnitudes.length / 128); // 4 bins window
+        int start = Math.max(0, centerIdx - windowSize / 2);
+        int end = Math.min(magnitudes.length - 1, start + windowSize);
+        
+        float sum = 0;
+        for (int i = start; i <= end; i++) {
+            sum += magnitudes[i];
+        }
+        return sum / (end - start + 1);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (mMagnitudes == null || mBarHeightPx <= 0) return;
+
+        long now = android.os.SystemClock.elapsedRealtime();
+        float dt = (mLastDrawTime == 0) ? 16.6f : (now - mLastDrawTime);
+        mLastDrawTime = now;
+
+        float interpolation = Math.min(1.0f, dt / 50.0f); // 50ms smooth window
+        float decay = (float) Math.pow(0.85f, dt / 16.6f);
+
+        // Update smoothed values
+        for (int i = 0; i < mBarCountHoriz; i++) {
+            float tTop = mTargetTop[i] * 1.5f * mSensitivity;
+            if (tTop > mSmoothedTop[i]) mSmoothedTop[i] += (tTop - mSmoothedTop[i]) * interpolation;
+            else mSmoothedTop[i] *= decay;
+            
+            float tBottom = mTargetBottom[i] * 1.5f * mSensitivity;
+            if (tBottom > mSmoothedBottom[i]) mSmoothedBottom[i] += (tBottom - mSmoothedBottom[i]) * interpolation;
+            else mSmoothedBottom[i] *= decay;
+        }
+        for (int i = 0; i < mBarCountVert; i++) {
+            float tLeft = mTargetLeft[i] * 1.5f * mSensitivity;
+            if (tLeft > mSmoothedLeft[i]) mSmoothedLeft[i] += (tLeft - mSmoothedLeft[i]) * interpolation;
+            else mSmoothedLeft[i] *= decay;
+
+            float tRight = mTargetRight[i] * 1.5f * mSensitivity;
+            if (tRight > mSmoothedRight[i]) mSmoothedRight[i] += (tRight - mSmoothedRight[i]) * interpolation;
+            else mSmoothedRight[i] *= decay;
+        }
 
         int w = getWidth();
         int h = getHeight();

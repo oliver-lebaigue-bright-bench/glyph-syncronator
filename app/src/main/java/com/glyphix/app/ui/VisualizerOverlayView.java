@@ -9,9 +9,12 @@ import android.view.View;
 public class VisualizerOverlayView extends View {
     private float[] mMagnitudes;
     private final Paint mPaint = new Paint();
-    private static final int NUM_BARS = 16;
+    private static final int NUM_BARS = 32;
     private final float[] mSmoothedMagnitudesTop = new float[NUM_BARS];
     private final float[] mSmoothedMagnitudesBottom = new float[NUM_BARS];
+    private final float[] mTargetMagnitudes = new float[NUM_BARS];
+    
+    private long mLastDrawTime = 0;
     private int mColor = Color.WHITE;
     
     private boolean mTopEnabled = true;
@@ -62,24 +65,14 @@ public class VisualizerOverlayView extends View {
         if (magnitudes == null || magnitudes.length == 0) return;
         this.mMagnitudes = magnitudes;
         
-        // magnitudes is now 512 log-spaced bins (20Hz - 20kHz)
         int binsPerBar = magnitudes.length / NUM_BARS;
-
         for (int i = 0; i < NUM_BARS; i++) {
             float maxInBar = 0f;
             for (int j = i * binsPerBar; j < (i + 1) * binsPerBar && j < magnitudes.length; j++) {
                 if (magnitudes[j] > maxInBar) maxInBar = magnitudes[j];
             }
-            
-            // Smoothing for visual stability
-            if (mTopEnabled) {
-                float currentTop = maxInBar * 1.5f * mTopSensitivity;
-                mSmoothedMagnitudesTop[i] = mSmoothedMagnitudesTop[i] * 0.7f + currentTop * 0.3f;
-            }
-            if (mBottomEnabled) {
-                float currentBottom = maxInBar * 1.5f * mBottomSensitivity;
-                mSmoothedMagnitudesBottom[i] = mSmoothedMagnitudesBottom[i] * 0.7f + currentBottom * 0.3f;
-            }
+            // Switch back to MAX to restore punchiness; underlying data is now smoothed anyway
+            mTargetMagnitudes[i] = maxInBar;
         }
         postInvalidateOnAnimation();
     }
@@ -89,38 +82,60 @@ public class VisualizerOverlayView extends View {
         super.onDraw(canvas);
         if (mMagnitudes == null) return;
 
+        long now = android.os.SystemClock.elapsedRealtime();
+        float dt = (mLastDrawTime == 0) ? 16.6f : (now - mLastDrawTime);
+        mLastDrawTime = now;
+
+        // Visual smoothing constants (liquid feel)
+        float interpolation = Math.min(1.0f, dt / 40.0f); // 40ms window for smoothing
+        float decay = (float) Math.pow(0.88f, dt / 16.6f);
+
         int width = getWidth();
         float barWidth = (float) width / NUM_BARS;
-        float spacing = 1.5f;
+        float spacing = 1.0f;
         float cornerRadius = 2f;
 
         float baselineY = mTopEnabled ? mTopHeightPx : 0;
 
         for (int i = 0; i < NUM_BARS; i++) {
-            float left = i * barWidth + spacing;
-            float right = (i + 1) * barWidth - spacing;
-
+            float target = mTargetMagnitudes[i] * 1.5f;
+            
             if (mTopEnabled) {
-                float valTop = mSmoothedMagnitudesTop[i];
-                float barHeightTop = valTop * mTopHeightPx;
+                float val = target * mTopSensitivity;
+                if (val > mSmoothedMagnitudesTop[i]) {
+                    mSmoothedMagnitudesTop[i] = mSmoothedMagnitudesTop[i] + (val - mSmoothedMagnitudesTop[i]) * interpolation;
+                } else {
+                    mSmoothedMagnitudesTop[i] *= decay;
+                }
+                
+                float barHeightTop = mSmoothedMagnitudesTop[i] * mTopHeightPx;
                 if (barHeightTop > mTopHeightPx) barHeightTop = mTopHeightPx;
                 if (barHeightTop < 1.0f) barHeightTop = 1.0f;
 
-                float top = baselineY - barHeightTop;
-                float bottom = baselineY;
-                canvas.drawRoundRect(left, top, right, bottom, cornerRadius, cornerRadius, mPaint);
+                float left = i * barWidth + spacing;
+                float right = (i + 1) * barWidth - spacing;
+                canvas.drawRoundRect(left, baselineY - barHeightTop, right, baselineY, cornerRadius, cornerRadius, mPaint);
             }
 
             if (mBottomEnabled) {
-                float valBottom = mSmoothedMagnitudesBottom[i];
-                float barHeightBottom = valBottom * mBottomHeightPx;
+                float val = target * mBottomSensitivity;
+                if (val > mSmoothedMagnitudesBottom[i]) {
+                    mSmoothedMagnitudesBottom[i] = mSmoothedMagnitudesBottom[i] + (val - mSmoothedMagnitudesBottom[i]) * interpolation;
+                } else {
+                    mSmoothedMagnitudesBottom[i] *= decay;
+                }
+                
+                float barHeightBottom = mSmoothedMagnitudesBottom[i] * mBottomHeightPx;
                 if (barHeightBottom > mBottomHeightPx) barHeightBottom = mBottomHeightPx;
                 if (barHeightBottom < 1.0f) barHeightBottom = 1.0f;
 
-                float top = baselineY;
-                float bottom = baselineY + barHeightBottom;
-                canvas.drawRoundRect(left, top, right, bottom, cornerRadius, cornerRadius, mPaint);
+                float left = i * barWidth + spacing;
+                float right = (i + 1) * barWidth - spacing;
+                canvas.drawRoundRect(left, baselineY, right, baselineY + barHeightBottom, cornerRadius, cornerRadius, mPaint);
             }
         }
+        
+        // Keep animating if we have active bars
+        postInvalidateOnAnimation();
     }
 }
