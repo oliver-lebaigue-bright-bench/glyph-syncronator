@@ -8,6 +8,7 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
 
 class GlyphNotificationListener : NotificationListenerService() {
 
@@ -19,6 +20,7 @@ class GlyphNotificationListener : NotificationListenerService() {
             if (state == null) return
             
             val intent = Intent("com.glyphix.app.action.STATE_CHANGED")
+            intent.setPackage(packageName)
             intent.putExtra("is_playing", state.state == PlaybackState.STATE_PLAYING)
             intent.putExtra("position", state.position)
             sendBroadcast(intent)
@@ -35,8 +37,10 @@ class GlyphNotificationListener : NotificationListenerService() {
             val state = activeController?.playbackState
             val position = state?.position ?: 0L
             
+            Log.d("GlyphNotif", "Song changed: $title - $artist")
             if (title != null && artist != null) {
                 val intent = Intent("com.glyphix.app.action.SONG_CHANGED")
+                intent.setPackage(packageName)
                 intent.putExtra("title", title)
                 intent.putExtra("artist", artist)
                 intent.putExtra("duration", duration)
@@ -47,6 +51,7 @@ class GlyphNotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        Log.d("GlyphNotif", "Notification posted: ${sbn?.packageName}")
         val notification = sbn?.notification ?: return
         val token = notification.extras.getParcelable<MediaSession.Token>(Notification.EXTRA_MEDIA_SESSION)
         
