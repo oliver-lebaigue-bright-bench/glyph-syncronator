@@ -81,15 +81,10 @@ fun HapticsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = LocalAppSpacing.current.edge)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-        ScreenTitle(text = stringResource(R.string.haptics_header))
-
         AnimatedToggleCard(
             title = stringResource(R.string.haptics_motor_title),
             checked = hapticMotorEnabled,
@@ -299,6 +294,6 @@ fun HapticsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(85.dp))
+        Spacer(modifier = Modifier.height(110.dp))
     }
 }

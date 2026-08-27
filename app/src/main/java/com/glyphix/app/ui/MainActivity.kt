@@ -65,6 +65,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -291,7 +292,11 @@ class MainActivity : ComponentActivity() {
                     )
 
                     // Overlays
-                    MainOverlays(viewModel = viewModel, selectedDevice = viewModel.selectedDevice.collectAsState().value)
+                    MainOverlays(
+                        viewModel = viewModel,
+                        selectedDevice = viewModel.selectedDevice.collectAsState().value,
+                        onGoogleSignIn = { launchGoogleSignIn() }
+                    )
                     CommunityOverlays(viewModel = viewModel)
                 }
             }
@@ -556,28 +561,60 @@ internal fun GlyphixApp(
     val penisMode = LocalPenisMode.current
     val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
     val isMonster = selectedTheme.startsWith("Monster")
+    val isFabMenuExpanded by viewModel.isFabMenuExpanded.collectAsStateWithLifecycle()
+    val isHamburgerMenuOpen by viewModel.isHamburgerMenuOpen.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
 
-    Scaffold(
-        bottomBar = {
-            NativeBottomBar(
-                selectedTab = selectedTab,
-                visibleTabs = visibleTabs,
-                onTabSelected = { viewModel.selectTab(it) }
+    val screenTitle = when (selectedTab) {
+        Tab.Audio -> "Glyphix"
+        Tab.Glyphs -> "Glyphs"
+        Tab.Visuals -> "Visuals"
+        Tab.Haptics -> "Haptics"
+        Tab.Flashlight -> "Torch"
+        Tab.Settings -> "Settings"
+    }
+
+    val pagePadding = PaddingValues(bottom = 100.dp, top = 6.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+        // Top Bar Container: Top Bar + seamlessly attached Hamburger Dropdown Menu
+        Box(modifier = Modifier.fillMaxWidth()) {
+            FloatingTopBar(
+                title = screenTitle,
+                onMenuClick = { viewModel.toggleHamburgerMenu() },
+                onProfileClick = { viewModel.showProfile() },
+                avatarUrl = userProfile?.profilePictureUrl,
+                isProfileActive = false
             )
-        },
-        floatingActionButton = {
-            StartStopButton(running = isRunning, onClick = onToggleVisualizer)
-        },
-        containerColor = if (isGlass || bananaMode || penisMode || isMonster) Color.Transparent else MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        modifier = Modifier.fillMaxSize()
-    ) { padding ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = visibleTabs.size,
-            userScrollEnabled = true
-        ) { page ->
+
+            // Quick Configuration Dropdown Menu (Assets/Hamburger Menu.png)
+            HamburgerDropdownMenu(
+                isOpen = isHamburgerMenuOpen,
+                onDismiss = { viewModel.setHamburgerMenuOpen(false) },
+                onSelectGlyphs = { viewModel.selectTab(Tab.Glyphs) },
+                onSelectHaptics = { viewModel.selectTab(Tab.Haptics) },
+                onSelectOverlays = { viewModel.selectTab(Tab.Visuals) },
+                onSelectTorch = { viewModel.selectTab(Tab.Flashlight) }
+            )
+        }
+
+        // Main Page Box: HorizontalPager fills full area; FloatingBottomBar OVERLAPS at bottom
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = visibleTabs.size,
+                userScrollEnabled = true
+            ) { page ->
             if (page >= visibleTabs.size) return@HorizontalPager
             val tab = visibleTabs[page]
             Box(
@@ -629,7 +666,7 @@ internal fun GlyphixApp(
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
                             penisMode = penisMode,
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Glyphs -> {
@@ -654,7 +691,7 @@ internal fun GlyphixApp(
                             isRunning = isRunning,
                             selectedDevice = selectedDevice,
                             viewModel = viewModel,
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Visuals -> {
@@ -664,7 +701,7 @@ internal fun GlyphixApp(
                             overlayEnabled = overlayEnabled,
                             onOverlayEnabledChanged = { viewModel.setOverlayEnabled(it) },
                             onOverlayPermissionRequest = { onOverlayPermissionRequest() },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Haptics -> {
@@ -712,7 +749,7 @@ internal fun GlyphixApp(
                             onHapticBeatGammaChanged = { viewModel.setHapticBeatGamma(it) },
                             hapticAmplitudeProvider = { viewModel.hapticAmplitude.value },
                             isBeatDetectedProvider = { isBeatDetected },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Flashlight -> {
@@ -758,7 +795,7 @@ internal fun GlyphixApp(
                             flashlightCurrentLevel = flashlightLevel,
                             flashlightAmplitudeProvider = { viewModel.flashlightAmplitude.value },
                             isBeatDetectedProvider = { isFlashlightBeatDetected },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Settings -> {
@@ -786,11 +823,44 @@ internal fun GlyphixApp(
                                 )
                             },
                             onGoogleSignIn = onGoogleSignIn,
-                            padding = padding
+                            padding = pagePadding,
+                            onOpenProfile = { viewModel.showProfile() },
+                            onOpenMenu = { viewModel.toggleHamburgerMenu() }
                         )
                     }
                 }
             }
         }
+
+        // Floating Bottom Navigation Bar (Floats directly over pages with no reserved space)
+        FloatingBottomBar(
+            selectedTab = selectedTab,
+            onTabSelected = { viewModel.selectTab(it) },
+            isRunning = isRunning,
+            onToggleVisualizer = onToggleVisualizer,
+            isFabMenuExpanded = isFabMenuExpanded,
+            onToggleFabMenu = { viewModel.toggleFabMenu() },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        )
+
+        // Speed-Dial Capture Source Menu (Assets/FAB menu.png)
+        SpeedDialFabMenu(
+            isExpanded = isFabMenuExpanded,
+            currentSource = captureSource,
+            onSelectSource = { source ->
+                viewModel.setCaptureSource(source)
+                viewModel.setFabMenuExpanded(false)
+                if (!isRunning) {
+                    onToggleVisualizer()
+                }
+            },
+            onDismiss = { viewModel.setFabMenuExpanded(false) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+        )
     }
+}
 }

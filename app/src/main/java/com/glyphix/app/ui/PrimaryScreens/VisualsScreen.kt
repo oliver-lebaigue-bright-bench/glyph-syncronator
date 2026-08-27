@@ -59,15 +59,10 @@ fun VisualsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = LocalAppSpacing.current.edge)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-        ScreenTitle(text = stringResource(R.string.tab_visuals))
-
         ExpressiveCard {
             Row(
                 modifier = Modifier
@@ -743,6 +738,6 @@ fun VisualsScreen(
             }
         }
         
-        Spacer(modifier = Modifier.height(85.dp))
+        Spacer(modifier = Modifier.height(110.dp))
     }
 }

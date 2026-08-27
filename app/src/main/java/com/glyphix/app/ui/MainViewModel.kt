@@ -201,6 +201,37 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showProfileSetup() { _isShowingProfileSetup.value = true }
     fun hideProfileSetup() { _isShowingProfileSetup.value = false }
 
+    private val _isShowingProfile = MutableStateFlow(false)
+    val isShowingProfile = _isShowingProfile.asStateFlow()
+    fun showProfile() { _isShowingProfile.value = true }
+    fun hideProfile() { _isShowingProfile.value = false }
+
+    fun updateDisplayName(name: String) {
+        val current = _userProfile.value
+        val updated = current?.copy(displayName = name) ?: UserProfile(
+            userId = userId.value ?: "anon",
+            displayName = name,
+            createdAt = System.currentTimeMillis()
+        )
+        _userProfile.value = updated
+        _userNickname.value = name
+        viewModelScope.launch(Dispatchers.IO) {
+            userRepository.saveUserProfile(updated)
+        }
+    }
+
+    fun updateProfile(name: String) = updateDisplayName(name)
+
+    private val _isHamburgerMenuOpen = MutableStateFlow(false)
+    val isHamburgerMenuOpen = _isHamburgerMenuOpen.asStateFlow()
+    fun setHamburgerMenuOpen(open: Boolean) { _isHamburgerMenuOpen.value = open }
+    fun toggleHamburgerMenu() { _isHamburgerMenuOpen.value = !_isHamburgerMenuOpen.value }
+
+    private val _isFabMenuExpanded = MutableStateFlow(false)
+    val isFabMenuExpanded = _isFabMenuExpanded.asStateFlow()
+    fun setFabMenuExpanded(expanded: Boolean) { _isFabMenuExpanded.value = expanded }
+    fun toggleFabMenu() { _isFabMenuExpanded.value = !_isFabMenuExpanded.value }
+
 
     private val _flashlightMultiIntensityForced = MutableStateFlow(false)
     val flashlightMultiIntensityForced = _flashlightMultiIntensityForced.asStateFlow()

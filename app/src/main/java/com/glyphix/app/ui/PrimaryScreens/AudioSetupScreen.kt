@@ -42,6 +42,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -89,13 +94,7 @@ import androidx.core.content.ContextCompat
 import com.glyphix.app.R
 import com.glyphix.app.logic.LatencyWizard
 import com.glyphix.app.service.AudioCaptureService
-import com.glyphix.app.ui.OptionTile
-import com.glyphix.app.ui.ScreenTitle
-import com.glyphix.app.ui.ExpressiveCard
-import com.glyphix.app.ui.BodyText
-import com.glyphix.app.ui.CardHeader
-import com.glyphix.app.ui.ExpressiveSlider
-import com.glyphix.app.ui.LocalAppSpacing
+import com.glyphix.app.ui.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
@@ -178,54 +177,48 @@ fun AudioScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = LocalAppSpacing.current.edge)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-        ScreenTitle(
-            text = stringResource(
-                R.string.audio_screen_title
-            )
-        )
-
-        val headerSpacerHeight by animateDpAsState(
-            targetValue = if (isRunning) 0.dp else 25.dp,
-            animationSpec = tween(durationMillis = 600, easing = EaseOutCubic),
-            label = "headerSpacerHeight"
-        )
-
-        if (headerSpacerHeight > 0.dp) {
-            Spacer(Modifier.height(headerSpacerHeight))
-        }
-
-        CaptureSourceCard(
-            selectedSource = captureSource,
-            onSourceSelected = { source ->
-                if (source == AudioCaptureService.CaptureSource.MIC || source == AudioCaptureService.CaptureSource.VIZUALIZER) {
-                    val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                    if (status == PackageManager.PERMISSION_GRANTED) {
-                        onCaptureSourceChanged(source)
-                    } else {
-                        pendingCaptureSource = source
-                        recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        if (!isRunning) {
+            MockupCard {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(mockupAccentColor().copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            tint = mockupAccentColor(),
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
-                } else {
-                    onCaptureSourceChanged(source)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Audio Visualizer Ready",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                        Text(
+                            text = "Tap the Play button below to select capture source and start sync.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = mockupSubtextColor()
+                        )
+                    }
                 }
             }
-        )
-
-        val header2SpacerHeight by animateDpAsState(
-            targetValue = if (isRunning) 0.dp else 25.dp,
-            animationSpec = tween(durationMillis = 600, easing = EaseOutCubic),
-            label = "headerSpacerHeight"
-        )
-
-        if (header2SpacerHeight > 0.dp) {
-            Spacer(Modifier.height(header2SpacerHeight))
         }
 
         AnimatedVisibility(visible = isRunning) {

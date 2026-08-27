@@ -83,15 +83,10 @@ fun FlashlightScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
-            .padding(horizontal = LocalAppSpacing.current.edge)
-            .verticalScroll(scrollState),
+            .verticalScroll(scrollState)
+            .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-
-        ScreenTitle(text = stringResource(R.string.flashlight_header))
-
         AnimatedToggleCard(
             title = stringResource(R.string.flashlight_sync_title),
             checked = flashlightEnabled,
@@ -306,6 +301,6 @@ fun FlashlightScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(85.dp))
+        Spacer(modifier = Modifier.height(110.dp))
     }
 }
