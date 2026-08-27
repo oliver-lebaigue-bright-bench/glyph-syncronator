@@ -49,26 +49,26 @@ fun StatsScreen(
     val hapticTime by viewModel.totalHapticTime.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
 
-    // Formatted time calculations
+    // Formatted real time calculations
     val totalHours = totalTime / (1000 * 60 * 60)
     val totalMins = (totalTime / (1000 * 60)) % 60
-    val totalDisplay = if (totalTime > 0) "${totalHours}h ${totalMins}m" else "92h 14m"
+    val totalDisplay = "${totalHours}h ${totalMins}m"
 
     val totalActiveAndIdle = (activeTime + idleTime).coerceAtLeast(1L)
-    val activePercent = if (activeTime > 0) (activeTime * 100 / totalActiveAndIdle).toInt() else 78
-    val idlePercent = 100 - activePercent
+    val activePercent = if (activeTime > 0) (activeTime * 100 / totalActiveAndIdle).toInt() else 0
+    val idlePercent = if (idleTime > 0) 100 - activePercent else 0
 
     val glyphHours = glyphTime / (1000 * 60 * 60)
     val glyphMins = (glyphTime / (1000 * 60)) % 60
-    val glyphDisplay = if (glyphTime > 0) "${glyphHours}h ${glyphMins}m" else "58h 32m"
+    val glyphDisplay = "${glyphHours}h ${glyphMins}m"
 
     val hapticHours = hapticTime / (1000 * 60 * 60)
     val hapticMins = (hapticTime / (1000 * 60)) % 60
-    val hapticDisplay = if (hapticTime > 0) "${hapticHours}h ${hapticMins}m" else "21h 14m"
+    val hapticDisplay = "${hapticHours}h ${hapticMins}m"
 
     val idleHours = idleTime / (1000 * 60 * 60)
     val idleMins = (idleTime / (1000 * 60)) % 60
-    val idleDisplay = if (idleTime > 0) "${idleHours}h ${idleMins}m" else "12h 28m"
+    val idleDisplay = "${idleHours}h ${idleMins}m"
 
     Box(
         modifier = modifier

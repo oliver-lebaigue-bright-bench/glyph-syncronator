@@ -97,7 +97,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SPOTIFY }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";
@@ -558,6 +558,16 @@ public class AudioCaptureService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIF_ID, buildNotification(), 0);
+            } else {
+                startForeground(NOTIF_ID, buildNotification());
+            }
+        } catch (Throwable ignored) {}
+
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_STOP.equals(action)) { stopCapture(); stopSelf(); return START_NOT_STICKY; }
@@ -620,6 +630,7 @@ public class AudioCaptureService extends Service {
     public void startVisualizer() {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+        else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -632,6 +643,7 @@ public class AudioCaptureService extends Service {
             stopCapture();
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+            else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
         });
     }
 
@@ -941,19 +953,50 @@ public class AudioCaptureService extends Service {
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
 
+    public void startSpotifyCapture() { startCaptureInternal(CaptureSource.SPOTIFY, 0, null); }
+
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
         if (source == CaptureSource.INTERNAL) projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         synchronized (mCaptureLock) {
             stopCaptureLocked();
-            if (source == CaptureSource.INTERNAL) {
-                if (projectionManager == null) return;
-                if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION); else startForeground(NOTIF_ID, buildNotification());
-                mProjection = projectionManager.getMediaProjection(resultCode, data);
-                if (mProjection == null) { stopForeground(STOP_FOREGROUND_REMOVE); setRunning(false); return; }
-                mProjection.registerCallback(mProjectionCallback, mWorkerHandler);
-            } else if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE); else startForeground(NOTIF_ID, buildNotification());
+            try {
+                if (source == CaptureSource.INTERNAL) {
+                    if (projectionManager == null) return;
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                    mProjection = projectionManager.getMediaProjection(resultCode, data);
+                    if (mProjection == null) { stopForeground(STOP_FOREGROUND_REMOVE); setRunning(false); return; }
+                    mProjection.registerCallback(mProjectionCallback, mWorkerHandler);
+                } else if (source == CaptureSource.MIC) {
+                    if (Build.VERSION.SDK_INT >= 29 && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+                    } else if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                    } else if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), 0);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                } else {
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                    } else if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), 0);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                }
+            } catch (Throwable fgsError) {
+                Log.w(TAG, "startForeground fallback", fgsError);
+                try {
+                    startForeground(NOTIF_ID, buildNotification());
+                } catch (Throwable ignored) {}
+            }
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
@@ -990,9 +1033,19 @@ public class AudioCaptureService extends Service {
                         } else {
                             Log.e(TAG, "MediaProjection is null or SDK < Q for internal capture");
                         }
-                    } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
-                    else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                    } else if (source == CaptureSource.VIZUALIZER || source == CaptureSource.SPOTIFY) {
+                        setupVisualizerCapture();
+                        return;
+                    } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        try {
+                            localRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                            if (localRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                                localRecord.release();
+                                localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "AudioRecord initialization error", e);
+                        }
                     }
                     
                     if (localRecord != null) {
@@ -1047,6 +1100,7 @@ public class AudioCaptureService extends Service {
 
         // Persist locally
         SharedPreferences prefs = getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE);
+        String todayKey = "usage_day_" + new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(new java.util.Date());
         prefs.edit()
             .putLong("total_visualized_time", prefs.getLong("total_visualized_time", 0L) + t)
             .putLong("total_active_time", prefs.getLong("total_active_time", 0L) + a)
@@ -1054,6 +1108,7 @@ public class AudioCaptureService extends Service {
             .putLong("total_glyph_time", prefs.getLong("total_glyph_time", 0L) + g)
             .putLong("total_haptic_time", prefs.getLong("total_haptic_time", 0L) + h)
             .putLong("total_flashlight_time", prefs.getLong("total_flashlight_time", 0L) + f)
+            .putLong(todayKey, prefs.getLong(todayKey, 0L) + t)
             .apply();
 
         // Reset local counters for next sync block
@@ -1188,13 +1243,51 @@ public class AudioCaptureService extends Service {
             mAudioProcessor.updateFFTSize();
             mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
             mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
-            mVisualizer = new Visualizer(0); int captureSize = Math.min(Visualizer.getCaptureSizeRange()[1], 1024); mVisualizer.setCaptureSize(captureSize);
-            mVisualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
-                @Override public void onWaveFormDataCapture(Visualizer v, byte[] w, int sr) { processVisualizerWaveform(w, sr); }
-                @Override public void onFftDataCapture(Visualizer v, byte[] f, int sr) {}
-            }, Visualizer.getMaxCaptureRate(), true, false);
-            mVisualizer.setEnabled(true);
-        } catch (Exception e) { Log.e(TAG, "Failed to start Visualizer capture", e); releaseVisualizer(); }
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                mVisualizer = new Visualizer(0);
+                int captureSize = Math.min(Visualizer.getCaptureSizeRange()[1], 1024);
+                mVisualizer.setCaptureSize(captureSize);
+                mVisualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
+                    @Override public void onWaveFormDataCapture(Visualizer v, byte[] w, int sr) { processVisualizerWaveform(w, sr); }
+                    @Override public void onFftDataCapture(Visualizer v, byte[] f, int sr) {}
+                }, Visualizer.getMaxCaptureRate(), true, false);
+                mVisualizer.setEnabled(true);
+                Log.d(TAG, "Visualizer capture initialized successfully");
+            } else {
+                Log.w(TAG, "RECORD_AUDIO not granted for Visualizer(0), waiting for permission or in-app sync");
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to start Visualizer capture safely handled", e);
+            releaseVisualizer();
+        }
+    }
+
+    public void pushSpotifyFrame(float[] magnitudes, float peak) {
+        if (!mCapturing) {
+            mCapturing = true;
+            setRunning(true);
+            ensureGlyphSession();
+        }
+        if (mVisualizerConfig == null) return;
+        long now = SystemClock.elapsedRealtime();
+        if (magnitudes != null && magnitudes.length > 0) {
+            int[] emptyFft = new int[0];
+            PendingFrame frame = new PendingFrame(
+                magnitudes,
+                emptyFft,
+                emptyFft,
+                peak,
+                peak,
+                peak,
+                mVisualizerConfig,
+                mPresetConfigVersion.get(),
+                now
+            );
+            synchronized (mVisualizerPendingFrames) {
+                mVisualizerPendingFrames.addLast(frame);
+                dispatchDueFrames(mVisualizerPendingFrames);
+            }
+        }
     }
 
     private short[] mWaveformHopBuffer = new short[0];

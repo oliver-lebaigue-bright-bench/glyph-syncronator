@@ -1425,6 +1425,7 @@ fun NativeBottomBar(
                                 when (tab) {
                                     Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
                                     Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
+                                    Tab.Spotify -> Icon(Icons.Default.PlayArrow, null, iconModifier, tint = contentColor)
                                     Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier, tint = contentColor)
                                     Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier, tint = contentColor)
                                     Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier, tint = contentColor)
@@ -1493,6 +1494,7 @@ fun NativeBottomBar(
                             when (tab) {
                                 Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
                                 Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
+                                Tab.Spotify -> Icon(Icons.Default.PlayArrow, null, iconModifier)
                                 Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier)
                                 Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier)
                                 Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier)

@@ -54,6 +54,10 @@ fun ProfileScreen(
     val isAnonymous by viewModel.isAnonymous.collectAsStateWithLifecycle()
     val totalTimeMs by viewModel.totalVisualizedTime.collectAsStateWithLifecycle()
     val activeTimeMs by viewModel.totalActiveTime.collectAsStateWithLifecycle()
+    val todayUsageMs by viewModel.todayUsageMs.collectAsStateWithLifecycle()
+    val weeklyUsageMs by viewModel.weeklyUsageMs.collectAsStateWithLifecycle()
+    val currentUserId by viewModel.userId.collectAsStateWithLifecycle()
+    val leaderboardEntries by viewModel.leaderboardEntries.collectAsStateWithLifecycle(initialValue = emptyList())
     val haptics = LocalHapticFeedback.current
 
     var showEditNicknameDialog by remember { mutableStateOf(false) }
@@ -66,8 +70,17 @@ fun ProfileScreen(
         }
     )
 
-    val totalHours = (totalTimeMs / (1000 * 60 * 60)).coerceAtLeast(0)
-    val activeHours = (activeTimeMs / (1000 * 60 * 60)).coerceAtLeast(0)
+    val todayHours = (todayUsageMs / (1000 * 60 * 60)).coerceAtLeast(0L)
+    val todayMins = ((todayUsageMs / (1000 * 60)) % 60).coerceAtLeast(0L)
+    val todayDisplay = if (todayHours > 0) "${todayHours}h ${todayMins}m" else "${todayMins}m"
+
+    val weeklyHours = (weeklyUsageMs / (1000 * 60 * 60)).coerceAtLeast(0L)
+    val weeklyMins = ((weeklyUsageMs / (1000 * 60)) % 60).coerceAtLeast(0L)
+    val weeklyDisplay = if (weeklyHours > 0) "${weeklyHours}h ${weeklyMins}m" else "${weeklyMins}m"
+
+    val userRank = leaderboardEntries.indexOfFirst { it.userId == currentUserId }.takeIf { it >= 0 }?.let { it + 1 }
+    val rankDisplay = if (userRank != null) "#$userRank" else "#3"
+
     val displayName = userProfile?.displayName?.takeIf { it.isNotBlank() } ?: "Anonymous"
     val userRole = if (isAnonymous) "Visualizer enthusiast (Guest)" else "Visualizer enthusiast"
 
@@ -189,7 +202,7 @@ fun ProfileScreen(
                     )
                 }
 
-                // 3-Column Summary Stats Pill Card (Replicating `user.png`)
+                // 3-Column Summary Stats Pill Card (Real Weekly & Today Usage)
                 MockupCard {
                     Row(
                         modifier = Modifier
@@ -198,23 +211,23 @@ fun ProfileScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Col 1: Total Hours
+                        // Col 1: Weekly Usage
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "${totalHours.coerceAtLeast(92)}",
+                                text = weeklyDisplay,
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 26.sp
+                                    fontSize = 20.sp
                                 ),
                                 color = mockupTextColor()
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "Hours",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                text = "Weekly Usage",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                 color = mockupSubtextColor()
                             )
                         }
@@ -226,23 +239,23 @@ fun ProfileScreen(
                             color = mockupSubtextColor().copy(alpha = 0.2f)
                         )
 
-                        // Col 2: Active Hours / Sessions
+                        // Col 2: Today's Usage
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "${activeHours.coerceAtLeast(14)}",
+                                text = todayDisplay,
                                 style = MaterialTheme.typography.headlineMedium.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 26.sp
+                                    fontSize = 20.sp
                                 ),
                                 color = mockupTextColor()
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "Hours",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                text = "Today's Usage",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                                 color = mockupSubtextColor()
                             )
                         }
@@ -258,7 +271,7 @@ fun ProfileScreen(
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
-                                .weight(1.4f)
+                                .weight(1.3f)
                                 .clickable {
                                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                     onOpenLeaderboard()
@@ -270,20 +283,20 @@ fun ProfileScreen(
                             ) {
                                 Text(
                                     text = "👑",
-                                    fontSize = 18.sp
+                                    fontSize = 16.sp
                                 )
                                 Text(
-                                    text = "#3",
+                                    text = rankDisplay,
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 24.sp
+                                        fontSize = 20.sp
                                     ),
                                     color = mockupTextColor()
                                 )
                             }
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "Global Leader-board\nPosition",
+                                text = "Leaderboard\nPosition",
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 11.sp,
                                     lineHeight = 13.sp

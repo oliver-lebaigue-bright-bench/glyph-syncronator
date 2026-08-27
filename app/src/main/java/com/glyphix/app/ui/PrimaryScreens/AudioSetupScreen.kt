@@ -91,9 +91,19 @@ import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.brands.Android
 import compose.icons.fontawesomeicons.solid.*
 import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
+import coil3.compose.AsyncImage
 import com.glyphix.app.R
 import com.glyphix.app.logic.LatencyWizard
 import com.glyphix.app.service.AudioCaptureService
+import com.glyphix.app.spotify.SpotifyPlaybackState
 import com.glyphix.app.ui.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -121,6 +131,14 @@ fun AudioScreen(
     onResetLatencyWizard: () -> Unit = {},
     bananaMode: Boolean = false,
     penisMode: Boolean = false,
+    spotifyPlaybackState: SpotifyPlaybackState? = null,
+    onSpotifyTogglePlay: () -> Unit = {},
+    onSpotifyNext: () -> Unit = {},
+    onSpotifyPrevious: () -> Unit = {},
+    onSpotifySeek: (Long) -> Unit = {},
+    onSpotifyToggleShuffle: () -> Unit = {},
+    onSpotifyToggleRepeat: () -> Unit = {},
+    onOpenSpotifyTab: () -> Unit = {},
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
     val context = LocalContext.current
@@ -181,6 +199,20 @@ fun AudioScreen(
             .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Inbuilt Spotify Control Panel (Displayed above everything when Spotify is active input)
+        if (captureSource == AudioCaptureService.CaptureSource.SPOTIFY) {
+            GlyphixSpotifyControlPanel(
+                playbackState = spotifyPlaybackState,
+                onTogglePlay = onSpotifyTogglePlay,
+                onNext = onSpotifyNext,
+                onPrevious = onSpotifyPrevious,
+                onSeek = onSpotifySeek,
+                onToggleShuffle = onSpotifyToggleShuffle,
+                onToggleRepeat = onSpotifyToggleRepeat,
+                onOpenSpotifyTab = onOpenSpotifyTab
+            )
+        }
+
         if (!isRunning) {
             MockupCard {
                 Row(
@@ -251,41 +283,7 @@ fun AudioScreen(
             }
         }
 
-        AnimatedVisibility(visible = isRunning) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-                if (captureSource != AudioCaptureService.CaptureSource.MIC) {
-                    LatencyCard(
-                        latencyMs = latencyMs,
-                        onLatencyChanged = onLatencyChanged,
-                        latencyPresets = latencyPresets,
-                        onLatencyPresetsChanged = onLatencyPresetsChanged,
-                        wizardState = latencyWizardState,
-                        onRunWizard = {
-                            val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                            if (status == PackageManager.PERMISSION_GRANTED) {
-                                onRunLatencyWizard()
-                            } else {
-                                wizardPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
-                        },
-                        onResetWizard = onResetLatencyWizard,
-                        autoDeviceEnabled = autoDeviceEnabled,
-                        onAutoDeviceToggle = handleAutoToggle,
-                        connectedDeviceName = connectedDeviceName
-                    )
-                }
-
-                ExpressiveCard(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
-                ) {
-                    BodyText(
-                        text = stringResource(R.string.latency_compensation_description),
-                        size = 12.sp
-                    )
-                }
-            }
-        }
         Spacer(modifier = Modifier.height(86.dp)) //no one will notice
     }
 }
@@ -873,6 +871,272 @@ fun RowScope.FineTuneButton(
                 color = if (isAnimating) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format(Locale.US, "%d:%02d", minutes, seconds)
+}
+
+/**
+ * Inbuilt Spotify Control Panel for Glyphix (Audio) page
+ */
+@Composable
+fun GlyphixSpotifyControlPanel(
+    playbackState: SpotifyPlaybackState?,
+    onTogglePlay: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onToggleShuffle: () -> Unit,
+    onToggleRepeat: () -> Unit,
+    onOpenSpotifyTab: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val track = playbackState?.item
+    val isPlaying = playbackState?.is_playing == true
+    val currentMs = playbackState?.progress_ms ?: 0L
+    val durationMs = track?.durationMs?.coerceAtLeast(1L) ?: 1L
+    val progressFraction = (currentMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+
+    var isSeeking by remember { mutableStateOf(false) }
+    var seekFraction by remember { mutableFloatStateOf(0f) }
+
+    MockupCard(modifier = modifier) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Top Bar: Spotify Logo Badge + Device + Open Tab Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF1DB954),
+                        modifier = Modifier.size(20.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Spotify Player",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        ),
+                        color = Color(0xFF1DB954)
+                    )
+                }
+
+                Surface(
+                    onClick = onOpenSpotifyTab,
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = "Browse",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = null,
+                            tint = mockupSubtextColor(),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.08f))
+
+            // Track details row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val coverUrl = track?.imageUrl
+                if (!coverUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = coverUrl,
+                        contentDescription = "Album Cover",
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.DarkGray.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.6f),
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = track?.name ?: "No Track Playing",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        ),
+                        color = mockupTextColor(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = track?.artistNames ?: "Open Spotify to choose music",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = mockupSubtextColor(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Progress Slider
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Slider(
+                    value = if (isSeeking) seekFraction else progressFraction,
+                    onValueChange = {
+                        isSeeking = true
+                        seekFraction = it
+                    },
+                    onValueChangeFinished = {
+                        val targetMs = (seekFraction * durationMs).toLong()
+                        onSeek(targetMs)
+                        isSeeking = false
+                    },
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color(0xFF1DB954),
+                        activeTrackColor = Color(0xFF1DB954),
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    val dispCurrentMs = if (isSeeking) (seekFraction * durationMs).toLong() else currentMs
+                    Text(
+                        text = formatDuration(dispCurrentMs),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = mockupSubtextColor()
+                    )
+                    Text(
+                        text = formatDuration(durationMs),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = mockupSubtextColor()
+                    )
+                }
+            }
+
+            // Controls Row: Shuffle, Previous, Play/Pause, Next, Repeat
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Shuffle
+                val isShuffle = playbackState?.shuffle_state == true
+                IconButton(onClick = onToggleShuffle) {
+                    Icon(
+                        imageVector = Icons.Default.Shuffle,
+                        contentDescription = "Shuffle",
+                        tint = if (isShuffle) Color(0xFF1DB954) else mockupSubtextColor(),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                // Previous
+                IconButton(onClick = onPrevious) {
+                    Icon(
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous",
+                        tint = mockupTextColor(),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                // Play / Pause
+                Surface(
+                    onClick = onTogglePlay,
+                    shape = CircleShape,
+                    color = Color(0xFF1DB954),
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+
+                // Next
+                IconButton(onClick = onNext) {
+                    Icon(
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next",
+                        tint = mockupTextColor(),
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                // Repeat
+                val repeatState = playbackState?.repeat_state ?: "off"
+                val isRepeatActive = repeatState != "off"
+                IconButton(onClick = onToggleRepeat) {
+                    Icon(
+                        imageVector = if (repeatState == "track") Icons.Default.RepeatOne else Icons.Default.Repeat,
+                        contentDescription = "Repeat",
+                        tint = if (isRepeatActive) Color(0xFF1DB954) else mockupSubtextColor(),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
         }
     }
 }

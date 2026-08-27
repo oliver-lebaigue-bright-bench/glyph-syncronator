@@ -217,6 +217,17 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Handle deep link on cold launch
+        intent?.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri) { success ->
+                    if (success) {
+                        viewModel.selectTab(Tab.Spotify)
+                    }
+                }
+            }
+        }
+
         setContent {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
@@ -284,6 +295,14 @@ class MainActivity : ComponentActivity() {
                     GlyphixApp(
                         viewModel = viewModel,
                         onToggleVisualizer = { toggleVisualizer() },
+                        onSelectCaptureSource = { source ->
+                            viewModel.setCaptureSource(source)
+                            val s = service
+                            if (s != null && s.isVisualizerRunning) {
+                                s.stopVisualizer()
+                            }
+                            startSourceCapture(source)
+                        },
                         onGoogleSignIn = { launchGoogleSignIn() },
                         onOverlayPermissionRequest = {
                             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
@@ -298,6 +317,21 @@ class MainActivity : ComponentActivity() {
                         onGoogleSignIn = { launchGoogleSignIn() }
                     )
                     CommunityOverlays(viewModel = viewModel)
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri) { success ->
+                    if (success) {
+                        Toast.makeText(this, "Spotify connected successfully!", Toast.LENGTH_SHORT).show()
+                        viewModel.selectTab(Tab.Spotify)
+                    }
                 }
             }
         }
@@ -321,22 +355,43 @@ class MainActivity : ComponentActivity() {
         if (s.isVisualizerRunning) {
             s.stopVisualizer()
         } else {
-            val intent = Intent(this, AudioCaptureService::class.java)
-            startForegroundService(intent)
+            startSourceCapture(viewModel.captureSource.value)
+        }
+    }
 
-            val source = viewModel.captureSource.value
-            when (source) {
-                AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
-                AudioCaptureService.CaptureSource.MIC -> {
-                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        s.startVisualizer()
-                    } else {
-                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                    }
+    private fun startSourceCapture(source: AudioCaptureService.CaptureSource) {
+        val s = service
+        val intent = Intent(this, AudioCaptureService::class.java)
+        startForegroundService(intent)
+
+        when (source) {
+            AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
+            AudioCaptureService.CaptureSource.MIC -> {
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    s?.startMicCapture() ?: pendingVisualizerStartAction(source)
+                } else {
+                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
-                AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+            }
+            AudioCaptureService.CaptureSource.VIZUALIZER -> {
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    s?.startVizualizerCapture() ?: pendingVisualizerStartAction(source)
+                } else {
+                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
+            AudioCaptureService.CaptureSource.SPOTIFY -> {
+                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    s?.startSpotifyCapture() ?: pendingVisualizerStartAction(source)
+                } else {
+                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
             }
         }
+    }
+
+    private fun pendingVisualizerStartAction(source: AudioCaptureService.CaptureSource) {
+        pendingVisualizerStart = true
     }
 
     private fun launchProjection() {
@@ -489,6 +544,7 @@ val HeavyEasingSpec = tween<Float>(durationMillis = 600)
 internal fun GlyphixApp(
     viewModel: MainViewModel,
     onToggleVisualizer: () -> Unit,
+    onSelectCaptureSource: (AudioCaptureService.CaptureSource) -> Unit,
     onGoogleSignIn: () -> Unit,
     onOverlayPermissionRequest: () -> Unit
 ) {
@@ -569,6 +625,7 @@ internal fun GlyphixApp(
     val screenTitle = when (selectedTab) {
         Tab.Audio -> "Glyphix"
         Tab.Glyphs -> "Glyphs"
+        Tab.Spotify -> "Spotify"
         Tab.Visuals -> "Visuals"
         Tab.Haptics -> "Haptics"
         Tab.Flashlight -> "Torch"
@@ -577,13 +634,14 @@ internal fun GlyphixApp(
 
     val pagePadding = PaddingValues(bottom = 100.dp, top = 6.dp)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-    ) {
-        // Top Bar Container: Top Bar + seamlessly attached Hamburger Dropdown Menu
-        Box(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+        ) {
+            // Top Bar Container: Top Bar + seamlessly attached Hamburger Dropdown Menu
+            Box(modifier = Modifier.fillMaxWidth()) {
             FloatingTopBar(
                 title = screenTitle,
                 onMenuClick = { viewModel.toggleHamburgerMenu() },
@@ -597,6 +655,7 @@ internal fun GlyphixApp(
                 isOpen = isHamburgerMenuOpen,
                 onDismiss = { viewModel.setHamburgerMenuOpen(false) },
                 onSelectGlyphs = { viewModel.selectTab(Tab.Glyphs) },
+                onSelectSpotify = { viewModel.selectTab(Tab.Spotify) },
                 onSelectHaptics = { viewModel.selectTab(Tab.Haptics) },
                 onSelectOverlays = { viewModel.selectTab(Tab.Visuals) },
                 onSelectTorch = { viewModel.selectTab(Tab.Flashlight) }
@@ -646,6 +705,7 @@ internal fun GlyphixApp(
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
+                        val spotifyPlaybackState by viewModel.spotifyRepository.playbackState.collectAsStateWithLifecycle()
 
                         AudioScreen(
                             isRunning = isRunning,
@@ -666,6 +726,16 @@ internal fun GlyphixApp(
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
                             penisMode = penisMode,
+                            spotifyPlaybackState = spotifyPlaybackState,
+                            onSpotifyTogglePlay = { viewModel.spotifyRepository.togglePlayPause() },
+                            onSpotifyNext = { viewModel.spotifyRepository.skipNext() },
+                            onSpotifyPrevious = { viewModel.spotifyRepository.skipPrevious() },
+                            onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
+                            onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
+                            onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
+                            onOpenSpotifyTab = {
+                                viewModel.selectTab(Tab.Spotify)
+                            },
                             padding = pagePadding
                         )
                     }
@@ -692,6 +762,22 @@ internal fun GlyphixApp(
                             selectedDevice = selectedDevice,
                             viewModel = viewModel,
                             padding = pagePadding
+                        )
+                    }
+                    Tab.Spotify -> {
+                        SpotifyScreen(
+                            spotifyRepo = viewModel.spotifyRepository,
+                            authManager = viewModel.spotifyAuthManager,
+                            onStartVisualizer = {
+                                if (!isRunning) {
+                                    onToggleVisualizer()
+                                }
+                            },
+                            onActivateSpotifyInput = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
+                                viewModel.setSpotifyInputActive(true)
+                            },
+                            modifier = Modifier.padding(pagePadding)
                         )
                     }
                     Tab.Visuals -> {
@@ -831,6 +917,8 @@ internal fun GlyphixApp(
                 }
             }
         }
+    }
+}
 
         // Floating Bottom Navigation Bar (Floats directly over pages with no reserved space)
         FloatingBottomBar(
@@ -850,11 +938,16 @@ internal fun GlyphixApp(
             isExpanded = isFabMenuExpanded,
             currentSource = captureSource,
             onSelectSource = { source ->
-                viewModel.setCaptureSource(source)
+                viewModel.setSpotifyInputActive(false)
                 viewModel.setFabMenuExpanded(false)
-                if (!isRunning) {
-                    onToggleVisualizer()
-                }
+                onSelectCaptureSource(source)
+            },
+            onSelectSpotifyInput = {
+                viewModel.setSpotifyInputActive(true)
+                viewModel.setFabMenuExpanded(false)
+                viewModel.selectTab(Tab.Spotify)
+                viewModel.spotifyRepository.refreshAllData()
+                onSelectCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
             },
             onDismiss = { viewModel.setFabMenuExpanded(false) },
             modifier = Modifier
@@ -862,5 +955,4 @@ internal fun GlyphixApp(
                 .navigationBarsPadding()
         )
     }
-}
 }

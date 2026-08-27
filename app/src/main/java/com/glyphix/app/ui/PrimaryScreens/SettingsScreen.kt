@@ -1,6 +1,8 @@
 package com.glyphix.app.ui.PrimaryScreens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -33,9 +35,11 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.glyphix.app.BuildConfig
 import com.glyphix.app.R
+import com.glyphix.app.logic.LatencyWizard
 import com.glyphix.app.ui.*
 
 /**
@@ -366,7 +370,10 @@ internal fun SettingsScreen(
                     }
                 }
 
-                // 3. Idle Pulse Card (Replicating `settings.png`)
+                // 3. Latency Compensation Card (Moved from Glyphix/Audio to Settings)
+                LatencySettingsCard(viewModel = viewModel)
+
+                // 4. Idle Pulse Card (Replicating `settings.png`)
                 MockupCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -562,4 +569,47 @@ internal fun SettingsScreen(
 
                 Spacer(Modifier.height(110.dp))
     }
+}
+
+/**
+ * Latency Compensation & Wizard Settings Card (Exact original LatencyCard)
+ */
+@Composable
+private fun LatencySettingsCard(
+    viewModel: MainViewModel
+) {
+    val context = LocalContext.current
+    val latencyMs by viewModel.latencyMs.collectAsStateWithLifecycle()
+    val latencyPresets by viewModel.latencyPresets.collectAsStateWithLifecycle()
+    val autoDeviceEnabled by viewModel.autoDeviceMemorize.collectAsStateWithLifecycle()
+    val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
+    val connectedDeviceName = MainActivity.serviceStatic?.getActiveAudioRouteName()
+
+    val wizardPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.runLatencyWizard()
+        }
+    }
+
+    LatencyCard(
+        latencyMs = latencyMs,
+        onLatencyChanged = { viewModel.setLatencyMs(it) },
+        latencyPresets = latencyPresets,
+        onLatencyPresetsChanged = { viewModel.updateLatencyPresets(it) },
+        wizardState = latencyWizardState,
+        onRunWizard = {
+            val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+            if (status == PackageManager.PERMISSION_GRANTED) {
+                viewModel.runLatencyWizard()
+            } else {
+                wizardPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }
+        },
+        onResetWizard = { viewModel.resetLatencyWizard() },
+        autoDeviceEnabled = autoDeviceEnabled,
+        onAutoDeviceToggle = { viewModel.setAutoDeviceMemorize(it) },
+        connectedDeviceName = connectedDeviceName
+    )
 }

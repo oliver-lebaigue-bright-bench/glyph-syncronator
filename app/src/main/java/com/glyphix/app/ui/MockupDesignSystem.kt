@@ -398,6 +398,7 @@ fun SpeedDialFabMenu(
     isExpanded: Boolean,
     currentSource: AudioCaptureService.CaptureSource,
     onSelectSource: (AudioCaptureService.CaptureSource) -> Unit,
+    onSelectSpotifyInput: () -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -405,6 +406,7 @@ fun SpeedDialFabMenu(
 
     val isGlass = LocalIsGlassTheme.current
     val accentColor = mockupAccentColor()
+    val spotifyGreen = Color(0xFF1DB954)
     val pillBg = if (isGlass) {
         Color.White.copy(alpha = 0.20f)
     } else {
@@ -418,6 +420,7 @@ fun SpeedDialFabMenu(
     val haptics = LocalHapticFeedback.current
 
     val sources = listOf(
+        Triple("Spotify Input", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
         Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
         Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
         Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
@@ -457,13 +460,18 @@ fun SpeedDialFabMenu(
                 modifier = modifier.padding(end = 16.dp, bottom = 8.dp)
             ) {
                 sources.forEach { (name, icon, source) ->
-                    val itemBg = pillBg
-                    val itemTextColor = pillTextColor
+                    val isSpotify = name == "Spotify Input"
+                    val itemBg = if (isSpotify) {
+                        if (isGlass) spotifyGreen.copy(alpha = 0.35f) else spotifyGreen.copy(alpha = 0.90f)
+                    } else pillBg
+                    val itemTextColor = if (isSpotify) Color.White else pillTextColor
 
                     Surface(
                         shape = RoundedCornerShape(28.dp),
                         color = itemBg,
-                        border = if (isGlass) {
+                        border = if (isSpotify) {
+                            BorderStroke(1.dp, spotifyGreen.copy(alpha = 0.8f))
+                        } else if (isGlass) {
                             BorderStroke(1.dp, Color.White.copy(alpha = 0.45f))
                         } else {
                             BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
@@ -471,7 +479,11 @@ fun SpeedDialFabMenu(
                         shadowElevation = if (isGlass) 0.dp else 4.dp,
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectSource(source)
+                            if (isSpotify) {
+                                onSelectSpotifyInput()
+                            } else {
+                                onSelectSource(source)
+                            }
                             onDismiss()
                         }
                     ) {
@@ -483,7 +495,7 @@ fun SpeedDialFabMenu(
                             Icon(
                                 imageVector = icon,
                                 contentDescription = name,
-                                tint = itemTextColor,
+                                tint = if (isSpotify) Color.White else itemTextColor,
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
@@ -511,6 +523,7 @@ fun HamburgerDropdownMenu(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onSelectGlyphs: () -> Unit,
+    onSelectSpotify: () -> Unit = {},
     onSelectHaptics: () -> Unit,
     onSelectOverlays: () -> Unit,
     onSelectTorch: () -> Unit,
@@ -571,6 +584,21 @@ fun HamburgerDropdownMenu(
                         onClick = {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             onSelectGlyphs()
+                            onDismiss()
+                        }
+                    )
+                    HorizontalDivider(
+                        color = textPrimary.copy(alpha = 0.06f),
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+
+                    HamburgerMenuItem(
+                        title = "Spotify Hub",
+                        subtitle = "Playlists, search & player",
+                        icon = Icons.Default.LibraryMusic,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onSelectSpotify()
                             onDismiss()
                         }
                     )
