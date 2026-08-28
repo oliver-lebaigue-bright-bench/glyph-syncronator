@@ -21,7 +21,6 @@ internal fun MainOverlays(
     val isShowingEditor by viewModel.isShowingEditor.collectAsStateWithLifecycle()
     val isShowingAbout by viewModel.isShowingAbout.collectAsStateWithLifecycle()
     val isShowingLicense by viewModel.isShowingLicense.collectAsStateWithLifecycle()
-    val isShowingStats by viewModel.isShowingStats.collectAsStateWithLifecycle()
     val isShowingProfile by viewModel.isShowingProfile.collectAsStateWithLifecycle()
     val isShowingProfileSetup by viewModel.isShowingProfileSetup.collectAsStateWithLifecycle()
 
@@ -77,21 +76,6 @@ internal fun MainOverlays(
         LicenseScreen(
             viewModel = viewModel,
             onDismiss = { viewModel.hideLicense() }
-        )
-    }
-
-    AnimatedVisibility(
-        visible = isShowingStats,
-        enter = scaleIn(animationSpec = expansionSpec, initialScale = 0.8f) + fadeIn(),
-        exit = scaleOut(animationSpec = expansionSpec, targetScale = 0.8f) + fadeOut()
-    ) {
-        StatsScreen(
-            viewModel = viewModel,
-            onDismiss = { viewModel.hideStats() },
-            onOpenProfile = {
-                viewModel.hideStats()
-                viewModel.showProfile()
-            }
         )
     }
 

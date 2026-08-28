@@ -35,19 +35,15 @@ import com.glyphix.app.ui.*
 @Composable
 fun StatsScreen(
     viewModel: MainViewModel,
-    onDismiss: () -> Unit,
-    onOpenProfile: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    BackHandler { onDismiss() }
-
     val isGlass = LocalIsGlassTheme.current
     val totalTime by viewModel.totalVisualizedTime.collectAsStateWithLifecycle()
     val idleTime by viewModel.totalIdleTime.collectAsStateWithLifecycle()
     val activeTime by viewModel.totalActiveTime.collectAsStateWithLifecycle()
     val glyphTime by viewModel.totalGlyphTime.collectAsStateWithLifecycle()
     val hapticTime by viewModel.totalHapticTime.collectAsStateWithLifecycle()
-    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val globalStats by viewModel.globalStats.collectAsStateWithLifecycle()
 
     // Formatted time calculations
     val totalHours = totalTime / (1000 * 60 * 60)
@@ -82,158 +78,168 @@ fun StatsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Floating Top Bar
-            FloatingTopBar(
-                title = "Stats",
-                onMenuClick = { onDismiss() },
-                onProfileClick = { onOpenProfile() },
-                avatarUrl = userProfile?.profilePictureUrl,
-                isProfileActive = false
-            )
+            // 1. Hero Card: Total Visualization (Theme dynamic container)
+            val heroBg = if (isGlass) {
+                Color.White.copy(alpha = 0.22f)
+            } else {
+                MaterialTheme.colorScheme.primaryContainer
+            }
+            val heroTextColor = if (isGlass) {
+                Color.White
+            } else {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            }
 
-            Column(
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .fillMaxWidth()
+                    .then(
+                        if (isGlass && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            Modifier.graphicsLayer {
+                                renderEffect = RenderEffect.createBlurEffect(25f, 25f, Shader.TileMode.CLAMP).asComposeRenderEffect()
+                            }
+                        } else {
+                            Modifier.shadow(elevation = 2.dp, shape = RoundedCornerShape(26.dp))
+                        }
+                    ),
+                shape = RoundedCornerShape(26.dp),
+                color = heroBg,
+                border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)) else null
             ) {
-                // 1. Hero Card: Total Visualization (Theme dynamic container)
-                val heroBg = if (isGlass) {
-                    Color.White.copy(alpha = 0.22f)
-                } else {
-                    MaterialTheme.colorScheme.primaryContainer
-                }
-                val heroTextColor = if (isGlass) {
-                    Color.White
-                } else {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                }
-
-                Surface(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .then(
-                            if (isGlass && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                Modifier.graphicsLayer {
-                                    renderEffect = RenderEffect.createBlurEffect(25f, 25f, Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                }
-                            } else {
-                                Modifier.shadow(elevation = 2.dp, shape = RoundedCornerShape(26.dp))
-                            }
-                        ),
-                    shape = RoundedCornerShape(26.dp),
-                    color = heroBg,
-                    border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)) else null
+                        .padding(24.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp)
-                    ) {
-                        Text(
-                            text = "TOTAL VISUALIZATION",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                fontSize = 13.sp
-                            ),
-                            color = heroTextColor.copy(alpha = 0.8f)
-                        )
-                        Spacer(Modifier.height(14.dp))
-                        Text(
-                            text = totalDisplay,
-                            style = MaterialTheme.typography.displayMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 46.sp
-                            ),
-                            color = heroTextColor
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            text = "Lifetime",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
-                            color = heroTextColor.copy(alpha = 0.7f),
-                            modifier = Modifier.align(Alignment.End)
-                        )
-                    }
-                }
-
-                // 2. Two Side-by-Side Metric Cards (Active Music % & Idle Pulse %)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    // Active Music Card
-                    MockupCard(modifier = Modifier.weight(1f)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "ACTIVE MUSIC",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = mockupSubtextColor()
-                            )
-                            Text(
-                                text = "${activePercent}%",
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 36.sp
-                                ),
-                                color = mockupTextColor()
-                            )
-                        }
-                    }
-
-                    // Idle Pulse Card
-                    MockupCard(modifier = Modifier.weight(1f)) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "IDLE PULSE",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    letterSpacing = 0.5.sp
-                                ),
-                                color = mockupSubtextColor()
-                            )
-                            Text(
-                                text = "${idlePercent}%",
-                                style = MaterialTheme.typography.headlineLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 36.sp
-                                ),
-                                color = mockupTextColor()
-                            )
-                        }
-                    }
-                }
-
-                // 3. Breakdown Card
-                MockupCard {
                     Text(
-                        text = "Breakdown",
-                        style = MaterialTheme.typography.titleLarge.copy(
+                        text = "TOTAL VISUALIZATION",
+                        style = MaterialTheme.typography.labelMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
+                            letterSpacing = 1.sp,
+                            fontSize = 13.sp
                         ),
-                        color = mockupTextColor()
+                        color = heroTextColor.copy(alpha = 0.8f)
                     )
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        text = totalDisplay,
+                        style = MaterialTheme.typography.displayMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 46.sp
+                        ),
+                        color = heroTextColor
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "Lifetime",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+                        color = heroTextColor.copy(alpha = 0.7f),
+                        modifier = Modifier.align(Alignment.End)
+                    )
+                }
+            }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        BreakdownRow(label = "Glyph interface", value = glyphDisplay)
-                        BreakdownRow(label = "Haptic feedback", value = hapticDisplay)
-                        BreakdownRow(label = "Idle pulse", value = idleDisplay)
+            // 2. Two Side-by-Side Metric Cards (Active Music % & Idle Pulse %)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Active Music Card
+                MockupCard(modifier = Modifier.weight(1f)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "ACTIVE MUSIC",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = mockupSubtextColor()
+                        )
+                        Text(
+                            text = "${activePercent}%",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 36.sp
+                            ),
+                            color = mockupTextColor()
+                        )
                     }
                 }
 
-                Spacer(Modifier.height(90.dp))
+                // Idle Pulse Card
+                MockupCard(modifier = Modifier.weight(1f)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "IDLE PULSE",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                letterSpacing = 0.5.sp
+                            ),
+                            color = mockupSubtextColor()
+                        )
+                        Text(
+                            text = "${idlePercent}%",
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 36.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                    }
+                }
             }
+
+            // 3. Breakdown Card
+            MockupCard {
+                Text(
+                    text = "Breakdown",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    ),
+                    color = mockupTextColor()
+                )
+                Spacer(Modifier.height(16.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    BreakdownRow(label = "Glyph interface", value = glyphDisplay)
+                    BreakdownRow(label = "Haptic feedback", value = hapticDisplay)
+                    BreakdownRow(label = "Idle pulse", value = idleDisplay)
+                }
+            }
+
+            // 4. Global Community Card
+            MockupCard {
+                Text(
+                    text = "Global Community",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    ),
+                    color = mockupTextColor()
+                )
+                Spacer(Modifier.height(16.dp))
+
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val globalHours = globalStats.totalVisualizedTimeMs / (1000 * 60 * 60)
+                    val globalMins = (globalStats.totalVisualizedTimeMs / (1000 * 60)) % 60
+                    
+                    BreakdownRow(
+                        label = "Total visualization", 
+                        value = if (globalHours > 0) "${globalHours}h ${globalMins}m" else "${globalMins}m"
+                    )
+                    BreakdownRow(label = "Active users", value = "${globalStats.userCount}")
+                    BreakdownRow(label = "Total sessions", value = "${globalStats.totalSessions}")
+                }
+            }
+
+            Spacer(Modifier.height(90.dp))
         }
     }
 }

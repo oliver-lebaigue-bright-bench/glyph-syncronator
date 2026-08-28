@@ -232,6 +232,7 @@
     <string name="authenticated_user">Verified Account</string>
 
     <string name="tab_audio">Audio</string>
+    <string name="tab_stats">Stats</string>
     <string name="tab_glyphs">Glyphs</string>
     <string name="tab_visuals">Visuals</string>
     <string name="tab_haptics">Haptics</string>

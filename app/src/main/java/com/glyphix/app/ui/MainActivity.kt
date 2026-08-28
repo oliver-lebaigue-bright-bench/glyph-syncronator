@@ -568,8 +568,9 @@ internal fun GlyphixApp(
 
     val screenTitle = when (selectedTab) {
         Tab.Audio -> "Glyphix"
+        Tab.Stats -> "Stats"
         Tab.Glyphs -> "Glyphs"
-        Tab.Visuals -> "Visuals"
+        Tab.Visuals -> "Home"
         Tab.Haptics -> "Haptics"
         Tab.Flashlight -> "Torch"
         Tab.Settings -> "Settings"
@@ -669,6 +670,11 @@ internal fun GlyphixApp(
                             padding = pagePadding
                         )
                     }
+                    Tab.Stats -> {
+                        com.glyphix.app.ui.SecondaryScreens.StatsScreen(
+                            viewModel = viewModel
+                        )
+                    }
                     Tab.Glyphs -> {
                         val gammaValue by viewModel.gammaValue.collectAsStateWithLifecycle()
                         val maxBrightness by viewModel.maxBrightness.collectAsStateWithLifecycle()
@@ -695,14 +701,7 @@ internal fun GlyphixApp(
                         )
                     }
                     Tab.Visuals -> {
-                        val overlayEnabled by viewModel.overlayEnabled.collectAsStateWithLifecycle()
-                        VisualsScreen(
-                            viewModel = viewModel,
-                            overlayEnabled = overlayEnabled,
-                            onOverlayEnabledChanged = { viewModel.setOverlayEnabled(it) },
-                            onOverlayPermissionRequest = { onOverlayPermissionRequest() },
-                            padding = pagePadding
-                        )
+                        Box(modifier = Modifier.fillMaxSize())
                     }
                     Tab.Haptics -> {
                         val hapticMotorEnabled by viewModel.hapticMotorEnabled.collectAsStateWithLifecycle()

@@ -221,8 +221,8 @@ fun FloatingBottomBar(
 
     val navItems = listOf(
         TabItem(Tab.Audio, Icons.Default.MusicNote, "Audio"),
-        TabItem(Tab.Glyphs, Icons.AutoMirrored.Filled.TrendingUp, "Glyphs"),
-        TabItem(Tab.Visuals, Icons.Default.Info, "Visuals"),
+        TabItem(Tab.Stats, Icons.Default.BarChart, "Stats"),
+        TabItem(Tab.Visuals, Icons.Default.Image, ""),
         TabItem(Tab.Settings, Icons.Default.Settings, "Settings")
     )
 
@@ -276,7 +276,7 @@ fun FloatingBottomBar(
                             .size(46.dp)
                             .clip(CircleShape)
                             .then(
-                                if (isSelected) Modifier.background(activeBg, CircleShape) else Modifier
+                                if (isSelected && item.label.isNotBlank()) Modifier.background(activeBg, CircleShape) else Modifier
                             )
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -289,28 +289,30 @@ fun FloatingBottomBar(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        val iconModifier = Modifier.size(24.dp)
-                        if (bananaMode && isSelected) {
-                            Icon(
-                                painter = painterResource(R.drawable.banana),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = iconModifier
-                            )
-                        } else if (penisMode && isSelected) {
-                            Icon(
-                                painter = painterResource(R.drawable.penis),
-                                contentDescription = null,
-                                tint = Color.Unspecified,
-                                modifier = iconModifier
-                            )
-                        } else {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.label,
-                                tint = if (isSelected) activeIconTint else inactiveIconTint,
-                                modifier = iconModifier
-                            )
+                        if (item.label.isNotBlank()) {
+                            val iconModifier = Modifier.size(24.dp)
+                            if (bananaMode && isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.banana),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = iconModifier
+                                )
+                            } else if (penisMode && isSelected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.penis),
+                                    contentDescription = null,
+                                    tint = Color.Unspecified,
+                                    modifier = iconModifier
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.label,
+                                    tint = if (isSelected) activeIconTint else inactiveIconTint,
+                                    modifier = iconModifier
+                                )
+                            }
                         }
                     }
                 }

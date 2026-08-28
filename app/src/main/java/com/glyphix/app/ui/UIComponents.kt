@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Settings
@@ -1424,6 +1425,7 @@ fun NativeBottomBar(
                             } else {
                                 when (tab) {
                                     Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
+                                    Tab.Stats -> Icon(Icons.Default.BarChart, null, iconModifier, tint = contentColor)
                                     Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
                                     Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier, tint = contentColor)
                                     Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier, tint = contentColor)
@@ -1492,6 +1494,7 @@ fun NativeBottomBar(
                         } else {
                             when (tab) {
                                 Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
+                                Tab.Stats -> Icon(Icons.Default.BarChart, null, iconModifier)
                                 Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
                                 Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier)
                                 Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier)

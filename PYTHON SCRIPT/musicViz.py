@@ -767,11 +767,11 @@ def download_zones_config_to_cwd(overwrite: bool = False, attempts: int = 2, bac
         # No need to print "already present" here as it's checked frequently
         return True
 
-    url = "https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/zones.config"
+    url = "https://raw.githubusercontent.com/aleks-levet/better-nothing-music-visualizer/main/zones.config"
     last_err = None
     for attempt in range(1, attempts + 1):
         try:
-            print(f"[+] Downloading zones.config from SebiAI's repo (attempt {attempt}) ...")
+            print(f"[+] Downloading zones.config from repo (attempt {attempt}) ...")
             with urllib.request.urlopen(url, timeout=10) as resp:
                 if resp.status != 200:
                     raise urllib.error.HTTPError(url, resp.status, "Non-200 response", resp.headers, None)

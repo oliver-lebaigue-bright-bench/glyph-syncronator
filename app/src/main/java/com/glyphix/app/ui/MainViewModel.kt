@@ -47,6 +47,7 @@ import kotlin.math.sqrt
 
 enum class Tab(val label: String, val labelRes: Int) {
     Audio("Audio", R.string.tab_audio), 
+    Stats("Stats", R.string.tab_stats),
     Glyphs("Glyphs", R.string.tab_glyphs), 
     Visuals("Visuals", R.string.tab_visuals),
     Haptics("Haptics", R.string.tab_haptics), 
@@ -659,10 +660,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showLeaderboard() { _isShowingLeaderboard.value = true }
     fun hideLeaderboard() { _isShowingLeaderboard.value = false }
 
-    private val _isShowingStats = MutableStateFlow(false)
-    val isShowingStats = _isShowingStats.asStateFlow()
-    fun showStats() { _isShowingStats.value = true }
-    fun hideStats() { _isShowingStats.value = false }
 
     fun deleteCustomPreset(key: String) {
         viewModelScope.launch {
@@ -1246,7 +1243,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _favoritePresets.value = prefs.getStringSet("favorite_presets", emptySet()) ?: emptySet()
         
         val savedSource = prefs.getString("capture_source", AudioCaptureService.CaptureSource.INTERNAL.name)
-        _captureSource.value = AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
+        _captureSource.value = try {
+            AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
+        } catch (e: Exception) {
+            AudioCaptureService.CaptureSource.INTERNAL
+        }
 
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
@@ -1410,7 +1411,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (_showAnnouncementHistory.value) { hideAnnouncementHistory(); return true }
         if (_isShowingCommunity.value) { hideCommunity(); return true }
         if (_isShowingProfileSetup.value) { hideProfileSetup(); return true }
-        if (_isShowingStats.value) { hideStats(); return true }
         if (_isShowingLicense.value) { hideLicense(); return true }
         if (_isShowingAbout.value) { hideAbout(); return true }
         if (_isShowingEditor.value) { hideEditor(); return true }
