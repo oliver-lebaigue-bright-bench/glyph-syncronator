@@ -246,6 +246,13 @@ We welcome contributions! Ideas:
         <br/><small>Founder & Lead Dev</small>
       </a>
     </td>
+        <td align="center">
+      <a href="https://github.com/rKyzen">
+        <img src="https://github.com/rKyzen.png?size=80&mask=circle" width="80" alt="rKyzen" />
+        <br/><b>rKyzen</b>
+        <br/><small> Core Dev & Base App Maker</small>
+      </a>
+    </td>
     <td align="center">
       <a href="https://github.com/m-uvex">
         <img src="https://github.com/m-uvex.png?size=80&mask=circle" width="80" alt="m_uvex" />
