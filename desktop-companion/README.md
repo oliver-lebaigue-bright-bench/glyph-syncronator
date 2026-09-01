@@ -27,6 +27,14 @@ This script captures system audio from your Windows PC and streams it to the Gly
 
 The script will automatically search for your phone on the network and start streaming.
 
+## Enhanced Version (OpenRGB & Keyboard Sync)
+
+For users who want to sync their desktop RGB (via OpenRGB) and have the lighting pause during typing to prevent flicker, use:
+```bash
+python openrgb_companion.py
+```
+This version also includes optimized frequency ranges for the Nothing Phone (2a).
+
 ## Manual Connection
 
 If auto-discovery fails, you can force a connection to a specific IP address:

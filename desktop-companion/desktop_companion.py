@@ -9,6 +9,7 @@ import queue
 import asyncio
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
+from tkinter import colorchooser
 
 try:
     from openrgb import OpenRGBClient
@@ -40,6 +41,58 @@ COLOR_ACCENT = "#00B0FF"   # Bright Blue (Cyan-ish)
 COLOR_SUCCESS = "#00E676"  # Neon Green
 COLOR_WARNING = "#FFD700"  # Gold
 COLOR_DANGER = "#FF5252"   # Light Red
+
+class PureBassEngine:
+    """Accurate bass analyzer for RGB devices without high-frequency noise."""
+    def __init__(self, sample_rate=48000):
+        self.sample_rate = sample_rate
+        self.prev_bass = 0.0
+        self.rolling_floor = 0.002
+        self.recent_peak = 0.03
+        self.last_beat_time = 0.0
+        self.smooth_val = 0.0
+
+    def process(self, samples_int16: np.ndarray, decay: float = 0.80) -> float:
+        samples_f = samples_int16.astype(np.float32) / 32768.0
+        n = len(samples_f)
+        if n < 64:
+            return 0.0
+
+        windowed = samples_f * np.hanning(n)
+        mag = np.abs(np.fft.rfft(windowed)) / (n / 2.0)
+        freqs = np.fft.rfftfreq(n, 1.0 / self.sample_rate)
+
+        # Strictly sub-bass (35-110 Hz) and control mid (vocals 300-3000 Hz)
+        sub_mask = (freqs >= 35.0) & (freqs <= 110.0)
+        mid_mask = (freqs >= 300.0) & (freqs <= 3000.0)
+
+        sub_energy = float(np.sum(mag[sub_mask])) if np.any(sub_mask) else 0.0
+        mid_energy = float(np.sum(mag[mid_mask])) if np.any(mid_mask) else 0.0
+
+        # Vocal leak suppression: if vocals are louder than bass, suppress false bass
+        if mid_energy > sub_energy * 1.5:
+            sub_energy *= 0.1
+
+        self.rolling_floor = self.rolling_floor * 0.95 + sub_energy * 0.05
+        self.recent_peak = max(sub_energy, self.recent_peak * 0.985)
+        if self.recent_peak < 0.01:
+            self.recent_peak = 0.01
+
+        delta = sub_energy - self.prev_bass
+        self.prev_bass = sub_energy
+
+        now = time.perf_counter()
+        threshold = max(0.003, self.rolling_floor * 1.30)
+
+        # Sharp sub-low impulse (kick drum)
+        if delta > threshold and sub_energy > 0.004 and (now - self.last_beat_time) > 0.075:
+            self.last_beat_time = now
+            flash = float(np.clip(sub_energy / self.recent_peak, 0.45, 1.0))
+            if flash > self.smooth_val:
+                self.smooth_val = flash
+
+        self.smooth_val *= decay  # Decay rate
+        return float(np.clip(self.smooth_val, 0.0, 1.0))
 
 def get_broadcast_addresses():
     broadcasts = {'255.255.255.255'}
@@ -189,14 +242,18 @@ def discover_phone_bt_cli():
     return None
 
 def run_companion_bt_cli(mac, use_openrgb=False):
-    mice = []
+    devices = []
     if use_openrgb:
         if OPENRGB_AVAILABLE:
             try:
                 client = OpenRGBClient("localhost", OPENRGB_PORT)
-                mice = client.get_devices_by_type(DeviceType.MOUSE)
-                for m in mice:
-                    try: m.set_mode('direct')
+                devices = client.devices
+                for dev in devices:
+                    try:
+                        for mode in dev.modes:
+                            if mode.name.lower() in ("direct", "custom", "static"):
+                                dev.set_mode(mode)
+                                break
                     except: pass
             except: pass
 
@@ -273,7 +330,7 @@ def run_companion_bt_cli(mac, use_openrgb=False):
                 
             sock.sendall(data_to_send)
 
-            if use_openrgb and mice:
+            if use_openrgb and devices:
                 try:
                     samples_float = samples.astype(np.float32) / 32768.0
                     fft_mag = np.abs(np.fft.rfft(samples_float)) / (len(samples_float) / 2.0)
@@ -281,7 +338,7 @@ def run_companion_bt_cli(mac, use_openrgb=False):
                     g = int(np.max(fft_mag[int(len(fft_mag)*0.2):int(len(fft_mag)*0.6)]) * 255 * 3)
                     b = int(np.max(fft_mag[int(len(fft_mag)*0.6):]) * 255 * 2)
                     color = RGBColor(min(r, 255), min(g, 255), min(b, 255))
-                    for m in mice: m.set_color(color)
+                    for dev in devices: dev.set_color(color)
                 except: pass
     except Exception as e:
         print(f"\nStream error: {e}")
@@ -292,7 +349,7 @@ def run_companion_bt_cli(mac, use_openrgb=False):
         p.terminate()
 
 def run_companion_cli(ip, use_openrgb=False):
-    mice = []
+    devices = []
     if use_openrgb:
         if not OPENRGB_AVAILABLE:
             print("Error: openrgb-python not installed.")
@@ -300,10 +357,14 @@ def run_companion_cli(ip, use_openrgb=False):
         else:
             try:
                 client = OpenRGBClient("localhost", OPENRGB_PORT)
-                mice = client.get_devices_by_type(DeviceType.MOUSE)
-                print(f"OpenRGB: Connected, found {len(mice)} mouse device(s).")
-                for m in mice:
-                    try: m.set_mode('direct')
+                devices = client.devices
+                print(f"OpenRGB: Connected, found {len(devices)} device(s).")
+                for dev in devices:
+                    try:
+                        for mode in dev.modes:
+                            if mode.name.lower() in ("direct", "custom", "static"):
+                                dev.set_mode(mode)
+                                break
                     except: pass
             except Exception as e:
                 print(f"OpenRGB Connection failed: {e}")
@@ -386,7 +447,7 @@ def run_companion_cli(ip, use_openrgb=False):
             sock.sendto(data_to_send, (ip, UDP_PORT))
             packet_count += 1
 
-            if use_openrgb and mice:
+            if use_openrgb and devices:
                 try:
                     samples_float = samples.astype(np.float32) / 32768.0
                     fft_mag = np.abs(np.fft.rfft(samples_float)) / (len(samples_float) / 2.0)
@@ -396,7 +457,7 @@ def run_companion_cli(ip, use_openrgb=False):
                     b = int(np.max(fft_mag[int(len(fft_mag)*0.6):]) * 255 * 2)
                     
                     color = RGBColor(min(r, 255), min(g, 255), min(b, 255))
-                    for m in mice: m.set_color(color)
+                    for dev in devices: dev.set_color(color)
                 except:
                     pass
 
@@ -433,8 +494,11 @@ class CompanionGUI:
         
         self.conn_type = tk.StringVar(value="UDP") # "UDP" or "BT"
         self.use_openrgb = tk.BooleanVar(value=False)
+        self.rgb_sensitivity = tk.DoubleVar(value=1.0)
+        self.rgb_decay = tk.DoubleVar(value=0.80)
+        self.selected_rgb = (0, 176, 255) # Default Cyan
         self.openrgb_client = None
-        self.openrgb_mice = []
+        self.openrgb_devices = []
 
         # Message queues for thread safety
         self.log_queue = queue.Queue()
@@ -541,17 +605,35 @@ class CompanionGUI:
         self.meter_canvas.pack(fill="x", padx=5)
         self.draw_visualizer(self.spectrum_points)
 
-        # 3.5 Hardware Sync Row
+        # 3.5 Hardware Sync Area
         hw_row = ttk.Frame(card_frame, style="Card.TFrame")
-        hw_row.pack(fill="x", padx=15, pady=5)
+        hw_row.pack(fill="x", padx=15, pady=(5, 0))
         
         ttk.Label(hw_row, text="Hardware Sync:", style="Muted.TLabel").pack(side="left", padx=5)
         
-        self.openrgb_cb = tk.Checkbutton(hw_row, text="Sync Mouse RGB (OpenRGB)", variable=self.use_openrgb,
+        self.openrgb_cb = tk.Checkbutton(hw_row, text="Sync OpenRGB", variable=self.use_openrgb,
                                          bg=BG_CARD, fg=FG_TEXT, selectcolor=BG_MAIN, activebackground=BG_CARD,
                                          activeforeground=COLOR_ACCENT, font=("Segoe UI", 9),
                                          command=lambda: self.connect_openrgb() if self.use_openrgb.get() else None)
         self.openrgb_cb.pack(side="left", padx=10)
+
+        self.color_swatch = tk.Canvas(hw_row, width=16, height=16, bg=COLOR_ACCENT, highlightthickness=1, highlightbackground=FG_MUTED)
+        self.color_swatch.pack(side="left", padx=2)
+        
+        self.color_btn = ttk.Button(hw_row, text="Select Color", width=12, command=self.choose_color)
+        self.color_btn.pack(side="left", padx=5)
+
+        # Separate row for sliders to avoid layout clipping
+        slider_row = ttk.Frame(card_frame, style="Card.TFrame")
+        slider_row.pack(fill="x", padx=15, pady=(0, 5))
+
+        ttk.Label(slider_row, text="Bass Sensitivity:", style="Muted.TLabel").pack(side="left", padx=(5, 5))
+        self.sens_slider = ttk.Scale(slider_row, from_=0.1, to=3.0, variable=self.rgb_sensitivity, orient="horizontal", length=150)
+        self.sens_slider.pack(side="left", padx=10)
+
+        ttk.Label(slider_row, text="Pulse Fade Time:", style="Muted.TLabel").pack(side="left", padx=(20, 5))
+        self.fade_slider = ttk.Scale(slider_row, from_=0.5, to=0.99, variable=self.rgb_decay, orient="horizontal", length=150)
+        self.fade_slider.pack(side="left", padx=10)
 
         # 4. Action Stream Button
         self.stream_btn = tk.Button(card_frame, text="Start Streaming", font=("Segoe UI Bold", 12),
@@ -639,24 +721,34 @@ class CompanionGUI:
         try:
             self.log(f"Connecting to OpenRGB SDK Server (localhost:{OPENRGB_PORT})...")
             self.openrgb_client = OpenRGBClient("localhost", OPENRGB_PORT)
-            self.openrgb_mice = self.openrgb_client.get_devices_by_type(DeviceType.MOUSE)
+            self.openrgb_devices = self.openrgb_client.devices
             
-            if self.openrgb_mice:
-                self.log(f"OpenRGB Success: Found {len(self.openrgb_mice)} mouse device(s).")
-                for m in self.openrgb_mice:
+            if self.openrgb_devices:
+                self.log(f"OpenRGB Success: Found {len(self.openrgb_devices)} device(s).")
+                for dev in self.openrgb_devices:
                     try:
-                        # Try to set to direct mode for low latency
-                        m.set_mode('direct')
+                        # Try to find a direct/static mode for low latency
+                        for mode in dev.modes:
+                            if mode.name.lower() in ("direct", "custom", "static"):
+                                dev.set_mode(mode)
+                                break
                     except:
                         pass
             else:
-                self.log("OpenRGB: Connected, but no mouse devices found.")
-                messagebox.showinfo("OpenRGB", "Connected to server, but no mouse devices were found.")
+                self.log("OpenRGB: Connected, but no devices found.")
+                messagebox.showinfo("OpenRGB", "Connected to server, but no devices were found.")
         except Exception as e:
             self.log(f"OpenRGB Connection Failed: {e}")
             messagebox.showerror("OpenRGB Error", f"Could not connect to OpenRGB SDK Server.\nMake sure the OpenRGB app is running and 'SDK Server' is started.\n\nError: {e}")
             self.use_openrgb.set(False)
             self.openrgb_client = None
+
+    def choose_color(self):
+        color_code = colorchooser.askcolor(title="Select Bass Reactive Color", initialcolor=self.selected_rgb)
+        if color_code[0]:
+            self.selected_rgb = tuple(map(int, color_code[0]))
+            self.color_swatch.configure(bg=color_code[1])
+            self.log(f"OpenRGB Base color set to: {self.selected_rgb}")
 
     def toggle_discovery(self):
         if self.is_discovering:
@@ -898,6 +990,7 @@ class CompanionGUI:
             target_num_samples = int(num_samples * TARGET_RATE / actual_rate)
             interp_indices = np.linspace(0, num_samples - 1, target_num_samples)
 
+        bass_engine = PureBassEngine(sample_rate=actual_rate)
         packet_count = 0
         last_meter_time = 0
         
@@ -908,61 +1001,65 @@ class CompanionGUI:
                 
                 # Downmix to mono if needed
                 if channels > 1:
-                    samples = samples.reshape(-1, channels).mean(axis=1).astype(np.int16)
+                    mono_samples = samples.reshape(-1, channels).mean(axis=1).astype(np.int16)
+                else:
+                    mono_samples = samples
                 
-                # Frequency FFT analysis for the continuous spectrum visualizer (128 points)
+                # Frequency FFT analysis for visualizers and OpenRGB
                 current_time = time.time()
-                if current_time - last_meter_time > 0.05: # Send level data every 50ms
-                    # Normalize samples to [-1.0, 1.0] range
-                    samples_float = samples.astype(np.float32) / 32768.0
+                if current_time - last_meter_time > 0.04: # ~25 FPS for UI/RGB updates
+                    samples_float = mono_samples.astype(np.float32) / 32768.0
                     
-                    # Compute FFT and normalize magnitude
-                    fft_mag = np.abs(np.fft.rfft(samples_float)) / (len(samples_float) / 2.0)
+                    # Compute FFT
+                    fft_mag = np.abs(np.fft.rfft(samples_float * np.hanning(len(samples_float)))) / (len(samples_float) / 2.0)
                     num_points = 128
                     
-                    # Logarithmic spacing from 30Hz to 16kHz
+                    # Logarithmic spacing for UI visualizer
                     freqs = np.geomspace(30, 16000, num_points)
                     bin_width = actual_rate / len(samples_float)
-                    bin_indices = freqs / bin_width
-                    bin_indices = np.clip(bin_indices, 0, len(fft_mag) - 1)
+                    bin_indices = np.clip(freqs / bin_width, 0, len(fft_mag) - 1)
                     
-                    # Log-interpolate magnitude values to prevent duplicates
                     points = np.interp(bin_indices, np.arange(len(fft_mag)), fft_mag)
-                    
-                    # Apply treble emphasis boost (high frequency energies are naturally lower)
                     boost = 1.0 + (bin_indices / len(fft_mag)) * 3.5
                     val = points * boost
                     
-                    # Convert to decibels (range -60dB to 0dB)
                     db_val = 20 * np.log10(val + 1e-5)
                     norm_val = np.clip((db_val + 60.0) / 60.0, 0.0, 1.0)
                     
                     self.level_queue.put(list(norm_val))
                     
-                    # Update OpenRGB Hardware if enabled
-                    if self.use_openrgb.get() and self.openrgb_mice:
+                    # Update OpenRGB Hardware
+                    if self.use_openrgb.get() and self.openrgb_devices:
                         try:
-                            # Divide spectrum into 3 bands for R, G, B
-                            # Indices: Bass (0-25), Mids (26-75), Treble (76-127)
-                            r = int(np.max(norm_val[0:26]) * 255)
-                            g = int(np.max(norm_val[26:76]) * 255)
-                            b = int(np.max(norm_val[76:128]) * 255)
+                            # 1. Bass detection for pulsing
+                            # Apply sensitivity to the engine process or output
+                            sens = self.rgb_sensitivity.get()
+                            decay = self.rgb_decay.get()
+                            bass_pulse = bass_engine.process(mono_samples, decay=decay) * sens
+                            bass_pulse = min(1.0, bass_pulse)
+                            
+                            # 2. Use user-selected color and modulate by bass
+                            base_r, base_g, base_b = self.selected_rgb
+                            
+                            # We apply a slight non-linear curve to make the pulses punchier
+                            # and ensure it's not totally off if there's no bass (optional, but let's go with full reactive)
+                            r = int(base_r * bass_pulse)
+                            g = int(base_g * bass_pulse)
+                            b = int(base_b * bass_pulse)
                             
                             color = RGBColor(r, g, b)
-                            for mouse in self.openrgb_mice:
-                                mouse.set_color(color)
-                        except Exception as e:
-                            # Avoid logging every frame to prevent spam
+                            for dev in self.openrgb_devices:
+                                dev.set_color(color)
+                        except Exception:
                             pass
                             
                     last_meter_time = current_time
 
-                # Resample if target rate differs
+                # Resample and send to phone
                 if interp_indices is not None:
-                    resampled_samples = np.interp(interp_indices, np.arange(len(samples)), samples).astype(np.int16)
-                    data_to_send = resampled_samples.tobytes()
+                    data_to_send = np.interp(interp_indices, np.arange(len(mono_samples)), mono_samples).astype(np.int16).tobytes()
                 else:
-                    data_to_send = samples.tobytes()
+                    data_to_send = mono_samples.tobytes()
                 
                 if conn_type == "BT":
                     sock.sendall(data_to_send)
@@ -985,6 +1082,15 @@ class CompanionGUI:
         self.status_badge.configure(text="STOPPED", foreground=COLOR_DANGER)
         self.log(message)
         self.level_queue.put([0.0] * 128)  # Clear the visualizer spectrum
+        
+        # Clear RGB devices
+        if self.use_openrgb.get() and self.openrgb_devices:
+            black = RGBColor(0, 0, 0)
+            for dev in self.openrgb_devices:
+                try:
+                    dev.set_color(black)
+                except:
+                    pass
 
     def update_gui_loop(self):
         # 1. Drain Logs
