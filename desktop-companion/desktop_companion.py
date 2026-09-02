@@ -39,14 +39,18 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 TARGET_RATE = 48000
 
-# Theme & Colors (Nothing Identity)
-COLOR_BLACK = "#000000"
-COLOR_DARK_GRAY = "#111111"
-COLOR_GRAY_CARD = "#1A1A1A"
-COLOR_GRAY_BORDER = "#2A2A2A"
-COLOR_NOTHING_RED = "#D71920"
+# Theme & Colors (Refined Pro Identity)
+COLOR_BG = "#080808"
+COLOR_CARD = "#121212"
+COLOR_CARD_HOVER = "#1A1A1A"
+COLOR_BORDER = "#222222"
+COLOR_ACCENT = "#E01B22"
 COLOR_WHITE = "#FFFFFF"
-COLOR_MUTED = "#888888"
+COLOR_MUTED = "#666666"
+COLOR_TEXT = "#EAEAEA"
+
+FONT_MAIN = "Segoe UI" if sys.platform == "win32" else "Inter"
+FONT_LOGO = "Courier New" # Keeping brand identity for logo
 
 # Windows Hook Setup
 user32 = None
@@ -260,16 +264,16 @@ class CompanionApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GLYPHIX")
-        self.geometry("580x620")
+        self.geometry("600x720")
         self.resizable(True, True)
+        self.configure(fg_color=COLOR_BG)
         
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=0)
 
         self.is_streaming = False
         self.is_discovering = False
+        self.show_advanced = ctk.BooleanVar(value=False)
         self.stop_stream_event = threading.Event()
         self.stop_discovery_event = threading.Event()
         
@@ -297,99 +301,132 @@ class CompanionApp(ctk.CTk):
         self._update_loop()
 
     def _setup_ui(self):
-        self.header = ctk.CTkFrame(self, fg_color=COLOR_BLACK, corner_radius=0, height=60)
-        self.header.grid(row=0, column=0, sticky="ew")
+        # Header
+        self.header = ctk.CTkFrame(self, fg_color=COLOR_BG, corner_radius=0, height=70)
+        self.header.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 0))
         
-        self.logo_label = ctk.CTkLabel(self.header, text="G L Y P H I X", 
-                                      font=ctk.CTkFont(family="Courier New", size=24, weight="bold"),
-                                      text_color=COLOR_NOTHING_RED)
-        self.logo_label.pack(side="left", padx=20, pady=15)
+        self.logo_label = ctk.CTkLabel(self.header, text="GLYPHIX", 
+                                      font=ctk.CTkFont(family=FONT_LOGO, size=28, weight="bold"),
+                                      text_color=COLOR_ACCENT)
+        self.logo_label.pack(side="left", pady=15)
         
-        self.status_pill = ctk.CTkLabel(self.header, text="DISCONNECTED", 
-                                       fg_color=COLOR_GRAY_CARD, text_color=COLOR_MUTED,
-                                       corner_radius=20, width=100, height=24,
-                                       font=ctk.CTkFont(size=10, weight="bold"))
-        self.status_pill.pack(side="right", padx=20, pady=18)
+        self.status_frame = ctk.CTkFrame(self.header, fg_color="transparent")
+        self.status_frame.pack(side="right", pady=18)
+        
+        self.status_dot = ctk.CTkLabel(self.status_frame, text="●", font=ctk.CTkFont(size=14), text_color=COLOR_MUTED)
+        self.status_dot.pack(side="left", padx=(0, 5))
+        
+        self.status_pill = ctk.CTkLabel(self.status_frame, text="DISCONNECTED", 
+                                       text_color=COLOR_MUTED,
+                                       font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"))
+        self.status_pill.pack(side="left")
 
-        self.main_container = ctk.CTkScrollableFrame(self, fg_color=COLOR_DARK_GRAY, corner_radius=0)
-        self.main_container.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
+        # Main Scrollable Area
+        self.main_container = ctk.CTkScrollableFrame(self, fg_color=COLOR_BG, corner_radius=0)
+        self.main_container.grid(row=1, column=0, sticky="nsew", padx=5)
         
+        # Audio Module
         self._create_card(self.main_container, "AUDIO SOURCE")
         self.audio_combo = ctk.CTkOptionMenu(self.last_card, values=[], 
-                                            fg_color=COLOR_GRAY_BORDER, button_color=COLOR_GRAY_BORDER,
-                                            button_hover_color=COLOR_NOTHING_RED, dropdown_fg_color=COLOR_GRAY_CARD)
-        self.audio_combo.pack(fill="x", padx=15, pady=(5, 10))
+                                            fg_color=COLOR_BORDER, button_color=COLOR_BORDER,
+                                            button_hover_color=COLOR_ACCENT, dropdown_fg_color=COLOR_CARD,
+                                            font=ctk.CTkFont(family=FONT_MAIN, size=12))
+        self.audio_combo.pack(fill="x", padx=20, pady=(5, 15))
 
-        self.viz_canvas = ctk.CTkCanvas(self.last_card, height=80, bg=COLOR_BLACK, highlightthickness=0)
-        self.viz_canvas.pack(fill="x", padx=15, pady=(0, 15))
+        self.viz_canvas = ctk.CTkCanvas(self.last_card, height=100, bg=COLOR_CARD, highlightthickness=0)
+        self.viz_canvas.pack(fill="x", padx=20, pady=(0, 20))
         self.viz_canvas.bind("<Configure>", self._resize_viz)
-        self.viz_dots = []
-        self._init_viz_dots()
-
+        
+        # Connectivity Module
         self._create_card(self.main_container, "CONNECTIVITY")
         
         conn_switch_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        conn_switch_frame.pack(fill="x", padx=15, pady=5)
+        conn_switch_frame.pack(fill="x", padx=20, pady=(5, 10))
         
         ctk.CTkRadioButton(conn_switch_frame, text="UDP (Wi-Fi)", variable=self.conn_type, value="UDP",
-                           hover_color=COLOR_NOTHING_RED, fg_color=COLOR_NOTHING_RED).pack(side="left", padx=(0, 15))
+                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12)).pack(side="left", padx=(0, 20))
         ctk.CTkRadioButton(conn_switch_frame, text="Bluetooth", variable=self.conn_type, value="BT",
-                           hover_color=COLOR_NOTHING_RED, fg_color=COLOR_NOTHING_RED).pack(side="left")
+                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12)).pack(side="left")
         
         addr_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        addr_frame.pack(fill="x", padx=15, pady=(5, 15))
+        addr_frame.pack(fill="x", padx=20, pady=(0, 20))
         
         self.addr_entry = ctk.CTkEntry(addr_frame, placeholder_text="IP or MAC Address",
-                                      fg_color=COLOR_BLACK, border_color=COLOR_GRAY_BORDER, height=32)
-        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+                                      fg_color=COLOR_BG, border_color=COLOR_BORDER, height=36,
+                                      font=ctk.CTkFont(family=FONT_MAIN, size=12))
+        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
-        self.discover_btn = ctk.CTkButton(addr_frame, text="DISCOVER", width=80, height=32,
-                                         fg_color=COLOR_WHITE, text_color=COLOR_BLACK, hover_color=COLOR_NOTHING_RED,
-                                         font=ctk.CTkFont(weight="bold"), command=self._toggle_discovery)
+        self.discover_btn = ctk.CTkButton(addr_frame, text="DISCOVER", width=90, height=36,
+                                         fg_color=COLOR_WHITE, text_color=COLOR_BG, hover_color=COLOR_ACCENT,
+                                         font=ctk.CTkFont(family=FONT_MAIN, size=12, weight="bold"), 
+                                         command=self._toggle_discovery)
         self.discover_btn.pack(side="right")
 
+        # Hardware Module
         self._create_card(self.main_container, "HARDWARE SYNC")
         
         hw_grid = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        hw_grid.pack(fill="x", padx=15, pady=5)
+        hw_grid.pack(fill="x", padx=20, pady=10)
         
         self.openrgb_switch = ctk.CTkSwitch(hw_grid, text="OpenRGB Sync", variable=self.use_openrgb,
-                                           progress_color=COLOR_NOTHING_RED, command=self._toggle_openrgb)
-        self.openrgb_switch.pack(side="left", padx=(0, 20))
+                                           progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12),
+                                           command=self._toggle_openrgb)
+        self.openrgb_switch.pack(side="left", padx=(0, 30))
         
         self.typing_switch = ctk.CTkSwitch(hw_grid, text="Typing Suppression", variable=self.typing_suppression,
-                                          progress_color=COLOR_NOTHING_RED)
+                                          progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12))
         self.typing_switch.pack(side="left")
         
         slider_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        slider_frame.pack(fill="x", padx=15, pady=(5, 15))
+        slider_frame.pack(fill="x", padx=20, pady=(5, 20))
         
-        ctk.CTkLabel(slider_frame, text="SENSITIVITY", font=ctk.CTkFont(size=9, weight="bold")).pack(anchor="w")
+        ctk.CTkLabel(slider_frame, text="SENSITIVITY", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
         ctk.CTkSlider(slider_frame, from_=0.1, to=3.0, variable=self.rgb_sensitivity, 
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(1, 8))
+                      button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT).pack(fill="x", pady=(2, 12))
         
-        ctk.CTkLabel(slider_frame, text="PULSE DECAY", font=ctk.CTkFont(size=9, weight="bold")).pack(anchor="w")
+        ctk.CTkLabel(slider_frame, text="PULSE DECAY", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
         ctk.CTkSlider(slider_frame, from_=0.5, to=0.99, variable=self.rgb_decay,
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(1, 0))
+                      button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT).pack(fill="x", pady=(2, 0))
 
-        self.stream_btn = ctk.CTkButton(self, text="S T A R T   S T R E A M I N G", 
-                                       height=42, corner_radius=0, fg_color=COLOR_NOTHING_RED, 
-                                       font=ctk.CTkFont(size=13, weight="bold"),
-                                       hover_color="#A51318", command=self._toggle_streaming)
-        self.stream_btn.grid(row=2, column=0, sticky="ew")
-
-        self.console = ctk.CTkTextbox(self.main_container, height=100, fg_color=COLOR_BLACK, 
-                                     border_color=COLOR_GRAY_BORDER, border_width=1,
-                                     font=ctk.CTkFont(family="Consolas", size=9), text_color=COLOR_MUTED)
-        self.console.pack(fill="x", padx=15, pady=15)
+        # Advanced / Logs Section
+        self.adv_btn = ctk.CTkButton(self.main_container, text="SHOW LOGS",
+                                    fg_color="transparent", text_color=COLOR_MUTED, 
+                                    hover_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"),
+                                    command=self._toggle_advanced)
+        self.adv_btn.pack(pady=10)
+        
+        self.console = ctk.CTkTextbox(self.main_container, height=120, fg_color=COLOR_BG, 
+                                     border_color=COLOR_BORDER, border_width=1,
+                                     font=ctk.CTkFont(family="Consolas", size=10), text_color=COLOR_MUTED)
+        # Hidden by default in the toggle method
         self.console.configure(state="disabled")
 
+        # Footer Action
+        self.footer = ctk.CTkFrame(self, fg_color=COLOR_BG, height=80, corner_radius=0)
+        self.footer.grid(row=2, column=0, sticky="ew")
+        
+        self.stream_btn = ctk.CTkButton(self.footer, text="START STREAMING", 
+                                       height=50, corner_radius=10, fg_color=COLOR_ACCENT, 
+                                       font=ctk.CTkFont(family=FONT_MAIN, size=14, weight="bold"),
+                                       hover_color="#B0151A", command=self._toggle_streaming)
+        self.stream_btn.pack(fill="x", padx=20, pady=15)
+
     def _create_card(self, parent, title):
-        card = ctk.CTkFrame(parent, fg_color=COLOR_GRAY_CARD, corner_radius=10, border_width=1, border_color=COLOR_GRAY_BORDER)
-        card.pack(fill="x", padx=15, pady=6)
-        title_lbl = ctk.CTkLabel(card, text=title, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLOR_MUTED)
-        title_lbl.pack(anchor="w", padx=15, pady=(10, 2))
+        card = ctk.CTkFrame(parent, fg_color=COLOR_CARD, corner_radius=12, border_width=1, border_color=COLOR_BORDER)
+        card.pack(fill="x", padx=20, pady=10)
+        title_lbl = ctk.CTkLabel(card, text=title, font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED)
+        title_lbl.pack(anchor="w", padx=20, pady=(15, 5))
         self.last_card = card
+
+    def _toggle_advanced(self):
+        if self.show_advanced.get():
+            self.console.pack_forget()
+            self.adv_btn.configure(text="SHOW ADVANCED LOGS")
+            self.show_advanced.set(False)
+        else:
+            self.console.pack(fill="x", padx=20, pady=(0, 20))
+            self.adv_btn.configure(text="HIDE ADVANCED LOGS")
+            self.show_advanced.set(True)
 
     def log(self, msg):
         self.log_queue.put(msg)
@@ -420,8 +457,9 @@ class CompanionApp(ctk.CTk):
         else:
             self.is_discovering = True
             self.stop_discovery_event.clear()
-            self.discover_btn.configure(text="CANCEL", fg_color=COLOR_GRAY_BORDER, text_color=COLOR_WHITE)
-            self.status_pill.configure(text="SEARCHING", text_color=COLOR_NOTHING_RED)
+            self.discover_btn.configure(text="CANCEL", fg_color=COLOR_BORDER, text_color=COLOR_TEXT)
+            self.status_pill.configure(text="SEARCHING", text_color=COLOR_ACCENT)
+            self.status_dot.configure(text_color=COLOR_ACCENT)
             threading.Thread(target=self._discovery_worker, daemon=True).start()
 
     def _discovery_worker(self):
@@ -454,14 +492,16 @@ class CompanionApp(ctk.CTk):
 
     def _on_discovery_done(self, found):
         self.is_discovering = False
-        self.discover_btn.configure(text="DISCOVER", fg_color=COLOR_WHITE, text_color=COLOR_BLACK)
+        self.discover_btn.configure(text="DISCOVER", fg_color=COLOR_WHITE, text_color=COLOR_BG)
         if found:
             self.addr_entry.delete(0, "end")
             self.addr_entry.insert(0, found)
-            self.status_pill.configure(text="FOUND DEVICE", text_color=COLOR_WHITE)
+            self.status_pill.configure(text="READY", text_color=COLOR_TEXT)
+            self.status_dot.configure(text_color="#00FF00")
             self.log(f"Discovery: Found {found}")
         else:
             self.status_pill.configure(text="IDLE", text_color=COLOR_MUTED)
+            self.status_dot.configure(text_color=COLOR_MUTED)
             self.log("Discovery: No device found.")
 
     def _toggle_streaming(self):
@@ -483,8 +523,9 @@ class CompanionApp(ctk.CTk):
 
             self.is_streaming = True
             self.stop_stream_event.clear()
-            self.stream_btn.configure(text="S T O P   S T R E A M I N G", fg_color=COLOR_GRAY_BORDER)
-            self.status_pill.configure(text="STREAMING", text_color="#00FF00")
+            self.stream_btn.configure(text="STOP STREAMING", fg_color=COLOR_BORDER, text_color=COLOR_TEXT)
+            self.status_pill.configure(text="STREAMING", text_color=COLOR_ACCENT)
+            self.status_dot.configure(text_color=COLOR_ACCENT)
             
             if self.typing_suppression.get(): self.hook_watcher.start()
             
@@ -601,8 +642,9 @@ class CompanionApp(ctk.CTk):
 
     def _on_stream_stopped(self):
         self.is_streaming = False
-        self.stream_btn.configure(text="S T A R T   S T R E A M I N G", fg_color=COLOR_NOTHING_RED)
+        self.stream_btn.configure(text="START STREAMING", fg_color=COLOR_ACCENT, text_color=COLOR_WHITE)
         self.status_pill.configure(text="STOPPED", text_color=COLOR_MUTED)
+        self.status_dot.configure(text_color=COLOR_MUTED)
         self.level_queue.put([0.0]*64)
         self.hook_watcher.stop()
 
@@ -644,7 +686,8 @@ class CompanionApp(ctk.CTk):
         for i in range(count):
             col_dots = []
             for d in range(8):
-                dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill=COLOR_GRAY_BORDER, outline="")
+                # Using a rounded rectangle for a more modern dot look
+                dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill=COLOR_BORDER, outline="")
                 col_dots.append(dot)
             self.viz_dots.append(col_dots)
 
@@ -681,11 +724,9 @@ class CompanionApp(ctk.CTk):
             val = self.spectrum_points[i]
             dots_to_draw = int(val * 8)
             
-            # Optimization: Only update dots if the height for this column has changed.
-            # Calling itemconfig on 500+ items every 30ms chokes the GIL and causes audio jitter.
             if dots_to_draw != self._viz_cache[i]:
                 for d in range(8):
-                    color = COLOR_NOTHING_RED if d < dots_to_draw else COLOR_GRAY_BORDER
+                    color = COLOR_ACCENT if d < dots_to_draw else COLOR_BORDER
                     dot = self.viz_dots[i][d]
                     self.viz_canvas.itemconfig(dot, fill=color)
                 self._viz_cache[i] = dots_to_draw
