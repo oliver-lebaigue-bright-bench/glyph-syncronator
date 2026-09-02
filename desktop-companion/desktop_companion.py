@@ -260,7 +260,7 @@ class CompanionApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("GLYPHIX")
-        self.geometry("720x680")
+        self.geometry("580x620")
         self.resizable(True, True)
         
         self.grid_columnconfigure(0, weight=1)
@@ -279,6 +279,9 @@ class CompanionApp(ctk.CTk):
         self.rgb_sensitivity = ctk.DoubleVar(value=1.0)
         self.rgb_decay = ctk.DoubleVar(value=0.82)
         self.selected_rgb = (215, 25, 32)
+        self.viz_dots = []
+        self.viz_queue = queue.Queue(maxsize=1)
+        self._viz_cache = []
         
         self.wasapi_devices = get_wasapi_devices()
         self.spectrum_points = [0.0] * 64
@@ -294,19 +297,19 @@ class CompanionApp(ctk.CTk):
         self._update_loop()
 
     def _setup_ui(self):
-        self.header = ctk.CTkFrame(self, fg_color=COLOR_BLACK, corner_radius=0, height=80)
+        self.header = ctk.CTkFrame(self, fg_color=COLOR_BLACK, corner_radius=0, height=60)
         self.header.grid(row=0, column=0, sticky="ew")
         
         self.logo_label = ctk.CTkLabel(self.header, text="G L Y P H I X", 
-                                      font=ctk.CTkFont(family="Courier New", size=32, weight="bold"),
+                                      font=ctk.CTkFont(family="Courier New", size=24, weight="bold"),
                                       text_color=COLOR_NOTHING_RED)
-        self.logo_label.pack(side="left", padx=30, pady=20)
+        self.logo_label.pack(side="left", padx=20, pady=15)
         
         self.status_pill = ctk.CTkLabel(self.header, text="DISCONNECTED", 
                                        fg_color=COLOR_GRAY_CARD, text_color=COLOR_MUTED,
-                                       corner_radius=20, width=120, height=28,
-                                       font=ctk.CTkFont(size=11, weight="bold"))
-        self.status_pill.pack(side="right", padx=30, pady=26)
+                                       corner_radius=20, width=100, height=24,
+                                       font=ctk.CTkFont(size=10, weight="bold"))
+        self.status_pill.pack(side="right", padx=20, pady=18)
 
         self.main_container = ctk.CTkScrollableFrame(self, fg_color=COLOR_DARK_GRAY, corner_radius=0)
         self.main_container.grid(row=1, column=0, sticky="nsew", padx=2, pady=2)
@@ -315,10 +318,10 @@ class CompanionApp(ctk.CTk):
         self.audio_combo = ctk.CTkOptionMenu(self.last_card, values=[], 
                                             fg_color=COLOR_GRAY_BORDER, button_color=COLOR_GRAY_BORDER,
                                             button_hover_color=COLOR_NOTHING_RED, dropdown_fg_color=COLOR_GRAY_CARD)
-        self.audio_combo.pack(fill="x", padx=20, pady=(10, 20))
+        self.audio_combo.pack(fill="x", padx=15, pady=(5, 10))
 
-        self.viz_canvas = ctk.CTkCanvas(self.last_card, height=100, bg=COLOR_BLACK, highlightthickness=0)
-        self.viz_canvas.pack(fill="x", padx=20, pady=(0, 20))
+        self.viz_canvas = ctk.CTkCanvas(self.last_card, height=80, bg=COLOR_BLACK, highlightthickness=0)
+        self.viz_canvas.pack(fill="x", padx=15, pady=(0, 15))
         self.viz_canvas.bind("<Configure>", self._resize_viz)
         self.viz_dots = []
         self._init_viz_dots()
@@ -326,21 +329,21 @@ class CompanionApp(ctk.CTk):
         self._create_card(self.main_container, "CONNECTIVITY")
         
         conn_switch_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        conn_switch_frame.pack(fill="x", padx=20, pady=10)
+        conn_switch_frame.pack(fill="x", padx=15, pady=5)
         
         ctk.CTkRadioButton(conn_switch_frame, text="UDP (Wi-Fi)", variable=self.conn_type, value="UDP",
-                           hover_color=COLOR_NOTHING_RED, fg_color=COLOR_NOTHING_RED).pack(side="left", padx=(0, 20))
+                           hover_color=COLOR_NOTHING_RED, fg_color=COLOR_NOTHING_RED).pack(side="left", padx=(0, 15))
         ctk.CTkRadioButton(conn_switch_frame, text="Bluetooth", variable=self.conn_type, value="BT",
                            hover_color=COLOR_NOTHING_RED, fg_color=COLOR_NOTHING_RED).pack(side="left")
         
         addr_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        addr_frame.pack(fill="x", padx=20, pady=(10, 20))
+        addr_frame.pack(fill="x", padx=15, pady=(5, 15))
         
         self.addr_entry = ctk.CTkEntry(addr_frame, placeholder_text="IP or MAC Address",
-                                      fg_color=COLOR_BLACK, border_color=COLOR_GRAY_BORDER, height=36)
-        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
+                                      fg_color=COLOR_BLACK, border_color=COLOR_GRAY_BORDER, height=32)
+        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
         
-        self.discover_btn = ctk.CTkButton(addr_frame, text="DISCOVER", width=100, height=36,
+        self.discover_btn = ctk.CTkButton(addr_frame, text="DISCOVER", width=80, height=32,
                                          fg_color=COLOR_WHITE, text_color=COLOR_BLACK, hover_color=COLOR_NOTHING_RED,
                                          font=ctk.CTkFont(weight="bold"), command=self._toggle_discovery)
         self.discover_btn.pack(side="right")
@@ -348,44 +351,44 @@ class CompanionApp(ctk.CTk):
         self._create_card(self.main_container, "HARDWARE SYNC")
         
         hw_grid = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        hw_grid.pack(fill="x", padx=20, pady=10)
+        hw_grid.pack(fill="x", padx=15, pady=5)
         
         self.openrgb_switch = ctk.CTkSwitch(hw_grid, text="OpenRGB Sync", variable=self.use_openrgb,
                                            progress_color=COLOR_NOTHING_RED, command=self._toggle_openrgb)
-        self.openrgb_switch.pack(side="left", padx=(0, 30))
+        self.openrgb_switch.pack(side="left", padx=(0, 20))
         
         self.typing_switch = ctk.CTkSwitch(hw_grid, text="Typing Suppression", variable=self.typing_suppression,
                                           progress_color=COLOR_NOTHING_RED)
         self.typing_switch.pack(side="left")
         
         slider_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        slider_frame.pack(fill="x", padx=20, pady=(10, 20))
+        slider_frame.pack(fill="x", padx=15, pady=(5, 15))
         
-        ctk.CTkLabel(slider_frame, text="SENSITIVITY", font=ctk.CTkFont(size=10, weight="bold")).pack(anchor="w")
+        ctk.CTkLabel(slider_frame, text="SENSITIVITY", font=ctk.CTkFont(size=9, weight="bold")).pack(anchor="w")
         ctk.CTkSlider(slider_frame, from_=0.1, to=3.0, variable=self.rgb_sensitivity, 
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(2, 10))
+                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(1, 8))
         
-        ctk.CTkLabel(slider_frame, text="PULSE DECAY", font=ctk.CTkFont(size=10, weight="bold")).pack(anchor="w")
+        ctk.CTkLabel(slider_frame, text="PULSE DECAY", font=ctk.CTkFont(size=9, weight="bold")).pack(anchor="w")
         ctk.CTkSlider(slider_frame, from_=0.5, to=0.99, variable=self.rgb_decay,
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(2, 0))
+                      button_color=COLOR_WHITE, button_hover_color=COLOR_NOTHING_RED, progress_color=COLOR_NOTHING_RED).pack(fill="x", pady=(1, 0))
 
         self.stream_btn = ctk.CTkButton(self, text="S T A R T   S T R E A M I N G", 
-                                       height=50, corner_radius=0, fg_color=COLOR_NOTHING_RED, 
-                                       font=ctk.CTkFont(size=14, weight="bold"),
+                                       height=42, corner_radius=0, fg_color=COLOR_NOTHING_RED, 
+                                       font=ctk.CTkFont(size=13, weight="bold"),
                                        hover_color="#A51318", command=self._toggle_streaming)
         self.stream_btn.grid(row=2, column=0, sticky="ew")
 
-        self.console = ctk.CTkTextbox(self.main_container, height=120, fg_color=COLOR_BLACK, 
+        self.console = ctk.CTkTextbox(self.main_container, height=100, fg_color=COLOR_BLACK, 
                                      border_color=COLOR_GRAY_BORDER, border_width=1,
-                                     font=ctk.CTkFont(family="Consolas", size=10), text_color=COLOR_MUTED)
-        self.console.pack(fill="x", padx=20, pady=20)
+                                     font=ctk.CTkFont(family="Consolas", size=9), text_color=COLOR_MUTED)
+        self.console.pack(fill="x", padx=15, pady=15)
         self.console.configure(state="disabled")
 
     def _create_card(self, parent, title):
-        card = ctk.CTkFrame(parent, fg_color=COLOR_GRAY_CARD, corner_radius=12, border_width=1, border_color=COLOR_GRAY_BORDER)
-        card.pack(fill="x", padx=20, pady=10)
-        title_lbl = ctk.CTkLabel(card, text=title, font=ctk.CTkFont(size=11, weight="bold"), text_color=COLOR_MUTED)
-        title_lbl.pack(anchor="w", padx=20, pady=(15, 5))
+        card = ctk.CTkFrame(parent, fg_color=COLOR_GRAY_CARD, corner_radius=10, border_width=1, border_color=COLOR_GRAY_BORDER)
+        card.pack(fill="x", padx=15, pady=6)
+        title_lbl = ctk.CTkLabel(card, text=title, font=ctk.CTkFont(size=10, weight="bold"), text_color=COLOR_MUTED)
+        title_lbl.pack(anchor="w", padx=15, pady=(10, 2))
         self.last_card = card
 
     def log(self, msg):
@@ -491,21 +494,24 @@ class CompanionApp(ctk.CTk):
         p = pyaudio.PyAudio()
         native_rate = device["rate"]
         channels = device["channels"]
+        chunk_size = 512 # Smaller chunks to fit UDP MTU
         
         try:
             stream = p.open(format=FORMAT, channels=channels, rate=TARGET_RATE,
                             input=True, input_device_index=device["index"],
-                            frames_per_buffer=CHUNK)
+                            frames_per_buffer=chunk_size)
             actual_rate = TARGET_RATE
         except:
             try:
                 stream = p.open(format=FORMAT, channels=channels, rate=native_rate,
                                 input=True, input_device_index=device["index"],
-                                frames_per_buffer=CHUNK)
+                                frames_per_buffer=chunk_size)
                 actual_rate = native_rate
             except Exception as e:
                 self.after(0, self._on_stream_error, str(e))
                 return
+
+        threading.Thread(target=self._viz_worker, args=(actual_rate,), daemon=True).start()
 
         conn_type = self.conn_type.get()
         sock = None
@@ -527,28 +533,55 @@ class CompanionApp(ctk.CTk):
 
         interp_indices = None
         if actual_rate != TARGET_RATE:
-            interp_indices = np.linspace(0, CHUNK - 1, int(CHUNK * TARGET_RATE / actual_rate))
-
-        bass_engine = PureBassEngine(sample_rate=actual_rate)
-        last_ui_time = 0
+            interp_indices = np.linspace(0, chunk_size - 1, int(chunk_size * TARGET_RATE / actual_rate))
         
         try:
             while not self.stop_stream_event.is_set():
-                raw = stream.read(CHUNK, exception_on_overflow=False)
+                raw = stream.read(chunk_size, exception_on_overflow=False)
                 samples = np.frombuffer(raw, dtype=np.int16)
                 mono = samples.reshape(-1, channels).mean(axis=1).astype(np.int16) if channels > 1 else samples
                 
+                # Offload viz processing to stay under GIL limits
+                try: self.viz_queue.put_nowait(mono)
+                except queue.Full: pass
+
+                # Network send should be as immediate as possible
+                if interp_indices is not None:
+                    data = np.interp(interp_indices, np.arange(len(mono)), mono).astype(np.int16).tobytes()
+                else:
+                    data = mono.tobytes()
+                
+                if conn_type == "BT": sock.sendall(data)
+                else: sock.sendto(data, (addr, UDP_PORT))
+                
+        except Exception as e: self.log(f"Stream error: {e}")
+        finally:
+            self.rgb_manager.stop()
+            stream.stop_stream(); stream.close(); p.terminate(); sock.close()
+            self.after(0, self._on_stream_stopped)
+
+    def _viz_worker(self, actual_rate):
+        bass_engine = PureBassEngine(sample_rate=actual_rate)
+        last_viz_time = 0
+        
+        while not self.stop_stream_event.is_set():
+            try:
+                mono = self.viz_queue.get(timeout=0.1)
                 now = time.time()
-                if now - last_ui_time > 0.03:
+                
+                if now - last_viz_time > 0.03:
+                    # FFT for visualizer dots
                     sf = mono.astype(np.float32) / 32768.0
-                    fft = np.abs(np.fft.rfft(sf * np.hanning(len(sf)))) / (len(sf) / 2.0)
+                    n = len(sf)
+                    fft = np.abs(np.fft.rfft(sf * np.hanning(n))) / (n / 2.0)
                     
                     freqs = np.geomspace(40, 15000, 64)
-                    bin_idx = np.clip(freqs / (actual_rate / len(sf)), 0, len(fft) - 1)
+                    bin_idx = np.clip(freqs / (actual_rate / n), 0, len(fft) - 1)
                     points = np.interp(bin_idx, np.arange(len(fft)), fft)
                     
                     self.level_queue.put(list(np.clip(points * 15, 0, 1)))
                     
+                    # RGB Hardware Sync
                     if self.use_openrgb.get():
                         typing_pause = self.typing_suppression.get() and (time.perf_counter() - self.last_key_time < 1.5)
                         if not typing_pause:
@@ -558,17 +591,9 @@ class CompanionApp(ctk.CTk):
                         else:
                             self.rgb_manager.stop()
                     
-                    last_ui_time = now
-
-                data = np.interp(interp_indices, np.arange(len(mono)), mono).astype(np.int16).tobytes() if interp_indices is not None else mono.tobytes()
-                if conn_type == "BT": sock.sendall(data)
-                else: sock.sendto(data, (addr, UDP_PORT))
-                
-        except Exception as e: self.log(f"Stream error: {e}")
-        finally:
-            self.rgb_manager.stop()
-            stream.stop_stream(); stream.close(); p.terminate(); sock.close()
-            self.after(0, self._on_stream_stopped)
+                    last_viz_time = now
+            except queue.Empty:
+                continue
 
     def _on_stream_error(self, err):
         messagebox.showerror("Stream Error", err)
@@ -592,20 +617,33 @@ class CompanionApp(ctk.CTk):
         last_points = None
         while not self.level_queue.empty(): last_points = self.level_queue.get_nowait()
         
+        num_dots = len(self.spectrum_points)
         if last_points:
-            for i in range(64):
-                self.spectrum_points[i] = max(self.spectrum_points[i] * 0.8, last_points[i])
+            # Interpolate 64 FFT bins to current column count
+            interpolated = np.interp(
+                np.linspace(0, 63, num_dots),
+                np.arange(64),
+                last_points
+            )
+            for i in range(num_dots):
+                self.spectrum_points[i] = max(self.spectrum_points[i] * 0.8, interpolated[i])
         else:
-            for i in range(64): self.spectrum_points[i] *= 0.8
+            for i in range(num_dots): self.spectrum_points[i] *= 0.8
 
         self._draw_viz()
         self.after(30, self._update_loop)
 
-    def _init_viz_dots(self):
+    def _init_viz_dots(self, count=64):
+        if self.viz_dots:
+            for col in self.viz_dots:
+                for dot in col:
+                    self.viz_canvas.delete(dot)
+        
         self.viz_dots = []
-        for i in range(64): # cols
+        self.spectrum_points = [0.0] * count
+        for i in range(count):
             col_dots = []
-            for d in range(8): # max_dots
+            for d in range(8):
                 dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill=COLOR_GRAY_BORDER, outline="")
                 col_dots.append(dot)
             self.viz_dots.append(col_dots)
@@ -615,10 +653,17 @@ class CompanionApp(ctk.CTk):
         h = self.viz_canvas.winfo_height()
         if w <= 1: return
         
-        dot_spacing = w / 64
-        dot_size = max(2, dot_spacing - 2)
+        target_spacing = 12
+        new_count = max(8, w // target_spacing)
         
-        for i in range(64):
+        if new_count != len(self.viz_dots):
+            self._init_viz_dots(new_count)
+            self._viz_cache = [-1] * new_count
+            
+        dot_spacing = w / new_count
+        dot_size = max(4, dot_spacing - 4)
+        
+        for i in range(new_count):
             x = i * dot_spacing + dot_spacing/2
             for d in range(8):
                 dy = h - (d * 10 + 15)
@@ -628,13 +673,22 @@ class CompanionApp(ctk.CTk):
     def _draw_viz(self):
         if not self.viz_dots: return
         
-        for i in range(64):
+        num_cols = len(self.viz_dots)
+        if len(self._viz_cache) != num_cols:
+            self._viz_cache = [-1] * num_cols
+            
+        for i in range(num_cols):
             val = self.spectrum_points[i]
             dots_to_draw = int(val * 8)
-            for d in range(8):
-                color = COLOR_NOTHING_RED if d < dots_to_draw else COLOR_GRAY_BORDER
-                dot = self.viz_dots[i][d]
-                self.viz_canvas.itemconfig(dot, fill=color)
+            
+            # Optimization: Only update dots if the height for this column has changed.
+            # Calling itemconfig on 500+ items every 30ms chokes the GIL and causes audio jitter.
+            if dots_to_draw != self._viz_cache[i]:
+                for d in range(8):
+                    color = COLOR_NOTHING_RED if d < dots_to_draw else COLOR_GRAY_BORDER
+                    dot = self.viz_dots[i][d]
+                    self.viz_canvas.itemconfig(dot, fill=color)
+                self._viz_cache[i] = dots_to_draw
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("Dark")
