@@ -30,7 +30,6 @@ except ImportError:
     RGBColor = None
     DeviceType = None
 
-# Constants
 UDP_PORT = 12347
 DISCOVERY_PORT = 12348
 OPENRGB_PORT = 6742
@@ -39,7 +38,6 @@ CHUNK = 1024
 FORMAT = pyaudio.paInt16
 TARGET_RATE = 48000
 
-# Theme & Colors (Refined Pro Identity)
 COLOR_BG = "#080808"
 COLOR_CARD = "#121212"
 COLOR_CARD_HOVER = "#1A1A1A"
@@ -50,9 +48,8 @@ COLOR_MUTED = "#666666"
 COLOR_TEXT = "#EAEAEA"
 
 FONT_MAIN = "Segoe UI" if sys.platform == "win32" else "Inter"
-FONT_LOGO = "Courier New" # Keeping brand identity for logo
+FONT_LOGO = "Courier New"
 
-# Windows Hook Setup
 user32 = None
 kernel32 = None
 if HAS_CTYPES and sys.platform == "win32":
@@ -67,7 +64,6 @@ WM_KEYDOWN = 0x0100
 WM_SYSKEYDOWN = 0x0104
 
 class KeyboardHookWatcher:
-    """Detects keystrokes to optionally suppress RGB pulses while typing."""
     def __init__(self, on_press_callback):
         self.on_press_callback = on_press_callback
         self.hook = None
@@ -106,7 +102,6 @@ class KeyboardHookWatcher:
                 user32.PostThreadMessageW(self.thread.ident, 0x0012, 0, 0)
 
 class PureBassEngine:
-    """High-precision bass impulse detector."""
     def __init__(self, sample_rate=48000):
         self.sample_rate = sample_rate
         self.prev_bass = 0.0
@@ -151,7 +146,6 @@ class PureBassEngine:
         return float(np.clip(self.smooth_val, 0.0, 1.0))
 
 class OpenRGBManager:
-    """Handles synchronization with PC peripherals."""
     def __init__(self, logger=None):
         self.logger = logger
         self.client = None
@@ -301,7 +295,6 @@ class CompanionApp(ctk.CTk):
         self._update_loop()
 
     def _setup_ui(self):
-        # Header
         self.header = ctk.CTkFrame(self, fg_color=COLOR_BG, corner_radius=0, height=70)
         self.header.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 0))
         
@@ -321,11 +314,9 @@ class CompanionApp(ctk.CTk):
                                        font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"))
         self.status_pill.pack(side="left")
 
-        # Main Scrollable Area
         self.main_container = ctk.CTkScrollableFrame(self, fg_color=COLOR_BG, corner_radius=0)
         self.main_container.grid(row=1, column=0, sticky="nsew", padx=5)
         
-        # Audio Module
         self._create_card(self.main_container, "AUDIO SOURCE")
         self.audio_combo = ctk.CTkOptionMenu(self.last_card, values=[], 
                                             fg_color=COLOR_BORDER, button_color=COLOR_BORDER,
@@ -337,7 +328,6 @@ class CompanionApp(ctk.CTk):
         self.viz_canvas.pack(fill="x", padx=20, pady=(0, 20))
         self.viz_canvas.bind("<Configure>", self._resize_viz)
         
-        # Connectivity Module
         self._create_card(self.main_container, "CONNECTIVITY")
         
         conn_switch_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
@@ -362,7 +352,6 @@ class CompanionApp(ctk.CTk):
                                          command=self._toggle_discovery)
         self.discover_btn.pack(side="right")
 
-        # Hardware Module
         self._create_card(self.main_container, "HARDWARE SYNC")
         
         hw_grid = ctk.CTkFrame(self.last_card, fg_color="transparent")
@@ -388,7 +377,6 @@ class CompanionApp(ctk.CTk):
         ctk.CTkSlider(slider_frame, from_=0.5, to=0.99, variable=self.rgb_decay,
                       button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT).pack(fill="x", pady=(2, 0))
 
-        # Advanced / Logs Section
         self.adv_btn = ctk.CTkButton(self.main_container, text="SHOW LOGS",
                                     fg_color="transparent", text_color=COLOR_MUTED, 
                                     hover_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"),
@@ -398,10 +386,8 @@ class CompanionApp(ctk.CTk):
         self.console = ctk.CTkTextbox(self.main_container, height=120, fg_color=COLOR_BG, 
                                      border_color=COLOR_BORDER, border_width=1,
                                      font=ctk.CTkFont(family="Consolas", size=10), text_color=COLOR_MUTED)
-        # Hidden by default in the toggle method
         self.console.configure(state="disabled")
 
-        # Footer Action
         self.footer = ctk.CTkFrame(self, fg_color=COLOR_BG, height=80, corner_radius=0)
         self.footer.grid(row=2, column=0, sticky="ew")
         
@@ -535,7 +521,7 @@ class CompanionApp(ctk.CTk):
         p = pyaudio.PyAudio()
         native_rate = device["rate"]
         channels = device["channels"]
-        chunk_size = 512 # Smaller chunks to fit UDP MTU
+        chunk_size = 512
         
         try:
             stream = p.open(format=FORMAT, channels=channels, rate=TARGET_RATE,
@@ -582,11 +568,9 @@ class CompanionApp(ctk.CTk):
                 samples = np.frombuffer(raw, dtype=np.int16)
                 mono = samples.reshape(-1, channels).mean(axis=1).astype(np.int16) if channels > 1 else samples
                 
-                # Offload viz processing to stay under GIL limits
                 try: self.viz_queue.put_nowait(mono)
                 except queue.Full: pass
 
-                # Network send should be as immediate as possible
                 if interp_indices is not None:
                     data = np.interp(interp_indices, np.arange(len(mono)), mono).astype(np.int16).tobytes()
                 else:
@@ -611,7 +595,6 @@ class CompanionApp(ctk.CTk):
                 now = time.time()
                 
                 if now - last_viz_time > 0.03:
-                    # FFT for visualizer dots
                     sf = mono.astype(np.float32) / 32768.0
                     n = len(sf)
                     fft = np.abs(np.fft.rfft(sf * np.hanning(n))) / (n / 2.0)
@@ -622,7 +605,6 @@ class CompanionApp(ctk.CTk):
                     
                     self.level_queue.put(list(np.clip(points * 15, 0, 1)))
                     
-                    # RGB Hardware Sync
                     if self.use_openrgb.get():
                         typing_pause = self.typing_suppression.get() and (time.perf_counter() - self.last_key_time < 1.5)
                         if not typing_pause:
@@ -661,7 +643,6 @@ class CompanionApp(ctk.CTk):
         
         num_dots = len(self.spectrum_points)
         if last_points:
-            # Interpolate 64 FFT bins to current column count
             interpolated = np.interp(
                 np.linspace(0, 63, num_dots),
                 np.arange(64),
@@ -686,7 +667,6 @@ class CompanionApp(ctk.CTk):
         for i in range(count):
             col_dots = []
             for d in range(8):
-                # Using a rounded rectangle for a more modern dot look
                 dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill=COLOR_BORDER, outline="")
                 col_dots.append(dot)
             self.viz_dots.append(col_dots)
