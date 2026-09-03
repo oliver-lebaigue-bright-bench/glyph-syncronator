@@ -6,6 +6,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -88,6 +89,7 @@ fun FloatingTopBar(
     onProfileClick: () -> Unit,
     avatarUrl: String? = null,
     isProfileActive: Boolean = false,
+    onTitleLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isGlass = LocalIsGlassTheme.current
@@ -154,7 +156,20 @@ fun FloatingTopBar(
                     letterSpacing = if (titleFontFamily == NDot55FontFamily) 1.2.sp else 0.4.sp
                 ),
                 color = contentColor,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (onTitleLongClick != null) {
+                            Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onTitleLongClick()
+                                }
+                            )
+                        } else Modifier
+                    )
             )
 
             // Right: Profile Avatar Button

@@ -565,6 +565,7 @@ internal fun GlyphixApp(
     val isHamburgerMenuOpen by viewModel.isHamburgerMenuOpen.collectAsStateWithLifecycle()
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
+    val developerModeEnabled by viewModel.developerModeEnabled.collectAsStateWithLifecycle()
 
     val screenTitle = when (selectedTab) {
         Tab.Audio -> "Glyphix"
@@ -584,12 +585,24 @@ internal fun GlyphixApp(
     ) {
         // Top Bar Container: Top Bar + seamlessly attached Hamburger Dropdown Menu
         Box(modifier = Modifier.fillMaxWidth()) {
+            val context = LocalContext.current
             FloatingTopBar(
                 title = screenTitle,
                 onMenuClick = { viewModel.toggleHamburgerMenu() },
                 onProfileClick = { viewModel.showProfile() },
                 avatarUrl = userProfile?.profilePictureUrl,
-                isProfileActive = false
+                isProfileActive = false,
+                onTitleLongClick = if (selectedTab == Tab.Settings) {
+                    {
+                        val newState = !developerModeEnabled
+                        viewModel.setDeveloperModeEnabled(newState)
+                        Toast.makeText(
+                            context,
+                            if (newState) "Developer mode enabled" else "Developer mode disabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } else null
             )
 
             // Quick Configuration Dropdown Menu (Assets/Hamburger Menu.png)

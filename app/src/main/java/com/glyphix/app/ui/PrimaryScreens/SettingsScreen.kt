@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.glyphix.app.BuildConfig
 import com.glyphix.app.R
+import com.glyphix.app.model.DeviceProfile
 import com.glyphix.app.ui.*
 
 /**
@@ -71,6 +72,8 @@ internal fun SettingsScreen(
     val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
     val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
     val spectrumGain by viewModel.spectrumGain.collectAsStateWithLifecycle()
+    val developerModeEnabled by viewModel.developerModeEnabled.collectAsStateWithLifecycle()
+    val spoofedDevice by viewModel.spoofedDevice.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
 
     var isThemeExpanded by remember { mutableStateOf(false) }
@@ -557,6 +560,92 @@ internal fun SettingsScreen(
                             tint = mockupSubtextColor(),
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                }
+
+                // 6. Developer Options Card
+                if (developerModeEnabled) {
+                    MockupCard {
+                        Text(
+                            text = "Developer Options",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 19.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                        Spacer(Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Developer Mode",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 16.sp
+                                    ),
+                                    color = mockupTextColor()
+                                )
+                                Text(
+                                    text = "Advanced spoofing & logs",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                    color = mockupSubtextColor()
+                                )
+                            }
+                            MockupPillToggle(
+                                checked = developerModeEnabled,
+                                onCheckedChange = { viewModel.setDeveloperModeEnabled(it) }
+                            )
+                        }
+
+                        Spacer(Modifier.height(18.dp))
+
+                        Text(
+                            text = "Spoof Device",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                        Text(
+                            text = "Force app to use a specific device profile",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = mockupSubtextColor()
+                        )
+                        
+                        Spacer(Modifier.height(12.dp))
+
+                        val devices = listOf(
+                            "Phone (1)" to DeviceProfile.DEVICE_NP1,
+                            "Phone (2)" to DeviceProfile.DEVICE_NP2,
+                            "Phone (2a)" to DeviceProfile.DEVICE_NP2A,
+                            "Phone (3)" to DeviceProfile.DEVICE_NP3,
+                            "Phone (3a)" to DeviceProfile.DEVICE_NP3A,
+                            "Phone (4)" to DeviceProfile.DEVICE_NP4A,
+                            "Phone (4 Pro)" to DeviceProfile.DEVICE_NP4APRO
+                        )
+
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            maxItemsInEachRow = 2
+                        ) {
+                            devices.forEach { (name, id) ->
+                                OptionTile(
+                                    label = name,
+                                    icon = Icons.Outlined.Smartphone,
+                                    isSelected = spoofedDevice == id,
+                                    onClick = { viewModel.setSpoofedDevice(id) }
+                                )
+                            }
+                        }
                     }
                 }
 
