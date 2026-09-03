@@ -541,13 +541,20 @@ public class AudioCaptureService extends Service {
         mHapticEnabled = hasHapticMotor(this) && appPrefs.getBoolean("haptic_motor_enabled", false);
         mFlashlightEnabled = hasFlashlight(this) && appPrefs.getBoolean("flashlight_enabled", false);
         refreshLatencyForCurrentAudioRoute();
-        try {
-            refreshPresetCatalog();
-            if (!mAvailablePresetKeys.isEmpty()) {
-                mPresetKey = chooseDefaultPresetKey(phoneModelForDevice(mSelectedDevice), mAvailablePresetKeys);
-                mVisualizerConfig = loadVisualizerConfig(mPresetKey, SAMPLE_RATE);
+
+        // Offload heavy file I/O and JSON parsing to background thread to prevent ANR on startup
+        mWorkerHandler.post(() -> {
+            try {
+                refreshPresetCatalog();
+                if (!mAvailablePresetKeys.isEmpty()) {
+                    mPresetKey = chooseDefaultPresetKey(phoneModelForDevice(mSelectedDevice), mAvailablePresetKeys);
+                    mVisualizerConfig = loadVisualizerConfig(mPresetKey, SAMPLE_RATE);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading preset catalog on startup", e);
             }
-        } catch (Exception ignored) {}
+        });
+
         resetVisualizerState();
         if (mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN && Build.VERSION.SDK_INT >= 31) ensureGlyphManagerInitialized();
         mMainHandler.post(mIdlePulseRunnable);
