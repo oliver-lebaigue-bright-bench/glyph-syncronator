@@ -63,6 +63,7 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import kotlin.math.pow
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
 import androidx.compose.ui.unit.dp
@@ -638,15 +639,16 @@ internal fun GlyphixApp(
                         val absOffset = pageOffset.coerceIn(-1f, 1f).let { kotlin.math.abs(it) }
                         val fraction = 1f - absOffset
 
-                        val scale = 0.85f + (1f - 0.85f) * fraction
+                        val scale = 0.82f + (1f - 0.82f) * fraction
                         scaleX = scale
                         scaleY = scale
-                        alpha = fraction
+                        alpha = fraction.pow(1.5f) // Softer fade
 
-                        val maxRotation = 8f
+                        val maxRotation = 10f
                         val rotationAmount = maxRotation * (1f - fraction)
-
                         rotationZ = if (pageOffset > 0) -rotationAmount else rotationAmount
+                        
+                        translationY = 50f * (1f - fraction)
                     }
             ) {
                 when (tab) {
@@ -654,12 +656,12 @@ internal fun GlyphixApp(
                         val latencyMs by viewModel.latencyMs.collectAsStateWithLifecycle()
                         val latencyPresets by viewModel.latencyPresets.collectAsStateWithLifecycle()
                         val autoDeviceEnabled by viewModel.autoDeviceMemorize.collectAsStateWithLifecycle()
-                        val fftData by viewModel.fftState.collectAsStateWithLifecycle()
                         val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
 
+                        val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
                             isRunning = isRunning,
                             sessionDuration = totalVisualizedTime,
@@ -671,7 +673,7 @@ internal fun GlyphixApp(
                             onAutoDeviceToggle = { viewModel.setAutoDeviceMemorize(it) },
                             connectedDeviceName = MainActivity.serviceStatic?.getActiveAudioRouteName()
                                 ?: "Unknown",
-                            fftData = fftData,
+                            fftData = { fftDataState.value },
                             captureSource = captureSource,
                             onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
                             latencyWizardState = latencyWizardState,
@@ -689,6 +691,7 @@ internal fun GlyphixApp(
                         val selectedPreset by viewModel.selectedPreset.collectAsStateWithLifecycle()
                         val selectedDevice by viewModel.selectedDevice.collectAsStateWithLifecycle()
 
+                        val vizStateState = viewModel.visualizerState.collectAsStateWithLifecycle()
                         GlyphsScreen(
                             gammaValue = gammaValue,
                             onGammaChanged = {
@@ -704,6 +707,7 @@ internal fun GlyphixApp(
                             isRunning = isRunning,
                             selectedDevice = selectedDevice,
                             viewModel = viewModel,
+                            vizStateProvider = { vizStateState.value },
                             padding = pagePadding
                         )
                     }
@@ -729,6 +733,7 @@ internal fun GlyphixApp(
                         val hapticBeatGamma by viewModel.hapticBeatGamma.collectAsStateWithLifecycle()
                         val isBeatDetected by viewModel.isBeatDetected.collectAsStateWithLifecycle()
 
+                        val hapticAmplitudeState = viewModel.hapticAmplitude.collectAsStateWithLifecycle()
                         HapticsScreen(
                             hapticMotorEnabled = hapticMotorEnabled,
                             onHapticMotorEnabledChanged = {
@@ -760,7 +765,7 @@ internal fun GlyphixApp(
                             },
                             hapticBeatGamma = hapticBeatGamma,
                             onHapticBeatGammaChanged = { viewModel.setHapticBeatGamma(it) },
-                            hapticAmplitudeProvider = { viewModel.hapticAmplitude.value },
+                            hapticAmplitudeProvider = { hapticAmplitudeState.value },
                             isBeatDetectedProvider = { isBeatDetected },
                             padding = pagePadding
                         )
@@ -777,6 +782,7 @@ internal fun GlyphixApp(
                         val flashlightLevel by viewModel.flashlightLevel.collectAsStateWithLifecycle()
                         val isFlashlightBeatDetected by viewModel.isFlashlightBeatDetected.collectAsStateWithLifecycle()
 
+                        val flashlightAmplitudeState = viewModel.flashlightAmplitude.collectAsStateWithLifecycle()
                         FlashlightScreen(
                             flashlightEnabled = flashlightEnabled,
                             onFlashlightEnabledChanged = { viewModel.setFlashlightEnabled(it) },
@@ -806,7 +812,7 @@ internal fun GlyphixApp(
                             },
                             flashlightIntensityLevels = flashlightIntensityLevels,
                             flashlightCurrentLevel = flashlightLevel,
-                            flashlightAmplitudeProvider = { viewModel.flashlightAmplitude.value },
+                            flashlightAmplitudeProvider = { flashlightAmplitudeState.value },
                             isBeatDetectedProvider = { isFlashlightBeatDetected },
                             padding = pagePadding
                         )

@@ -113,7 +113,7 @@ fun AudioScreen(
     autoDeviceEnabled: Boolean,
     onAutoDeviceToggle: (Boolean) -> Unit,
     connectedDeviceName: String? = null,
-    fftData: FloatArray = floatArrayOf(),
+    fftData: () -> FloatArray = { floatArrayOf() },
     captureSource: AudioCaptureService.CaptureSource = AudioCaptureService.CaptureSource.INTERNAL,
     onCaptureSourceChanged: (AudioCaptureService.CaptureSource) -> Unit = {},
     latencyWizardState: LatencyWizard.State = LatencyWizard.State.Idle,
@@ -174,7 +174,7 @@ fun AudioScreen(
         }
     }
 
-    Column(
+    StaggeredEntranceColumn(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
@@ -182,49 +182,53 @@ fun AudioScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (!isRunning) {
-            MockupCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(mockupAccentColor().copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
+            AnimatedItem {
+                MockupCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.GraphicEq,
-                            contentDescription = null,
-                            tint = mockupAccentColor(),
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            text = "Audio Visualizer Ready",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp
-                            ),
-                            color = mockupTextColor()
-                        )
-                        Text(
-                            text = "Tap the Play button below to select capture source and start sync.",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                            color = mockupSubtextColor()
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(CircleShape)
+                                .background(mockupAccentColor().copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.GraphicEq,
+                                contentDescription = null,
+                                tint = mockupAccentColor(),
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "Audio Visualizer Ready",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp
+                                ),
+                                color = mockupTextColor()
+                            )
+                            Text(
+                                text = "Tap the Play button below to select capture source and start sync.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                color = mockupSubtextColor()
+                            )
+                        }
                     }
                 }
             }
         }
 
-        AnimatedVisibility(visible = isRunning) {
-            val compositionKey = remember(bananaMode, penisMode) { "$bananaMode-$penisMode" }
-            key(compositionKey) {
-                FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
+        val compositionKey = remember(bananaMode, penisMode) { "$bananaMode-$penisMode" }
+        key(compositionKey) {
+            AnimatedVisibility(visible = isRunning) {
+                AnimatedItem {
+                    FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
+                }
             }
         }
 
@@ -239,15 +243,17 @@ fun AudioScreen(
             }
             val descriptionText = stringResource(R.string.audio_description_running) + "\n\nActive Time: $timeStr"
 
-            ExpressiveCard(
-                containerColor = MaterialTheme.colorScheme.surface.copy(
-                    alpha = 0.5f
-                )
-            ) {
-                BodyText(
-                    text = descriptionText,
-                    size = 14.sp
-                )
+            AnimatedItem {
+                ExpressiveCard(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(
+                        alpha = 0.5f
+                    )
+                ) {
+                    BodyText(
+                        text = descriptionText,
+                        size = 14.sp
+                    )
+                }
             }
         }
 
@@ -255,34 +261,41 @@ fun AudioScreen(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
                 if (captureSource != AudioCaptureService.CaptureSource.MIC) {
-                    LatencyCard(
-                        latencyMs = latencyMs,
-                        onLatencyChanged = onLatencyChanged,
-                        latencyPresets = latencyPresets,
-                        onLatencyPresetsChanged = onLatencyPresetsChanged,
-                        wizardState = latencyWizardState,
-                        onRunWizard = {
-                            val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                            if (status == PackageManager.PERMISSION_GRANTED) {
-                                onRunLatencyWizard()
-                            } else {
-                                wizardPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
-                        },
-                        onResetWizard = onResetLatencyWizard,
-                        autoDeviceEnabled = autoDeviceEnabled,
-                        onAutoDeviceToggle = handleAutoToggle,
-                        connectedDeviceName = connectedDeviceName
-                    )
+                    AnimatedItem {
+                        LatencyCard(
+                            latencyMs = latencyMs,
+                            onLatencyChanged = onLatencyChanged,
+                            latencyPresets = latencyPresets,
+                            onLatencyPresetsChanged = onLatencyPresetsChanged,
+                            wizardState = latencyWizardState,
+                            onRunWizard = {
+                                val status = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.RECORD_AUDIO
+                                )
+                                if (status == PackageManager.PERMISSION_GRANTED) {
+                                    onRunLatencyWizard()
+                                } else {
+                                    wizardPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            },
+                            onResetWizard = onResetLatencyWizard,
+                            autoDeviceEnabled = autoDeviceEnabled,
+                            onAutoDeviceToggle = handleAutoToggle,
+                            connectedDeviceName = connectedDeviceName
+                        )
+                    }
                 }
 
-                ExpressiveCard(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
-                ) {
-                    BodyText(
-                        text = stringResource(R.string.latency_compensation_description),
-                        size = 12.sp
-                    )
+                AnimatedItem {
+                    ExpressiveCard(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                    ) {
+                        BodyText(
+                            text = stringResource(R.string.latency_compensation_description),
+                            size = 12.sp
+                        )
+                    }
                 }
             }
         }
@@ -600,7 +613,7 @@ fun LatencyCard(
 }
 
 @Composable
-fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode: Boolean = false) {
+fun FFTSpectrumCard(fftData: () -> FloatArray, bananaMode: Boolean = false, penisMode: Boolean = false) {
     val haptics = LocalHapticFeedback.current
     var isExpanded by remember { mutableStateOf(false) }
     var touchX by remember { mutableStateOf<Float?>(null) }
@@ -688,7 +701,7 @@ fun FFTSpectrumCard(fftData: FloatArray, bananaMode: Boolean = false, penisMode:
                     }
 
                     Canvas(modifier = Modifier.fillMaxSize()) {
-                        val data = fftData
+                        val data = fftData()
                         if (data.isEmpty()) return@Canvas
 
                         val w = size.width

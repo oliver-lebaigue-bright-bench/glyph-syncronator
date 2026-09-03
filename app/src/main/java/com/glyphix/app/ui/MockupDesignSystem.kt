@@ -466,49 +466,54 @@ fun SpeedDialFabMenu(
                 )
             ) + fadeOut(animationSpec = tween(150))
         ) {
-            Column(
+            StaggeredEntranceColumn(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = modifier.padding(end = 16.dp, bottom = 8.dp)
             ) {
                 sources.forEach { (name, icon, source) ->
-                    val itemBg = pillBg
-                    val itemTextColor = pillTextColor
+                    AnimatedItem {
+                        val itemBg = pillBg
+                        val itemTextColor = pillTextColor
 
-                    Surface(
-                        shape = RoundedCornerShape(28.dp),
-                        color = itemBg,
-                        border = if (isGlass) {
-                            BorderStroke(1.dp, Color.White.copy(alpha = 0.45f))
-                        } else {
-                            BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
-                        },
-                        shadowElevation = if (isGlass) 0.dp else 4.dp,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectSource(source)
-                            onDismiss()
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = itemBg,
+                            border = if (isGlass) {
+                                BorderStroke(1.dp, Color.White.copy(alpha = 0.45f))
+                            } else {
+                                BorderStroke(
+                                    0.5.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                                )
+                            },
+                            shadowElevation = if (isGlass) 0.dp else 4.dp,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectSource(source)
+                                onDismiss()
+                            }
                         ) {
-                            Icon(
-                                imageVector = icon,
-                                contentDescription = name,
-                                tint = itemTextColor,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = name,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                ),
-                                color = itemTextColor
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = name,
+                                    tint = itemTextColor,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = name,
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    ),
+                                    color = itemTextColor
+                                )
+                            }
                         }
                     }
                 }
@@ -575,65 +580,79 @@ fun HamburgerDropdownMenu(
                 color = menuBg,
                 border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.40f)) else BorderStroke(0.5.dp, textPrimary.copy(alpha = 0.12f))
             ) {
-                Column(
+                StaggeredEntranceColumn(
                     modifier = Modifier.padding(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    HamburgerMenuItem(
-                        title = "Glyphs Controls",
-                        subtitle = "Zones, effects & calibration",
-                        icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectGlyphs()
-                            onDismiss()
-                        }
-                    )
-                    HorizontalDivider(
-                        color = textPrimary.copy(alpha = 0.06f),
-                        modifier = Modifier.padding(horizontal = 14.dp)
-                    )
+                    AnimatedItem {
+                        HamburgerMenuItem(
+                            title = "Glyphs Controls",
+                            subtitle = "Zones, effects & calibration",
+                            icon = Icons.AutoMirrored.Filled.TrendingUp,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectGlyphs()
+                                onDismiss()
+                            }
+                        )
+                    }
+                    AnimatedItem {
+                        HorizontalDivider(
+                            color = textPrimary.copy(alpha = 0.06f),
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
 
-                    HamburgerMenuItem(
-                        title = "Haptics",
-                        subtitle = "Configure Haptic Viz",
-                        icon = Icons.Outlined.GraphicEq,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectHaptics()
-                            onDismiss()
-                        }
-                    )
-                    HorizontalDivider(
-                        color = textPrimary.copy(alpha = 0.06f),
-                        modifier = Modifier.padding(horizontal = 14.dp)
-                    )
+                    AnimatedItem {
+                        HamburgerMenuItem(
+                            title = "Haptics",
+                            subtitle = "Configure Haptic Viz",
+                            icon = Icons.Outlined.GraphicEq,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectHaptics()
+                                onDismiss()
+                            }
+                        )
+                    }
+                    AnimatedItem {
+                        HorizontalDivider(
+                            color = textPrimary.copy(alpha = 0.06f),
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
 
-                    HamburgerMenuItem(
-                        title = "Overlays",
-                        subtitle = "Configure Overlays",
-                        icon = Icons.Outlined.Layers,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectOverlays()
-                            onDismiss()
-                        }
-                    )
-                    HorizontalDivider(
-                        color = textPrimary.copy(alpha = 0.06f),
-                        modifier = Modifier.padding(horizontal = 14.dp)
-                    )
+                    AnimatedItem {
+                        HamburgerMenuItem(
+                            title = "Overlays",
+                            subtitle = "Configure Overlays",
+                            icon = Icons.Outlined.Layers,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectOverlays()
+                                onDismiss()
+                            }
+                        )
+                    }
+                    AnimatedItem {
+                        HorizontalDivider(
+                            color = textPrimary.copy(alpha = 0.06f),
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
 
-                    HamburgerMenuItem(
-                        title = "Torch",
-                        subtitle = "Configure Torch",
-                        icon = Icons.Outlined.FlashlightOn,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            onSelectTorch()
-                            onDismiss()
-                        }
-                    )
+                    AnimatedItem {
+                        HamburgerMenuItem(
+                            title = "Torch",
+                            subtitle = "Configure Torch",
+                            icon = Icons.Outlined.FlashlightOn,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectTorch()
+                                onDismiss()
+                            }
+                        )
+                    }
                 }
             }
         }
