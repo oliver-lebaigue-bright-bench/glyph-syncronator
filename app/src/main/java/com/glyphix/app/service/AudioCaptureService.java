@@ -1103,7 +1103,10 @@ public class AudioCaptureService extends Service {
                 try {
                     mCurrentSampleRate = (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000;
                     int captureSampleRate = mCurrentSampleRate;
-                    int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 4096);
+                    mAudioProcessor.updateFFTSize(captureSampleRate);
+                    mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+                    mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+                    int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 8192);
                     Log.d(TAG, "Starting capture for source: " + source + " @ " + captureSampleRate + "Hz, bufSize: " + bufSize);
                     
                     if (source == CaptureSource.INTERNAL) {
@@ -1317,7 +1320,14 @@ public class AudioCaptureService extends Service {
                 if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) { 
                     if (mGMM != null) mGMM.setAppMatrixFrame(frameColors); 
                 } else if (mGM != null) {
-                    mGM.setFrameColors(frameColors); 
+                    int ledCount = DeviceProfile.getLedCount(mSelectedDevice);
+                    if (ledCount > 0 && frameColors.length != ledCount) {
+                        int[] formatted = new int[ledCount];
+                        System.arraycopy(frameColors, 0, formatted, 0, Math.min(frameColors.length, ledCount));
+                        mGM.setFrameColors(formatted);
+                    } else {
+                        mGM.setFrameColors(frameColors);
+                    }
                 }
                 mLastSendMs = now; 
             } catch (Exception ignored) {}
@@ -1988,7 +1998,17 @@ public class AudioCaptureService extends Service {
         try { turnOffGlyphs(); if (mGM != null && mSessionOpen) { try { mGM.closeSession(); } catch (Exception ignored) {} if (mGMM != null) try { mGMM.closeAppMatrix(); } catch (Exception ignored) {} mSessionOpen = false; } } catch (Exception ignored) {}
     }
 
-    private boolean canPushGlyphFrames() { if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; return mGM != null && mSessionOpen; }
+    private boolean canPushGlyphFrames() { 
+        if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; 
+        if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; 
+        if (mGM == null && Build.VERSION.SDK_INT >= 31) {
+            ensureGlyphManagerInitialized();
+        }
+        if (mGM != null && !mSessionOpen) {
+            ensureGlyphSession();
+        }
+        return mGM != null && mSessionOpen; 
+    }
 
     private int resolveGlyphCount() { return mVisualizerConfig != null ? mVisualizerConfig.zones.length : DeviceProfile.getLedCount(mSelectedDevice); }
 
