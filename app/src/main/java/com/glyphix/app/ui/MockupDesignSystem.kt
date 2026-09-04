@@ -904,7 +904,7 @@ fun HamburgerDropdownMenu(
 
                     AnimatedItem {
                         HamburgerMenuItem(
-                            title = "Info & Overlays",
+                            title = "Overlays",
                             subtitle = "Visuals & configurations",
                             icon = Icons.Outlined.Info,
                             onClick = {
