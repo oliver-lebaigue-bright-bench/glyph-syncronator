@@ -1992,12 +1992,16 @@ public class AudioCaptureService extends Service {
 
     private static String phoneModelForDevice(int device) { return switch (device) { case DeviceProfile.DEVICE_NP1 -> "PHONE1"; case DeviceProfile.DEVICE_NP2 -> "PHONE2"; case DeviceProfile.DEVICE_NP2A -> "PHONE2A"; case DeviceProfile.DEVICE_NP3A -> "PHONE3A"; case DeviceProfile.DEVICE_NP4A -> "PHONE4A"; case DeviceProfile.DEVICE_NP4APRO -> "PHONE4A_PRO"; case DeviceProfile.DEVICE_NP3 -> "PHONE3"; case DeviceProfile.DEVICE_NP4B -> "PHONE4B"; default -> "UNKNOWN"; }; }
 
-    public static String loadZonesConfigVersion(Context context) { try { return loadZonesConfigRoot(context).optString("version", "Unknown"); } catch (Exception e) { return "Unknown"; } }
+    public static String loadZonesConfigVersion(Context context) { try { return loadZonesConfigRoot(context).optString("version", "1.0.0"); } catch (Exception e) { return "1.0.0"; } }
     private static JSONObject loadZonesConfigRoot(Context context) throws IOException, JSONException { return new JSONObject(loadZonesConfigText(context)); }
-    public static String loadZonesConfigText(Context context) throws IOException {
-        File file = new File(context.getFilesDir(), "zones.config");
-        if (file.isFile()) { try (FileInputStream is = new FileInputStream(file)) { return readFully(is); } }
+    public static String loadZonesConfigText(Context context) {
+        try {
+            File file = new File(context.getFilesDir(), "zones.config");
+            if (file.isFile()) { try (FileInputStream is = new FileInputStream(file)) { return readFully(is); } }
+        } catch (Exception ignored) {}
         try (InputStream is = context.getAssets().open("zones.config")) { return readFully(is); }
+        catch (Exception ignored) {}
+        return "{\"version\":\"1.0.0\",\"np1\":{\"description\":\"Phone (1) Default\",\"phone_model\":\"PHONE1\",\"zones\":[[20,150],[150,600],[600,2000],[2000,6000],[6000,16000]]},\"np2\":{\"description\":\"Phone (2) Default\",\"phone_model\":\"PHONE2\",\"zones\":[[20,80],[80,140],[140,220],[220,320],[320,450],[450,600],[600,800],[800,1100],[1100,1500],[1500,2000],[2000,2700],[2700,3600],[3600,4800],[4800,6400],[6400,8500],[8500,11000],[11000,16000],[20,100],[100,250],[250,500],[500,1000],[1000,2000],[2000,4000],[4000,8000],[8000,16000],[20,150],[150,400],[400,1000],[1000,3000],[3000,8000],[8000,16000],[20,250],[250,2000]]},\"np2a\":{\"description\":\"Phone (2a) Default\",\"phone_model\":\"PHONE2A\",\"zones\":[[20,250],[250,2000],[2000,16000]]},\"np3a\":{\"description\":\"Phone (3a) Default\",\"phone_model\":\"PHONE3A\",\"zones\":[[20,250],[250,2000],[2000,16000]]}}";
     }
     private static String readFully(InputStream is) throws IOException { ByteArrayOutputStream os = new ByteArrayOutputStream(); byte[] buf = new byte[4096]; int r; while ((r = is.read(buf)) != -1) os.write(buf, 0, r); return os.toString("UTF-8"); }
     private static List<String> getAllPresetKeys(JSONObject root) { ArrayList<String> res = new ArrayList<>(); JSONArray names = root.names(); if (names != null) for (int i = 0; i < names.length(); i++) res.add(names.optString(i, "")); Collections.sort(res); return res; }
