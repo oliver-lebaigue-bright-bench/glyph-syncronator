@@ -493,12 +493,11 @@ public class AudioCaptureService extends Service {
                     mLastGlobalSyncMs = now;
                 }
 
-                if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
-                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH) {
+                if (sIsRunning) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
-                    // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
-                    // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
-                    if (now - mLastSendMs >= 150 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
+                    if (now - mLastSendMs >= 150 && mVisualizerConfig != null) {
+                        processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
+                    }
                 } else if (mIdleBreathingEnabled && mSessionOpen && mVisualizerConfig != null) {
                     if (now - mLastAudioActivityMs > 100) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
                 }
@@ -1084,6 +1083,18 @@ public class AudioCaptureService extends Service {
             }
 
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
+            ensureGlyphSession();
+            if (mVisualizerConfig == null) {
+                try {
+                    refreshPresetCatalog();
+                    if (mPresetKey == null || mPresetKey.isEmpty()) {
+                        mPresetKey = chooseDefaultPresetKey(phoneModelForDevice(mSelectedDevice), mAvailablePresetKeys);
+                    }
+                    mVisualizerConfig = loadVisualizerConfig(mPresetKey, (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to load visualizer config in startCaptureInternal", e);
+                }
+            }
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
                 Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
@@ -1248,7 +1259,7 @@ public class AudioCaptureService extends Service {
     private int[] mFrameColorsBuffer = new int[0];
 
     private void processFrame(float[] uniqueMagnitudes, float hapticPeak, AudioProcessor.VisualizerConfig config, int configVersion) {
-        if (config == null || configVersion != mPresetConfigVersion.get()) return;
+        if (config == null) return;
         try {
             long now = SystemClock.elapsedRealtime(); 
             float gain = mGlyphRenderer.getSpectrumGain(); 
@@ -1960,7 +1971,18 @@ public class AudioCaptureService extends Service {
         if (mGMM != null) { int size = DeviceProfile.getMatrixWidth(mSelectedDevice) * DeviceProfile.getMatrixHeight(mSelectedDevice); if (size > 0) try { mGMM.setAppMatrixFrame(new int[size]); } catch (Exception ignored) {} }
     }
 
-    private void ensureGlyphSession() { if (mGM == null || mSessionOpen) return; try { mGM.openSession(); mSessionOpen = true; } catch (Exception e) { Log.e(TAG, "Failed to open Glyph session", e); } }
+    private void ensureGlyphSession() { 
+        if (mGM == null && Build.VERSION.SDK_INT >= 31 && mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
+            ensureGlyphManagerInitialized();
+        }
+        if (mGM == null || mSessionOpen) return; 
+        try { 
+            mGM.openSession(); 
+            mSessionOpen = true; 
+        } catch (Exception e) { 
+            Log.e(TAG, "Failed to open Glyph session", e); 
+        } 
+    }
 
     private void clearGlyphSession() {
         try { turnOffGlyphs(); if (mGM != null && mSessionOpen) { try { mGM.closeSession(); } catch (Exception ignored) {} if (mGMM != null) try { mGMM.closeAppMatrix(); } catch (Exception ignored) {} mSessionOpen = false; } } catch (Exception ignored) {}

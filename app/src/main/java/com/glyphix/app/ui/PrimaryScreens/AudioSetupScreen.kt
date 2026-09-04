@@ -341,50 +341,6 @@ fun AudioScreen(
             }
         }
 
-        AnimatedItem {
-            CaptureSourceCard(
-                selectedSource = captureSource,
-                networkPacketsReceived = networkPacketsReceived,
-                bluetoothDeviceName = bluetoothDeviceName,
-                bluetoothDeviceAddress = bluetoothDeviceAddress,
-                isRunning = isRunning,
-                onToggleVisualizer = onToggleVisualizer,
-                onSourceSelected = { source ->
-                    when (source) {
-                        AudioCaptureService.CaptureSource.MIC -> {
-                            val status = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-                            if (status == PackageManager.PERMISSION_GRANTED) {
-                                onCaptureSourceChanged(source)
-                            } else {
-                                pendingCaptureSource = source
-                                recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
-                        }
-                        AudioCaptureService.CaptureSource.BLUETOOTH -> {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                val status = ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT)
-                                if (status == PackageManager.PERMISSION_GRANTED) {
-                                    onCaptureSourceChanged(source)
-                                } else {
-                                    pendingCaptureSource = source
-                                    btPermissionLauncher.launch(
-                                        arrayOf(
-                                            Manifest.permission.BLUETOOTH_CONNECT,
-                                            Manifest.permission.BLUETOOTH_SCAN,
-                                            Manifest.permission.BLUETOOTH_ADVERTISE
-                                        )
-                                    )
-                                }
-                            } else {
-                                onCaptureSourceChanged(source)
-                            }
-                        }
-                        else -> onCaptureSourceChanged(source)
-                    }
-                }
-            )
-        }
-
         val compositionKey = remember(bananaMode, penisMode) { "$bananaMode-$penisMode" }
         key(compositionKey) {
             AnimatedVisibility(visible = isRunning) {
