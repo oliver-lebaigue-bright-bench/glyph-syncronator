@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
+import com.glyphix.app.ui.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.glyphix.app.R
 import com.glyphix.app.ui.BodyText
@@ -45,12 +46,10 @@ internal fun LicenseScreen(
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
             
-            IconButton(onClick = onDismiss) {
-                Icon(
-                    imageVector = FontAwesomeIcons.Solid.ArrowLeft,
-                    contentDescription = stringResource(R.string.back)
-                )
-            }
+            GlyphixBackButton(
+                onClick = onDismiss,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
 
             ScreenTitle(text = stringResource(R.string.license_title).uppercase())
 

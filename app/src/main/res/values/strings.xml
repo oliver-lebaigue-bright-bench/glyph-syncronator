@@ -210,6 +210,9 @@
     <string name="notification_button_set_presets">Presets</string>
     <string name="notification_button_set_quick_controls">Quick Controls</string>
 
+    <string name="show_spotify_tab">Show Spotify Tab</string>
+    <string name="show_spotify_tab_desc">Show or hide the Spotify player in the navigation bar.</string>
+
     <string name="profile">Profile</string>
     <string name="leaderboard_nickname">Leaderboard Nickname</string>
     <string name="profile_picture">Profile Picture</string>
@@ -232,8 +235,10 @@
     <string name="authenticated_user">Verified Account</string>
 
     <string name="tab_audio">Audio</string>
+    <string name="tab_leaderboard">Leaderboard</string>
+    <string name="tab_spotify">Spotify</string>
     <string name="tab_glyphs">Glyphs</string>
-    <string name="tab_visuals">Visuals</string>
+    <string name="tab_info">Info</string>
     <string name="tab_haptics">Haptics</string>
     <string name="tab_flashlight">Flashlight</string>
     <string name="tab_settings">Settings</string>

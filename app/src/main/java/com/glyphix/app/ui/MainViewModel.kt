@@ -47,9 +47,10 @@ import kotlin.math.sqrt
 
 enum class Tab(val label: String, val labelRes: Int) {
     Audio("Audio", R.string.tab_audio), 
+    Leaderboard("Leaderboard", R.string.tab_leaderboard),
     Glyphs("Glyphs", R.string.tab_glyphs), 
-    Spotify("Spotify", R.string.tab_audio),
-    Visuals("Visuals", R.string.tab_visuals),
+    Spotify("Spotify", R.string.tab_spotify),
+    Info("Info", R.string.tab_info),
     Haptics("Haptics", R.string.tab_haptics), 
     Flashlight("Flashlight", R.string.tab_flashlight), 
     Settings("Settings", R.string.tab_settings);
@@ -211,11 +212,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     private val _licenseStatus = MutableStateFlow<LicenseStatus>(LicenseStatus.Loading)
     val licenseStatus = _licenseStatus.asStateFlow()
-
-    private val _isShowingAbout = MutableStateFlow(false)
-    val isShowingAbout = _isShowingAbout.asStateFlow()
-    fun showAbout() { _isShowingAbout.value = true }
-    fun hideAbout() { _isShowingAbout.value = false }
 
     private val _isShowingLicense = MutableStateFlow(false)
     val isShowingLicense = _isShowingLicense.asStateFlow()
@@ -728,6 +724,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isShowingLeaderboard = _isShowingLeaderboard.asStateFlow()
     fun showLeaderboard() { _isShowingLeaderboard.value = true }
     fun hideLeaderboard() { _isShowingLeaderboard.value = false }
+
+    private val _isShowingGlyphs = MutableStateFlow(false)
+    val isShowingGlyphs = _isShowingGlyphs.asStateFlow()
+    fun showGlyphs() { _isShowingGlyphs.value = true }
+    fun hideGlyphs() { _isShowingGlyphs.value = false }
+
+    private val _isShowingHaptics = MutableStateFlow(false)
+    val isShowingHaptics = _isShowingHaptics.asStateFlow()
+    fun showHaptics() { _isShowingHaptics.value = true }
+    fun hideHaptics() { _isShowingHaptics.value = false }
+
+    private val _isShowingFlashlight = MutableStateFlow(false)
+    val isShowingFlashlight = _isShowingFlashlight.asStateFlow()
+    fun showFlashlight() { _isShowingFlashlight.value = true }
+    fun hideFlashlight() { _isShowingFlashlight.value = false }
+
+    private val _isShowingSpotify = MutableStateFlow(false)
+    val isShowingSpotify = _isShowingSpotify.asStateFlow()
+    fun showSpotify() { _isShowingSpotify.value = true }
+    fun hideSpotify() { _isShowingSpotify.value = false }
+
+    private val _isShowingVisuals = MutableStateFlow(false)
+    val isShowingVisuals = _isShowingVisuals.asStateFlow()
+    fun showVisuals() { _isShowingVisuals.value = true }
+    fun hideVisuals() { _isShowingVisuals.value = false }
 
 
     fun deleteCustomPreset(key: String) {
@@ -1505,12 +1526,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (_showAnnouncementModal.value) { dismissAnnouncement(); return true }
         if (_showAnnouncementEditor.value) { hideAnnouncementEditor(); return true }
         if (_isShowingLeaderboard.value) { hideLeaderboard(); return true }
+        if (_isShowingGlyphs.value) { hideGlyphs(); return true }
+        if (_isShowingHaptics.value) { hideHaptics(); return true }
+        if (_isShowingFlashlight.value) { hideFlashlight(); return true }
+        if (_isShowingSpotify.value) { hideSpotify(); return true }
+        if (_isShowingVisuals.value) { hideVisuals(); return true }
         if (_showAnnouncementHistory.value) { hideAnnouncementHistory(); return true }
         if (_isShowingCommunity.value) { hideCommunity(); return true }
         if (_isShowingProfileSetup.value) { hideProfileSetup(); return true }
         if (_isShowingStats.value) { hideStats(); return true }
         if (_isShowingLicense.value) { hideLicense(); return true }
-        if (_isShowingAbout.value) { hideAbout(); return true }
         if (_isShowingEditor.value) { hideEditor(); return true }
 
         // Then check tab history

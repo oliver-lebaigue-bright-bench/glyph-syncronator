@@ -64,13 +64,7 @@ import compose.icons.fontawesomeicons.solid.SyncAlt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.glyphix.app.BuildConfig
 import com.glyphix.app.R
-import com.glyphix.app.ui.BodyText
-import com.glyphix.app.ui.CardHeader
-import com.glyphix.app.ui.ExpressiveCard
-import com.glyphix.app.ui.LocalAppSpacing
-import com.glyphix.app.ui.MainViewModel
-import com.glyphix.app.ui.ScreenTitle
-import com.glyphix.app.ui.SectionHeader
+import com.glyphix.app.ui.*
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -104,7 +98,7 @@ internal fun AboutScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier
@@ -115,25 +109,20 @@ internal fun AboutScreen(
         ) {
             Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { onDismiss?.invoke() },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+            if (onDismiss != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
-                        contentDescription = stringResource(R.string.back),
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    GlyphixBackButton(onClick = { onDismiss.invoke() })
+                    Spacer(modifier = Modifier.width(16.dp))
+                    ScreenTitle(text = stringResource(R.string.about_title), modifier = Modifier.padding(bottom = 0.dp))
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                ScreenTitle(text = stringResource(R.string.about_title), modifier = Modifier.padding(bottom = 0.dp))
+            } else {
+                Spacer(Modifier.height(16.dp))
+                ScreenTitle(text = stringResource(R.string.about_title))
             }
 
         ExpressiveCard {

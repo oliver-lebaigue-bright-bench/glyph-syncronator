@@ -1,5 +1,6 @@
 package com.glyphix.app.ui.PrimaryScreens
 
+import androidx.activity.compose.BackHandler
 import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +16,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
@@ -73,7 +76,11 @@ internal fun GlyphsScreen(
     viewModel: MainViewModel,
     vizStateProvider: () -> FloatArray = { floatArrayOf() },
     padding: PaddingValues = PaddingValues(),
+    onDismiss: (() -> Unit)? = null,
 ) {
+    if (onDismiss != null) {
+        BackHandler { onDismiss() }
+    }
     val mainScrollState = rememberScrollState()
     val context = LocalContext.current
     val hapticsLocal = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -116,6 +123,22 @@ internal fun GlyphsScreen(
             .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        if (onDismiss != null) {
+            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+            AnimatedItem {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    GlyphixBackButton(onClick = onDismiss)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    ScreenTitle(text = "Glyphs", modifier = Modifier.padding(bottom = 0.dp))
+                }
+            }
+        }
+
         // Header with external toggle for glyph visualization
         val DEFAULT_BR = 4095
         val lastNonZero = remember { mutableIntStateOf(if (maxBrightness > 0) maxBrightness else DEFAULT_BR) }

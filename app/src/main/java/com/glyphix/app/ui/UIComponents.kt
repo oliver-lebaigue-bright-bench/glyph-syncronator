@@ -18,8 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlashlightOn
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
@@ -146,6 +148,7 @@ import compose.icons.fontawesomeicons.solid.Cog
 import compose.icons.fontawesomeicons.solid.LayerGroup
 import compose.icons.fontawesomeicons.solid.MobileAlt
 import compose.icons.fontawesomeicons.solid.Music
+import compose.icons.fontawesomeicons.solid.Trophy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -1220,6 +1223,30 @@ fun BodyText(
 }
 
 @Composable
+fun GlyphixBackButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptics = LocalHapticFeedback.current
+    IconButton(
+        onClick = {
+            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+            onClick()
+        },
+        modifier = modifier
+            .size(44.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = stringResource(R.string.back),
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
 fun StartStopButton(
     running: Boolean,
     onClick: () -> Unit,
@@ -1295,8 +1322,8 @@ fun StartStopButton(
             },
             interactionSource = interactionSource,
             shape = RoundedCornerShape(cornerRadius),
-            color = if (isGlass) Color.Transparent else if (running) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            contentColor = if (isGlass) Color.White else if (running) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary,
+            color = if (isGlass) Color.Transparent else if (running) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+            contentColor = if (isGlass) Color.White else Color.White,
             modifier = Modifier
                 .height(buttonHeight)
                 .widthIn(min = buttonWidthMin)
@@ -1373,7 +1400,6 @@ fun StartStopButton(
 @Composable
 fun NativeBottomBar(
     selectedTab: Tab,
-    visibleTabs: List<Tab>,
     onTabSelected: (Tab) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -1381,6 +1407,15 @@ fun NativeBottomBar(
     val bananaMode = LocalBananaMode.current
     val penisMode = LocalPenisMode.current
     val uiAmp = LocalUIAmplitude.current
+
+    val visibleTabs = remember {
+        listOf(
+            Tab.Audio,
+            Tab.Leaderboard,
+            Tab.Info,
+            Tab.Settings
+        )
+    }
 
     if (isGlass) {
         // ULTIMATE REDO: Modern Floating Glass Pill
@@ -1483,9 +1518,10 @@ fun NativeBottomBar(
                             } else {
                                 when (tab) {
                                     Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
+                                    Tab.Leaderboard -> Icon(FontAwesomeIcons.Solid.Trophy, null, iconModifier, tint = contentColor)
                                     Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
                                     Tab.Spotify -> Icon(Icons.Default.MusicNote, null, iconModifier, tint = contentColor)
-                                    Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier, tint = contentColor)
+                                    Tab.Info -> Icon(androidx.compose.material.icons.Icons.Default.Info, null, iconModifier, tint = contentColor)
                                     Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier, tint = contentColor)
                                     Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier, tint = contentColor)
                                     Tab.Settings -> Icon(FontAwesomeIcons.Solid.Cog, null, iconModifier, tint = contentColor)
@@ -1552,9 +1588,10 @@ fun NativeBottomBar(
                         } else {
                             when (tab) {
                                 Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
+                                Tab.Leaderboard -> Icon(FontAwesomeIcons.Solid.Trophy, null, iconModifier)
                                 Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
                                 Tab.Spotify -> Icon(Icons.Default.MusicNote, null, iconModifier)
-                                Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier)
+                                Tab.Info -> Icon(Icons.Default.Info, null, iconModifier)
                                 Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier)
                                 Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier)
                                 Tab.Settings -> Icon(FontAwesomeIcons.Solid.Cog, null, iconModifier)

@@ -316,9 +316,7 @@ fun AnnouncementHistoryScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.app_news), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(FontAwesomeIcons.Solid.ArrowLeft, stringResource(R.string.back), modifier = Modifier.size(20.dp))
-                    }
+                    GlyphixBackButton(onClick = onDismiss)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )

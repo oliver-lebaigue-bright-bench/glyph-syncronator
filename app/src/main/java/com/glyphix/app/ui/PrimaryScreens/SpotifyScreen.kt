@@ -40,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,8 +67,12 @@ fun SpotifyScreen(
     authManager: SpotifyAuthManager,
     onStartVisualizer: () -> Unit = {},
     onActivateSpotifyInput: () -> Unit = {},
+    onDismiss: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    if (onDismiss != null) {
+        androidx.activity.compose.BackHandler { onDismiss() }
+    }
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
     val isGlass = LocalIsGlassTheme.current
@@ -116,6 +121,20 @@ fun SpotifyScreen(
             .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (onDismiss != null) {
+            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                GlyphixBackButton(onClick = onDismiss)
+                Spacer(modifier = Modifier.width(16.dp))
+                ScreenTitle(text = "Spotify", modifier = Modifier.padding(bottom = 0.dp))
+            }
+        }
+
         if (!isLoggedIn) {
             // Logged Out Hero Card
             SpotifyConnectHeroCard(

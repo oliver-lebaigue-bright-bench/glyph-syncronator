@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +32,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.ContentScale
@@ -51,6 +55,9 @@ import androidx.compose.ui.geometry.Rect
 import coil3.compose.AsyncImage
 import com.glyphix.app.R
 import com.glyphix.app.service.AudioCaptureService
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.Trophy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -98,6 +105,7 @@ fun FloatingTopBar(
     onProfileClick: () -> Unit,
     avatarUrl: String? = null,
     isProfileActive: Boolean = false,
+    showBackButton: Boolean = false,
     onTitleLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -139,19 +147,26 @@ fun FloatingTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: Hamburger Menu Button
-            IconButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    onMenuClick()
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = contentColor,
-                    modifier = Modifier.size(24.dp)
+            // Left: Hamburger Menu Button or Back Button
+            if (showBackButton) {
+                GlyphixBackButton(
+                    onClick = onMenuClick,
+                    modifier = Modifier.size(40.dp).background(Color.Transparent, CircleShape)
                 )
+            } else {
+                IconButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onMenuClick()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu",
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             // Center: Screen Title
@@ -240,23 +255,12 @@ fun FloatingBottomBar(
     val bananaMode = LocalBananaMode.current
     val penisMode = LocalPenisMode.current
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val accentColor = mockupAccentColor()
     val contentColor = mockupTextColor()
 
     val navItems = remember(selectedTab) { getNavItemsForTab(selectedTab) }
     val itemCount = navItems.size
-
-    val navBgColor = if (isGlass) {
-        Color.White.copy(alpha = 0.15f)
-    } else {
-        Color(0xFF0D0D0D).copy(alpha = 0.95f)
-    }
-
-    val borderStroke = if (isGlass) {
-        BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
-    } else {
-        BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-    }
 
     // Animation orchestration for the "Collapse -> Bounce -> Expand" sequence
     val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0).toFloat()) }
@@ -270,17 +274,35 @@ fun FloatingBottomBar(
             val newIndex = navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0)
             targetIndex = newIndex
             
-            // 1. QUICK COLLAPSE
-            animExpansion.animateTo(0f, tween(100))
+            // Overlapping "Liquid" Transition
+            // Dip the expansion slightly to create a stretching/sliding effect
+            this.launch {
+                animExpansion.animateTo(0.10f, tween(140, easing = FastOutSlowInEasing))
+                animExpansion.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow))
+            }
             
-            // 2. BOUNCE OVER
-            animActiveIndex.animateTo(newIndex.toFloat(), spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow))
-            
-            // 3. EXPAND
-            animExpansion.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow))
+            this.launch {
+                // Move the index indicator with a snappy spring
+                animActiveIndex.animateTo(
+                    newIndex.toFloat(), 
+                    spring(dampingRatio = 0.58f, stiffness = Spring.StiffnessLow)
+                )
+            }
             
             previousTab = selectedTab
         }
+    }
+
+    val navBgColor = if (isGlass) {
+        Color.White.copy(alpha = 0.15f)
+    } else {
+        Color(0xFF0D0D0D).copy(alpha = 0.95f)
+    }
+
+    val borderStroke = if (isGlass) {
+        BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
+    } else {
+        BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
     }
 
     Row(
@@ -330,17 +352,24 @@ fun FloatingBottomBar(
                     // Current slot width
                     val currentSlotW = base + (if (slotIndex == targetIndex) extraWidthPx * isExpanded else 0f)
                     
-                    // If we are sliding (isExpanded is near 0), idx is the slide position
-                    return if (isExpanded < 0.1f) {
-                        idx * (totalWidthPx / count) + (totalWidthPx / (count * 2f))
-                    } else {
-                        x + currentSlotW / 2f
-                    }
+                    // Improved smooth transition calculation
+                    val totalSlotsWidth = totalWidthPx / count
+                    val linearX = idx * totalSlotsWidth + (totalSlotsWidth / 2f)
+                    val logicX = x + currentSlotW / 2f
+                    
+                    // Blend between linear and logic based on expansion to avoid jumps
+                    val frac = isExpanded.coerceIn(0f, 1f)
+                    return linearX + frac * (logicX - linearX)
                 }
 
                 val basePillWidth = if (itemCount > 4) 48.dp else 56.dp
                 val extraPillWidth = if (itemCount > 4) 68.dp else 84.dp
-                val pillWidth = with(LocalDensity.current) { (basePillWidth.toPx() + extraPillWidth.toPx() * expansion).toDp() }
+                val pillWidth = with(LocalDensity.current) { 
+                    // Minimum width ensures the pill never fully disappears
+                    val minWidth = basePillWidth.toPx()
+                    val targetWidth = basePillWidth.toPx() + extraPillWidth.toPx() * expansion
+                    maxOf(minWidth, targetWidth).toDp()
+                }
                 
                 // The Selection Indicator: Bouncy and Precisely Calculated
                 Box(
@@ -359,6 +388,14 @@ fun FloatingBottomBar(
                         val currentSlotWidth = with(LocalDensity.current) { 
                             (currentBaseWidthPx + (if (i == targetIndex) extraWidthPx * expansion else 0f)).toDp() 
                         }
+                        
+                        // Icon Pop Animation
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.15f else 1.0f,
+                            animationSpec = spring(dampingRatio = 0.48f, stiffness = Spring.StiffnessMediumLow),
+                            label = "icon_pop"
+                        )
+                        val shakeRotation = remember { Animatable(0f) }
 
                         Box(
                             modifier = Modifier
@@ -368,6 +405,18 @@ fun FloatingBottomBar(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
+                                    scope.launch {
+                                        // Delay the shake if we are moving the pill to a new tab
+                                        if (!isSelected) {
+                                            delay(320)
+                                        }
+                                        
+                                        // Playful shake: Right -> Left -> Settle
+                                        shakeRotation.animateTo(15f, spring(0.35f, Spring.StiffnessHigh))
+                                        shakeRotation.animateTo(-15f, spring(0.35f, Spring.StiffnessHigh))
+                                        shakeRotation.animateTo(0f, spring(Spring.DampingRatioHighBouncy, Spring.StiffnessMedium))
+                                    }
+                                    
                                     if (!isSelected) {
                                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                         onTabSelected(item.tab)
@@ -378,7 +427,12 @@ fun FloatingBottomBar(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.wrapContentWidth(unbounded = true)
+                                modifier = Modifier
+                                    .wrapContentWidth(unbounded = true)
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    }
                             ) {
                                 // Icon container
                                 Box(
@@ -388,7 +442,10 @@ fun FloatingBottomBar(
                                         .background(
                                             color = if (isSelected) Color.White.copy(alpha = expansion.coerceIn(0f, 1f) * 0.9f) else Color.Transparent,
                                             shape = CircleShape
-                                        ),
+                                        )
+                                        .graphicsLayer {
+                                            rotationZ = shakeRotation.value
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     val iconModifier = Modifier.size(if (itemCount > 4) 22.dp else 24.dp)
@@ -455,16 +512,16 @@ fun FloatingBottomBar(
         )
 
         val fabBg = when {
-            isRunning -> MaterialTheme.colorScheme.error
+            isRunning -> MaterialTheme.colorScheme.error // Stop is Red
             isFabMenuExpanded -> accentColor
             isGlass -> Color.White.copy(alpha = 0.25f)
-            else -> navBgColor
+            else -> Color(0xFF4CAF50) // Start is Green
         }
         val fabIconTint = when {
             isRunning -> Color.White
             isFabMenuExpanded -> MaterialTheme.colorScheme.onPrimary
             isGlass -> Color.White
-            else -> accentColor
+            else -> Color.White
         }
 
         // Action FAB Button
@@ -484,14 +541,18 @@ fun FloatingBottomBar(
                     .fillMaxSize()
                     .clickable {
                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                        onToggleFabMenu()
+                        if (isRunning && !isFabMenuExpanded) {
+                            onToggleVisualizer()
+                        } else {
+                            onToggleFabMenu()
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = when {
                         isFabMenuExpanded -> Icons.Default.Close
-                        isRunning -> Icons.Default.GraphicEq
+                        isRunning -> Icons.Default.Stop
                         else -> Icons.Default.PlayArrow
                     },
                     contentDescription = null,
@@ -512,44 +573,20 @@ private data class TabItem(
 
 private fun getTabItem(tab: Tab): TabItem = when (tab) {
     Tab.Audio -> TabItem(Tab.Audio, icon = Icons.Default.MusicNote, label = "Audio")
-    Tab.Glyphs -> TabItem(Tab.Glyphs, icon = Icons.AutoMirrored.Filled.TrendingUp, iconRes = R.drawable.ic_nav_glyphs, label = "Glyphs")
+    Tab.Leaderboard -> TabItem(Tab.Leaderboard, icon = FontAwesomeIcons.Solid.Trophy, label = "Leaderboard")
     Tab.Spotify -> TabItem(Tab.Spotify, icon = Icons.Default.GraphicEq, label = "Spotify")
-    Tab.Visuals -> TabItem(Tab.Visuals, icon = Icons.Default.Info, label = "Visuals")
-    Tab.Haptics -> TabItem(Tab.Haptics, icon = Icons.Default.Vibration, label = "Haptics")
-    Tab.Flashlight -> TabItem(Tab.Flashlight, icon = Icons.Default.FlashOn, label = "Torch")
+    Tab.Info -> TabItem(Tab.Info, icon = Icons.Default.Info, label = "Info")
     Tab.Settings -> TabItem(Tab.Settings, icon = Icons.Default.Settings, label = "Settings")
+    else -> TabItem(tab, label = tab.label)
 }
 
 private fun getNavItemsForTab(tab: Tab): List<TabItem> {
-    return when (tab) {
-        Tab.Spotify -> listOf(
-            getTabItem(Tab.Audio),
-            getTabItem(Tab.Spotify),
-            getTabItem(Tab.Glyphs),
-            getTabItem(Tab.Visuals),
-            getTabItem(Tab.Settings)
-        )
-        Tab.Haptics -> listOf(
-            getTabItem(Tab.Audio),
-            getTabItem(Tab.Glyphs),
-            getTabItem(Tab.Haptics),
-            getTabItem(Tab.Visuals),
-            getTabItem(Tab.Settings)
-        )
-        Tab.Flashlight -> listOf(
-            getTabItem(Tab.Audio),
-            getTabItem(Tab.Glyphs),
-            getTabItem(Tab.Flashlight),
-            getTabItem(Tab.Visuals),
-            getTabItem(Tab.Settings)
-        )
-        else -> listOf(
-            getTabItem(Tab.Audio),
-            getTabItem(Tab.Glyphs),
-            getTabItem(Tab.Visuals),
-            getTabItem(Tab.Settings)
-        )
-    }
+    return listOf(
+        getTabItem(Tab.Audio),
+        getTabItem(Tab.Leaderboard),
+        getTabItem(Tab.Info),
+        getTabItem(Tab.Settings)
+    )
 }
 
 /**
@@ -559,6 +596,8 @@ private fun getNavItemsForTab(tab: Tab): List<TabItem> {
 @Composable
 fun SpeedDialFabMenu(
     isExpanded: Boolean,
+    isRunning: Boolean = false,
+    onToggleVisualizer: (() -> Unit)? = null,
     currentSource: AudioCaptureService.CaptureSource,
     onSelectSource: (AudioCaptureService.CaptureSource) -> Unit,
     onDismiss: () -> Unit,
@@ -580,15 +619,22 @@ fun SpeedDialFabMenu(
     }
     val haptics = LocalHapticFeedback.current
 
-    val sources = listOf(
-        Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
-        Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
-        Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
-        Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC),
-        Triple("Spotify Player", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
-        Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK),
-        Triple("Desktop Companion (BT)", Icons.Outlined.Bluetooth, AudioCaptureService.CaptureSource.BLUETOOTH)
-    )
+    val sources = remember(isRunning) {
+        val list = mutableListOf<Triple<String, ImageVector, AudioCaptureService.CaptureSource>>()
+        if (isRunning) {
+            list.add(Triple("Stop Visualizer", Icons.Default.Stop, AudioCaptureService.CaptureSource.INTERNAL))
+        }
+        list.addAll(listOf(
+            Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
+            Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
+            Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
+            Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC),
+            Triple("Spotify Player", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
+            Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK),
+            Triple("Desktop Companion (BT)", Icons.Outlined.Bluetooth, AudioCaptureService.CaptureSource.BLUETOOTH)
+        ))
+        list
+    }
 
     val density = LocalDensity.current
     val xOffsetPx = with(density) { (-16).dp.roundToPx() }
@@ -618,10 +664,43 @@ fun SpeedDialFabMenu(
             ) + fadeOut(animationSpec = tween(150))
         ) {
             StaggeredEntranceColumn(
-                horizontalAlignment = Alignment.End,
+                modifier = modifier.padding(end = 16.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = modifier.padding(end = 16.dp, bottom = 8.dp)
+                horizontalAlignment = Alignment.End
             ) {
+                if (isRunning) {
+                    AnimatedItem {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.error,
+                            shadowElevation = if (isGlass) 0.dp else 4.dp,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                onToggleVisualizer?.invoke()
+                                onDismiss()
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Stop,
+                                    contentDescription = "Stop",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Stop Visualizer",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
                 sources.forEach { (name, icon, source) ->
                     AnimatedItem {
                         val itemBg = pillBg
@@ -795,9 +874,9 @@ fun HamburgerDropdownMenu(
 
                     AnimatedItem {
                         HamburgerMenuItem(
-                            title = "Overlays",
-                            subtitle = "Configure Overlays",
-                            icon = Icons.Outlined.Layers,
+                            title = "Info & Overlays",
+                            subtitle = "Visuals & configurations",
+                            icon = Icons.Outlined.Info,
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                 onSelectOverlays()

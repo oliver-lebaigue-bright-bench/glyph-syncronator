@@ -90,7 +90,8 @@ fun StatsScreen(
                 onMenuClick = { onDismiss() },
                 onProfileClick = { onOpenProfile() },
                 avatarUrl = userProfile?.profilePictureUrl,
-                isProfileActive = false
+                isProfileActive = false,
+                showBackButton = true
             )
 
             Column(

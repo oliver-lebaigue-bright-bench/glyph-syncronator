@@ -104,7 +104,8 @@ fun ProfileScreen(
                 onMenuClick = { onDismiss() },
                 onProfileClick = { /* Already on profile */ },
                 avatarUrl = userProfile?.profilePictureUrl,
-                isProfileActive = true
+                isProfileActive = true,
+                showBackButton = true
             )
 
             Column(

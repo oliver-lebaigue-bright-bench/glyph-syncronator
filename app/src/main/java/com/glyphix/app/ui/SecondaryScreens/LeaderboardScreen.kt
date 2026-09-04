@@ -36,15 +36,20 @@ import com.glyphix.app.ui.ScreenTitle
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.*
+import com.glyphix.app.ui.*
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 @Composable
 internal fun LeaderboardScreen(
     entries: List<LeaderboardEntry>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showTopBar: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
-    BackHandler { onDismiss() }
+    if (showTopBar) {
+        BackHandler { onDismiss() }
+    }
     var selectedImageUrl by remember { mutableStateOf<String?>(null) }
 
     if (selectedImageUrl != null) {
@@ -70,32 +75,25 @@ internal fun LeaderboardScreen(
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = modifier.fillMaxSize(),
+        color = Color.Transparent
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), CircleShape)
+            if (showTopBar) {
+                Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = FontAwesomeIcons.Solid.ArrowLeft,
-                        contentDescription = stringResource(R.string.back),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                    GlyphixBackButton(onClick = onDismiss)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    ScreenTitle(text = "Leaderboard", modifier = Modifier.padding(bottom = 0.dp))
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                ScreenTitle(text = "Leaderboard", modifier = Modifier.padding(bottom = 0.dp))
             }
 
             if (entries.isEmpty()) {

@@ -1,10 +1,13 @@
 package com.glyphix.app.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.glyphix.app.ui.SecondaryScreens.CommunityPresetsScreen
 import com.glyphix.app.ui.SecondaryScreens.LeaderboardScreen
+import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
 
 @Composable
@@ -23,40 +26,49 @@ internal fun CommunityOverlays(
         val presets by viewModel.communityRepository.getPresets().collectAsStateWithLifecycle(initialValue = null)
         val scope = androidx.compose.runtime.rememberCoroutineScope()
 
-        CommunityPresetsScreen(
-            presets = presets,
-            currentUserId = userId,
-            error = null,
-            onDownload = { preset ->
-                scope.launch {
-                    try {
-                        viewModel.communityRepository.incrementDownloadCount(preset.id)
-                    } catch (e: Exception) {
-                        // Log or show error
+        Box(modifier = Modifier.fillMaxSize()) {
+            GlyphixBackground()
+            CommunityPresetsScreen(
+                presets = presets,
+                currentUserId = userId,
+                error = null,
+                onDownload = { preset ->
+                    scope.launch {
+                        try {
+                            viewModel.communityRepository.incrementDownloadCount(preset.id)
+                        } catch (e: Exception) {
+                            // Log or show error
+                        }
                     }
-                }
-                // Add logic to actually apply/download the preset
-            },
-            onDelete = { preset -> viewModel.deleteCustomPreset(preset.id) },
-            onShowLeaderboard = { viewModel.showLeaderboard() },
-            onDismiss = { viewModel.hideCommunity() }
-        )
+                    // Add logic to actually apply/download the preset
+                },
+                onDelete = { preset -> viewModel.deleteCustomPreset(preset.id) },
+                onShowLeaderboard = { viewModel.showLeaderboard() },
+                onDismiss = { viewModel.hideCommunity() }
+            )
+        }
     }
 
     if (isShowingAnnouncementHistory) {
         val announcements by viewModel.announcementHistory.collectAsStateWithLifecycle()
-        AnnouncementHistoryScreen(
-            announcements = announcements,
-            onDismiss = { viewModel.hideAnnouncementHistory() }
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            GlyphixBackground()
+            AnnouncementHistoryScreen(
+                announcements = announcements,
+                onDismiss = { viewModel.hideAnnouncementHistory() }
+            )
+        }
     }
 
     if (isShowingLeaderboard) {
         val entries by viewModel.leaderboardEntries.collectAsStateWithLifecycle()
-        LeaderboardScreen(
-            entries = entries,
-            onDismiss = { viewModel.hideLeaderboard() }
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            GlyphixBackground()
+            LeaderboardScreen(
+                entries = entries,
+                onDismiss = { viewModel.hideLeaderboard() }
+            )
+        }
     }
 
     if (showAnnouncementModal && latestAnnouncement != null) {
@@ -67,9 +79,12 @@ internal fun CommunityOverlays(
     }
 
     if (showAnnouncementEditor) {
-        AnnouncementEditorScreen(
-            onPost = { t, m, s, l, lt -> viewModel.postAnnouncement(t, m, s, l, lt) },
-            onDismiss = { viewModel.hideAnnouncementEditor() }
-        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            GlyphixBackground()
+            AnnouncementEditorScreen(
+                onPost = { t, m, s, l, lt -> viewModel.postAnnouncement(t, m, s, l, lt) },
+                onDismiss = { viewModel.hideAnnouncementEditor() }
+            )
+        }
     }
 }
