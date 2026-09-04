@@ -812,7 +812,9 @@ internal fun GlyphixApp(
                             onStartVisualizer = {
                                 viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
                                 MainActivity.serviceStatic?.startCapture(0, null)
-                                viewModel.selectTab(Tab.Audio)
+                            },
+                            onActivateSpotifyInput = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
                             },
                             modifier = Modifier.padding(pagePadding)
                         )
