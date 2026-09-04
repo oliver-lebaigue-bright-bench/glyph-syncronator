@@ -132,21 +132,7 @@ class MainActivity : ComponentActivity() {
             }
 
             if (pendingVisualizerStart) {
-                val source = viewModel.captureSource.value
-                when (source) {
-                    AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
-                    AudioCaptureService.CaptureSource.MIC -> {
-                        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                            service?.startMicCapture()
-                        } else {
-                            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    }
-                    AudioCaptureService.CaptureSource.VIZUALIZER -> service?.startVizualizerCapture()
-                    AudioCaptureService.CaptureSource.SPOTIFY -> service?.startSpotifyCapture()
-                    AudioCaptureService.CaptureSource.NETWORK -> service?.startNetworkCapture()
-                    AudioCaptureService.CaptureSource.BLUETOOTH -> service?.startBluetoothCapture()
-                }
+                service?.startVisualizer()
                 pendingVisualizerStart = false
             }
         }
@@ -374,36 +360,28 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun toggleVisualizer() {
-        val intent = Intent(this, AudioCaptureService::class.java)
-        val s = service
-        if (s == null) {
-            pendingVisualizerStart = true
-            try {
-                FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-            } catch (_: Exception) {}
-            startForegroundService(intent)
-            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
-            return
-        }
+        val s = service ?: return
         if (s.isVisualizerRunning) {
             s.stopVisualizer()
         } else {
+            val intent = Intent(this, AudioCaptureService::class.java)
             startForegroundService(intent)
+
             val source = viewModel.captureSource.value
             s.setCaptureSource(source)
             when (source) {
                 AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
                 AudioCaptureService.CaptureSource.MIC -> {
                     if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        s.startMicCapture()
+                        s.startVisualizer()
                     } else {
                         audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 }
-                AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVizualizerCapture()
-                AudioCaptureService.CaptureSource.SPOTIFY -> s.startSpotifyCapture()
-                AudioCaptureService.CaptureSource.NETWORK -> s.startNetworkCapture()
-                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startBluetoothCapture()
+                AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.SPOTIFY -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
         }
     }
@@ -411,28 +389,20 @@ class MainActivity : ComponentActivity() {
     private fun switchCaptureSource(source: AudioCaptureService.CaptureSource) {
         viewModel.setCaptureSource(source)
         val s = service
-        if (s == null) {
-            pendingVisualizerStart = true
-            val intent = Intent(this, AudioCaptureService::class.java)
-            startForegroundService(intent)
-            bindService(intent, serviceConnection, BIND_AUTO_CREATE)
-            return
-        }
-        val intent = Intent(this, AudioCaptureService::class.java)
-        startForegroundService(intent)
-        when (source) {
-            AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
-            AudioCaptureService.CaptureSource.MIC -> {
-                if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    s.startMicCapture()
-                } else {
-                    audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        if (s != null && s.isVisualizerRunning) {
+            when (source) {
+                AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
+                AudioCaptureService.CaptureSource.MIC -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        s.setCaptureSource(source)
+                    } else {
+                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
                 }
+                else -> s.setCaptureSource(source)
             }
-            AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVizualizerCapture()
-            AudioCaptureService.CaptureSource.SPOTIFY -> s.startSpotifyCapture()
-            AudioCaptureService.CaptureSource.NETWORK -> s.startNetworkCapture()
-            AudioCaptureService.CaptureSource.BLUETOOTH -> s.startBluetoothCapture()
+        } else {
+            toggleVisualizer()
         }
     }
 

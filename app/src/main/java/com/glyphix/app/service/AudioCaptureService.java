@@ -73,15 +73,13 @@ import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.os.ParcelUuid;
+import java.util.UUID;
 import java.util.ArrayList;
-import java.util.List;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.NetworkInterface;
-import java.net.InterfaceAddress;
 import java.net.InetAddress;
 import java.net.Inet4Address;
-import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.function.Consumer;
 
@@ -493,11 +491,12 @@ public class AudioCaptureService extends Service {
                     mLastGlobalSyncMs = now;
                 }
 
-                if (sIsRunning) {
+                if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
+                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
-                    if (now - mLastSendMs >= 150 && mVisualizerConfig != null) {
-                        processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
-                    }
+                    // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
+                    // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
+                    if (now - mLastSendMs >= 150 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
                 } else if (mIdleBreathingEnabled && mSessionOpen && mVisualizerConfig != null) {
                     if (now - mLastAudioActivityMs > 100) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
                 }
@@ -607,7 +606,6 @@ public class AudioCaptureService extends Service {
 
         resetVisualizerState();
         if (mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN && Build.VERSION.SDK_INT >= 31) ensureGlyphManagerInitialized();
-        startDiscoveryResponder();
         mMainHandler.post(mIdlePulseRunnable);
     }
 
@@ -678,11 +676,9 @@ public class AudioCaptureService extends Service {
     @Override
     public void onDestroy() {
         sInstance = null; stopCapture(); clearGlyphSession();
-        stopDiscoveryResponder();
         if (mGM != null) mGM.unInit(); if (mGMM != null) mGMM.unInit();
         if (mAudioManager != null) mAudioManager.unregisterAudioDeviceCallback(mAudioDeviceCallback);
         if (mWorkerThread != null) mWorkerThread.quitSafely();
-        if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
         super.onDestroy();
     }
 
@@ -697,11 +693,7 @@ public class AudioCaptureService extends Service {
     public void stopVisualizer() { stopCapture(); }
 
     public void setCaptureSource(CaptureSource source) {
-        if (mCaptureSource != source) { 
-            mCaptureSource = source; 
-            if (sIsRunning) restartCapture(); 
-            requestWidgetRefresh(); 
-        }
+        if (mCaptureSource != source) { mCaptureSource = source; if (sIsRunning) restartCapture(); requestWidgetRefresh(); }
     }
 
     private void restartCapture() {
@@ -1083,18 +1075,6 @@ public class AudioCaptureService extends Service {
             }
 
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
-            ensureGlyphSession();
-            if (mVisualizerConfig == null) {
-                try {
-                    refreshPresetCatalog();
-                    if (mPresetKey == null || mPresetKey.isEmpty()) {
-                        mPresetKey = chooseDefaultPresetKey(phoneModelForDevice(mSelectedDevice), mAvailablePresetKeys);
-                    }
-                    mVisualizerConfig = loadVisualizerConfig(mPresetKey, (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000);
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to load visualizer config in startCaptureInternal", e);
-                }
-            }
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
                 Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);
@@ -1103,10 +1083,7 @@ public class AudioCaptureService extends Service {
                 try {
                     mCurrentSampleRate = (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000;
                     int captureSampleRate = mCurrentSampleRate;
-                    mAudioProcessor.updateFFTSize(captureSampleRate);
-                    mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
-                    mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
-                    int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 8192);
+                    int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 4096);
                     Log.d(TAG, "Starting capture for source: " + source + " @ " + captureSampleRate + "Hz, bufSize: " + bufSize);
                     
                     if (source == CaptureSource.INTERNAL) {
@@ -1156,13 +1133,7 @@ public class AudioCaptureService extends Service {
                     
                     if (localRecord != null) {
                         if (localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                            synchronized (mCaptureLock) { 
-                                if (!mCapturing) { 
-                                    localRecord.release(); 
-                                    return; 
-                                } 
-                                mAudioRecord = localRecord; 
-                            }
+                            synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
                             localRecord.startRecording();
                             if (localRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
                                 Log.d(TAG, "AudioRecord started recording successfully");
@@ -1176,19 +1147,8 @@ public class AudioCaptureService extends Service {
                     } else {
                         Log.e(TAG, "Failed to create AudioRecord instance");
                     }
-                } catch (Exception e) { 
-                    Log.e(TAG, "Capture failed", e); 
-                } finally { 
-                    if (localRecord != null) {
-                        try { localRecord.stop(); } catch (Exception ignored) {}
-                        try { localRecord.release(); } catch (Exception ignored) {}
-                        synchronized (mCaptureLock) {
-                            if (mAudioRecord == localRecord) {
-                                mAudioRecord = null;
-                            }
-                        }
-                    }
-                }
+                } catch (Exception e) { Log.e(TAG, "Capture failed", e); stopSelf(); }
+                finally { synchronized (mCaptureLock) { releaseAudioRecord(); } }
             });
         }
         refreshNotification();
@@ -1210,7 +1170,9 @@ public class AudioCaptureService extends Service {
     private void releaseAudioRecord() {
         if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; }
         if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
+        if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
         releaseBluetoothSockets();
+        stopDiscoveryResponder();
     }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
@@ -1262,7 +1224,7 @@ public class AudioCaptureService extends Service {
     private int[] mFrameColorsBuffer = new int[0];
 
     private void processFrame(float[] uniqueMagnitudes, float hapticPeak, AudioProcessor.VisualizerConfig config, int configVersion) {
-        if (config == null) return;
+        if (config == null || configVersion != mPresetConfigVersion.get()) return;
         try {
             long now = SystemClock.elapsedRealtime(); 
             float gain = mGlyphRenderer.getSpectrumGain(); 
@@ -1320,14 +1282,7 @@ public class AudioCaptureService extends Service {
                 if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) { 
                     if (mGMM != null) mGMM.setAppMatrixFrame(frameColors); 
                 } else if (mGM != null) {
-                    int ledCount = DeviceProfile.getLedCount(mSelectedDevice);
-                    if (ledCount > 0 && frameColors.length != ledCount) {
-                        int[] formatted = new int[ledCount];
-                        System.arraycopy(frameColors, 0, formatted, 0, Math.min(frameColors.length, ledCount));
-                        mGM.setFrameColors(formatted);
-                    } else {
-                        mGM.setFrameColors(frameColors);
-                    }
+                    mGM.setFrameColors(frameColors); 
                 }
                 mLastSendMs = now; 
             } catch (Exception ignored) {}
@@ -1477,17 +1432,12 @@ public class AudioCaptureService extends Service {
     }
 
     private void setupNetworkCapture() {
-        if (mNetworkSocket != null) { 
-            try { mNetworkSocket.close(); } catch (Exception ignored) {}
-            mNetworkSocket = null; 
-        }
+        if (mNetworkSocket != null) { mNetworkSocket.close(); mNetworkSocket = null; }
         sNetworkPacketsReceived.setValue(0);
         showToast("Network Thread Started");
         Log.i(TAG, "Starting Network Capture. Local IP displayed: " + getLocalIpAddress());
         try {
-            mNetworkSocket = new java.net.DatagramSocket(null);
-            mNetworkSocket.setReuseAddress(true);
-            mNetworkSocket.bind(new java.net.InetSocketAddress(UDP_PORT));
+            mNetworkSocket = new java.net.DatagramSocket(UDP_PORT);
             mNetworkSocket.setReceiveBufferSize(256 * 1024);
             mNetworkSocket.setSoTimeout(500); // 500ms timeout for responsiveness
             Log.i(TAG, "Network socket opened on port " + UDP_PORT);
@@ -1503,7 +1453,7 @@ public class AudioCaptureService extends Service {
             
             startDiscoveryResponder();
 
-            while (mCapturing && mNetworkSocket != null && !mNetworkSocket.isClosed()) {
+            while (mCapturing && mNetworkSocket != null) {
                 try {
                     java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
                     
@@ -1562,11 +1512,6 @@ public class AudioCaptureService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Failed to setup network capture", e);
             showToast("Failed to open network port: " + e.getMessage());
-        } finally {
-            if (mNetworkSocket != null) {
-                try { mNetworkSocket.close(); } catch (Exception ignored) {}
-                mNetworkSocket = null;
-            }
         }
     }
 
@@ -1742,66 +1687,49 @@ public class AudioCaptureService extends Service {
         }
     }
 
-    private volatile boolean mDiscoveryRunning = false;
     private Thread mDiscoveryThread;
-    private java.net.DatagramSocket mDiscoverySocket;
-
-    private synchronized void startDiscoveryResponder() {
-        if (mDiscoveryRunning && mDiscoveryThread != null && mDiscoveryThread.isAlive()) {
-            return;
-        }
-        mDiscoveryRunning = true;
+    private void startDiscoveryResponder() {
+        stopDiscoveryResponder();
         mDiscoveryThread = new Thread(() -> {
-            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes();
             Log.d(TAG, "Discovery responder started on port " + DISCOVERY_PORT);
             
-            while (mDiscoveryRunning) {
-                try {
-                    mDiscoverySocket = new java.net.DatagramSocket(null);
-                    mDiscoverySocket.setReuseAddress(true);
-                    mDiscoverySocket.bind(new java.net.InetSocketAddress(DISCOVERY_PORT));
-                    mDiscoverySocket.setSoTimeout(3000);
-                    byte[] buffer = new byte[1024];
-                    
-                    while (mDiscoveryRunning) {
-                        try {
-                            java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
-                            mDiscoverySocket.receive(packet);
-                            
-                            String message = new String(packet.getData(), 0, packet.getLength(), java.nio.charset.StandardCharsets.UTF_8);
-                            Log.d(TAG, "Discovery Port: Received '" + message + "' from " + packet.getAddress().getHostAddress());
-                            
-                            if (message.contains("GLYPHIX") || message.contains("DISCOVERY")) {
-                                java.net.DatagramPacket response = new java.net.DatagramPacket(
-                                        responseData, responseData.length, packet.getAddress(), packet.getPort());
-                                mDiscoverySocket.send(response);
-                                Log.d(TAG, "Discovery response sent to " + packet.getAddress().getHostAddress() + ":" + packet.getPort());
-                            }
-                        } catch (java.net.SocketTimeoutException ignored) {
-                            // Check mDiscoveryRunning
+            try (java.net.DatagramSocket socket = new java.net.DatagramSocket(DISCOVERY_PORT)) {
+                socket.setSoTimeout(5000);
+                byte[] buffer = new byte[1024];
+                
+                while (mCapturing && mCaptureSource == CaptureSource.NETWORK) {
+                    try {
+                        java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                        socket.receive(packet);
+                        
+                        Log.d(TAG, "Discovery Port: Received " + packet.getLength() + " bytes from " + packet.getAddress().getHostAddress());
+                        
+                        String message = new String(packet.getData(), 0, packet.getLength());
+                        if ("GLYPHIX_DISCOVERY_REQUEST".equals(message)) {
+                            Log.d(TAG, "Discovery request received from " + packet.getAddress().getHostAddress());
+                            java.net.DatagramPacket response = new java.net.DatagramPacket(
+                                    responseData, responseData.length, packet.getAddress(), packet.getPort());
+                            socket.send(response);
+                        }
+                    } catch (java.net.SocketTimeoutException e) {
+                        // Just check mCapturing again
+                    } catch (Exception e) {
+                        if (mCapturing) {
+                            Log.e(TAG, "Discovery responder error", e);
+                            Thread.sleep(2000);
                         }
                     }
-                } catch (Exception e) {
-                    if (mDiscoveryRunning) {
-                        Log.e(TAG, "Discovery responder socket error (will retry in 3s)", e);
-                        try { Thread.sleep(3000); } catch (InterruptedException ignored) { break; }
-                    }
-                } finally {
-                    if (mDiscoverySocket != null && !mDiscoverySocket.isClosed()) {
-                        mDiscoverySocket.close();
-                    }
                 }
+            } catch (Exception e) {
+                Log.e(TAG, "Could not start discovery responder", e);
             }
             Log.d(TAG, "Discovery responder stopped");
         }, "DiscoveryResponder");
         mDiscoveryThread.start();
     }
 
-    private synchronized void stopDiscoveryResponder() {
-        mDiscoveryRunning = false;
-        if (mDiscoverySocket != null && !mDiscoverySocket.isClosed()) {
-            mDiscoverySocket.close();
-        }
+    private void stopDiscoveryResponder() {
         if (mDiscoveryThread != null) {
             mDiscoveryThread.interrupt();
             mDiscoveryThread = null;
@@ -1872,11 +1800,7 @@ public class AudioCaptureService extends Service {
     }
 
     public void setPcStreamTargetIp(String ip) {
-        String cleanIp = (ip != null) ? ip.trim() : "";
-        if (cleanIp.contains(":") && !cleanIp.contains("::")) {
-            cleanIp = cleanIp.substring(0, cleanIp.indexOf(":"));
-        }
-        mPcStreamTargetIp = cleanIp;
+        mPcStreamTargetIp = (ip != null) ? ip.trim() : "";
         getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putString("pc_stream_target_ip", mPcStreamTargetIp).apply();
         if (mWorkerHandler != null) {
             mWorkerHandler.post(() -> {
@@ -1912,67 +1836,39 @@ public class AudioCaptureService extends Service {
         } catch (Exception ignored) {}
     }
 
-    public static List<InetAddress> getAllBroadcastAddresses() {
-        List<InetAddress> broadcastList = new ArrayList<>();
-        try {
-            broadcastList.add(InetAddress.getByName("255.255.255.255"));
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces != null && interfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = interfaces.nextElement();
-                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
-                    continue;
-                }
-                for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
-                    InetAddress broadcast = interfaceAddress.getBroadcast();
-                    if (broadcast != null && !broadcastList.contains(broadcast)) {
-                        broadcastList.add(broadcast);
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return broadcastList;
-    }
-
     public void discoverPcCompanion(Consumer<String> onFound) {
         new Thread(() -> {
             try (DatagramSocket socket = new DatagramSocket()) {
                 socket.setBroadcast(true);
-                socket.setSoTimeout(3500);
-                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                socket.setSoTimeout(1500);
+                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes();
                 
-                List<InetAddress> broadcasts = getAllBroadcastAddresses();
+                ArrayList<String> broadcasts = new ArrayList<>();
+                broadcasts.add("255.255.255.255");
+                String localIp = getLocalIpAddress();
+                if (!"Unknown".equals(localIp) && localIp.contains(".")) {
+                    String subnet = localIp.substring(0, localIp.lastIndexOf('.')) + ".255";
+                    broadcasts.add(subnet);
+                }
                 
-                for (int attempt = 0; attempt < 3; attempt++) {
-                    for (InetAddress b : broadcasts) {
-                        try {
-                            DatagramPacket p = new DatagramPacket(req, req.length, b, DISCOVERY_PORT);
-                            socket.send(p);
-                        } catch (Exception ignored) {}
-                    }
-                    try { Thread.sleep(100); } catch (InterruptedException ignored) {}
+                for (String b : broadcasts) {
+                    try {
+                        DatagramPacket p = new DatagramPacket(req, req.length, InetAddress.getByName(b), DISCOVERY_PORT);
+                        socket.send(p);
+                    } catch (Exception ignored) {}
                 }
                 
                 byte[] buf = new byte[1024];
-                long startTime = System.currentTimeMillis();
-                while (System.currentTimeMillis() - startTime < 3500) {
-                    try {
-                        DatagramPacket resp = new DatagramPacket(buf, buf.length);
-                        socket.receive(resp);
-                        String msg = new String(resp.getData(), 0, resp.getLength(), java.nio.charset.StandardCharsets.UTF_8);
-                        if (msg.contains("GLYPHIX") || msg.contains("RESPONSE")) {
-                            String pcIp = resp.getAddress().getHostAddress();
-                            if (onFound != null && mMainHandler != null) {
-                                mMainHandler.post(() -> onFound.accept(pcIp));
-                            }
-                            return;
-                        }
-                    } catch (SocketTimeoutException e) {
-                        break;
+                DatagramPacket resp = new DatagramPacket(buf, buf.length);
+                socket.receive(resp);
+                String msg = new String(resp.getData(), 0, resp.getLength());
+                if (msg.contains("GLYPHIX_PC_DISCOVERY_RESPONSE") || msg.contains("GLYPHIX")) {
+                    String pcIp = resp.getAddress().getHostAddress();
+                    if (onFound != null && mMainHandler != null) {
+                        mMainHandler.post(() -> onFound.accept(pcIp));
                     }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "discoverPcCompanion error", e);
-            }
+            } catch (Exception ignored) {}
         }, "PcDiscoveryThread").start();
     }
 
@@ -1981,34 +1877,13 @@ public class AudioCaptureService extends Service {
         if (mGMM != null) { int size = DeviceProfile.getMatrixWidth(mSelectedDevice) * DeviceProfile.getMatrixHeight(mSelectedDevice); if (size > 0) try { mGMM.setAppMatrixFrame(new int[size]); } catch (Exception ignored) {} }
     }
 
-    private void ensureGlyphSession() { 
-        if (mGM == null && Build.VERSION.SDK_INT >= 31 && mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN) {
-            ensureGlyphManagerInitialized();
-        }
-        if (mGM == null || mSessionOpen) return; 
-        try { 
-            mGM.openSession(); 
-            mSessionOpen = true; 
-        } catch (Exception e) { 
-            Log.e(TAG, "Failed to open Glyph session", e); 
-        } 
-    }
+    private void ensureGlyphSession() { if (mGM == null || mSessionOpen) return; try { mGM.openSession(); mSessionOpen = true; } catch (Exception e) { Log.e(TAG, "Failed to open Glyph session", e); } }
 
     private void clearGlyphSession() {
         try { turnOffGlyphs(); if (mGM != null && mSessionOpen) { try { mGM.closeSession(); } catch (Exception ignored) {} if (mGMM != null) try { mGMM.closeAppMatrix(); } catch (Exception ignored) {} mSessionOpen = false; } } catch (Exception ignored) {}
     }
 
-    private boolean canPushGlyphFrames() { 
-        if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; 
-        if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; 
-        if (mGM == null && Build.VERSION.SDK_INT >= 31) {
-            ensureGlyphManagerInitialized();
-        }
-        if (mGM != null && !mSessionOpen) {
-            ensureGlyphSession();
-        }
-        return mGM != null && mSessionOpen; 
-    }
+    private boolean canPushGlyphFrames() { if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; return mGM != null && mSessionOpen; }
 
     private int resolveGlyphCount() { return mVisualizerConfig != null ? mVisualizerConfig.zones.length : DeviceProfile.getLedCount(mSelectedDevice); }
 
@@ -2117,16 +1992,12 @@ public class AudioCaptureService extends Service {
 
     private static String phoneModelForDevice(int device) { return switch (device) { case DeviceProfile.DEVICE_NP1 -> "PHONE1"; case DeviceProfile.DEVICE_NP2 -> "PHONE2"; case DeviceProfile.DEVICE_NP2A -> "PHONE2A"; case DeviceProfile.DEVICE_NP3A -> "PHONE3A"; case DeviceProfile.DEVICE_NP4A -> "PHONE4A"; case DeviceProfile.DEVICE_NP4APRO -> "PHONE4A_PRO"; case DeviceProfile.DEVICE_NP3 -> "PHONE3"; case DeviceProfile.DEVICE_NP4B -> "PHONE4B"; default -> "UNKNOWN"; }; }
 
-    public static String loadZonesConfigVersion(Context context) { try { return loadZonesConfigRoot(context).optString("version", "1.0.0"); } catch (Exception e) { return "1.0.0"; } }
+    public static String loadZonesConfigVersion(Context context) { try { return loadZonesConfigRoot(context).optString("version", "Unknown"); } catch (Exception e) { return "Unknown"; } }
     private static JSONObject loadZonesConfigRoot(Context context) throws IOException, JSONException { return new JSONObject(loadZonesConfigText(context)); }
-    public static String loadZonesConfigText(Context context) {
-        try {
-            File file = new File(context.getFilesDir(), "zones.config");
-            if (file.isFile()) { try (FileInputStream is = new FileInputStream(file)) { return readFully(is); } }
-        } catch (Exception ignored) {}
+    public static String loadZonesConfigText(Context context) throws IOException {
+        File file = new File(context.getFilesDir(), "zones.config");
+        if (file.isFile()) { try (FileInputStream is = new FileInputStream(file)) { return readFully(is); } }
         try (InputStream is = context.getAssets().open("zones.config")) { return readFully(is); }
-        catch (Exception ignored) {}
-        return "{\"version\":\"1.0.0\",\"np1\":{\"description\":\"Phone (1) Default\",\"phone_model\":\"PHONE1\",\"zones\":[[20,150],[150,600],[600,2000],[2000,6000],[6000,16000]]},\"np2\":{\"description\":\"Phone (2) Default\",\"phone_model\":\"PHONE2\",\"zones\":[[20,80],[80,140],[140,220],[220,320],[320,450],[450,600],[600,800],[800,1100],[1100,1500],[1500,2000],[2000,2700],[2700,3600],[3600,4800],[4800,6400],[6400,8500],[8500,11000],[11000,16000],[20,100],[100,250],[250,500],[500,1000],[1000,2000],[2000,4000],[4000,8000],[8000,16000],[20,150],[150,400],[400,1000],[1000,3000],[3000,8000],[8000,16000],[20,250],[250,2000]]},\"np2a\":{\"description\":\"Phone (2a) Default\",\"phone_model\":\"PHONE2A\",\"zones\":[[20,250],[250,2000],[2000,16000]]},\"np3a\":{\"description\":\"Phone (3a) Default\",\"phone_model\":\"PHONE3A\",\"zones\":[[20,250],[250,2000],[2000,16000]]}}";
     }
     private static String readFully(InputStream is) throws IOException { ByteArrayOutputStream os = new ByteArrayOutputStream(); byte[] buf = new byte[4096]; int r; while ((r = is.read(buf)) != -1) os.write(buf, 0, r); return os.toString("UTF-8"); }
     private static List<String> getAllPresetKeys(JSONObject root) { ArrayList<String> res = new ArrayList<>(); JSONArray names = root.names(); if (names != null) for (int i = 0; i < names.length(); i++) res.add(names.optString(i, "")); Collections.sort(res); return res; }
