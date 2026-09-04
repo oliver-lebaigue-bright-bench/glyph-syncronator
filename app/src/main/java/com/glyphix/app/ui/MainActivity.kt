@@ -584,7 +584,6 @@ internal fun GlyphixApp(
     val visibleTabs = remember {
         listOf(
             Tab.Audio,
-            Tab.Spotify,
             Tab.Leaderboard,
             Tab.Info,
             Tab.Settings
@@ -748,6 +747,10 @@ internal fun GlyphixApp(
                         val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
                         val isPcStreamingActive by viewModel.isPcStreamingActive.collectAsStateWithLifecycle()
 
+                        val presets by viewModel.presetInfos.collectAsStateWithLifecycle()
+                        val selectedPreset by viewModel.selectedPreset.collectAsStateWithLifecycle()
+                        val vizState = viewModel.visualizerState.collectAsStateWithLifecycle()
+
                         val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
                             isRunning = isRunning,
@@ -810,8 +813,14 @@ internal fun GlyphixApp(
                             onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
                             onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
                             onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
-                            onOpenSpotifyTab = { viewModel.selectTab(Tab.Spotify) },
+                            onOpenSpotifyTab = { viewModel.showSpotify() },
                             onToggleVisualizer = onToggleVisualizer,
+                            viewModel = viewModel,
+                            selectedDevice = selectedDevice,
+                            vizStateProvider = { vizState.value },
+                            presets = presets,
+                            selectedPreset = selectedPreset,
+                            onPresetSelected = { viewModel.setSelectedPreset(it) },
                             padding = pagePadding
                         )
                     }

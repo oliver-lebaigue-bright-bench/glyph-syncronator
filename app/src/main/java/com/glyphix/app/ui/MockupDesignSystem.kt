@@ -613,7 +613,6 @@ private fun getTabItem(tab: Tab): TabItem = when (tab) {
 private fun getNavItemsForTab(tab: Tab): List<TabItem> {
     return listOf(
         getTabItem(Tab.Audio),
-        getTabItem(Tab.Spotify),
         getTabItem(Tab.Leaderboard),
         getTabItem(Tab.Info),
         getTabItem(Tab.Settings)
