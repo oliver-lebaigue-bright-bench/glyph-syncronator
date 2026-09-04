@@ -795,11 +795,24 @@ def get_broadcast_addresses():
         hostname = socket.gethostname()
         for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
             ip = info[4][0]
-            if ip != '127.0.0.1':
+            if ip and not ip.startswith('127.'):
                 parts = ip.split('.')
+                if len(parts) == 4:
+                    broadcasts.add(".".join(parts[:-1] + ["255"]))
+    except Exception: pass
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        if local_ip and not local_ip.startswith('127.'):
+            parts = local_ip.split('.')
+            if len(parts) == 4:
                 broadcasts.add(".".join(parts[:-1] + ["255"]))
     except Exception: pass
-    return [b for b in broadcasts]
+
+    return list(broadcasts)
 
 def get_local_ip():
     try:
@@ -936,6 +949,7 @@ class CompanionApp(ctk.CTk):
         self._setup_ui()
         self._refresh_audio_sources()
         self._on_direction_changed()
+        self._start_pc_discovery_responder()
         self._update_loop()
 
     def _setup_ui(self):
@@ -1410,6 +1424,36 @@ class CompanionApp(ctk.CTk):
             self.status_dot.configure(text_color=COLOR_ACCENT)
             threading.Thread(target=self._discovery_worker, daemon=True).start()
 
+    def _start_pc_discovery_responder(self):
+        threading.Thread(target=self._pc_discovery_responder_loop, daemon=True).start()
+
+    def _pc_discovery_responder_loop(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except: pass
+        try:
+            sock.bind(("0.0.0.0", DISCOVERY_PORT))
+            sock.settimeout(1.0)
+            while True:
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    if not data: continue
+                    msg = data.decode('utf-8', errors='ignore')
+                    if "GLYPHIX" in msg or "DISCOVERY" in msg:
+                        sock.sendto(b"GLYPHIX_PC_DISCOVERY_RESPONSE", addr)
+                        self.log(f"Discovery: Sent PC announcement to Phone ({addr[0]})")
+                except socket.timeout:
+                    continue
+                except Exception:
+                    time.sleep(1)
+        except Exception as e:
+            self.log(f"Discovery responder error: {e}")
+        finally:
+            try: sock.close()
+            except: pass
+
     def _discovery_worker(self):
         mode = self.conn_type.get()
         found = None
@@ -1422,17 +1466,31 @@ class CompanionApp(ctk.CTk):
             self.log("Broadcasting UDP discovery...")
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.settimeout(0.5)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if hasattr(socket, "SO_REUSEPORT"):
+                try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+                except: pass
+            sock.settimeout(0.3)
             msg = b"GLYPHIX_DISCOVERY_REQUEST"
             addrs = get_broadcast_addresses()
             start = time.time()
-            while time.time() - start < 10 and not self.stop_discovery_event.is_set():
+            while time.time() - start < 8 and not self.stop_discovery_event.is_set():
                 try:
-                    for a in addrs: sock.sendto(msg, (a, DISCOVERY_PORT))
-                    data, addr = sock.recvfrom(1024)
-                    if data == b"GLYPHIX_DISCOVERY_RESPONSE":
-                        found = addr[0]
+                    for a in addrs:
+                        try: sock.sendto(msg, (a, DISCOVERY_PORT))
+                        except: pass
+                    for _ in range(5):
+                        try:
+                            data, addr = sock.recvfrom(1024)
+                            if b"GLYPHIX" in data:
+                                found = addr[0]
+                                break
+                        except socket.timeout:
+                            break
+                        except: pass
+                    if found:
                         break
+                    time.sleep(0.2)
                 except: continue
             sock.close()
         
@@ -1508,7 +1566,6 @@ class CompanionApp(ctk.CTk):
 
         self.log(f"Listener active on port {UDP_PORT}. Waiting for Nothing Phone stream...")
         threading.Thread(target=self._viz_worker, args=(TARGET_RATE,), daemon=True).start()
-        threading.Thread(target=self._pc_discovery_responder, daemon=True).start()
 
         packets = 0
         last_report = time.time()
@@ -1537,29 +1594,6 @@ class CompanionApp(ctk.CTk):
             try: sock.close()
             except: pass
             self.after(0, self._on_stream_stopped)
-
-    def _pc_discovery_responder(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind(("0.0.0.0", DISCOVERY_PORT))
-            sock.settimeout(1.0)
-            while not self.stop_stream_event.is_set():
-                try:
-                    data, addr = sock.recvfrom(1024)
-                    msg = data.decode('utf-8', errors='ignore')
-                    if "GLYPHIX" in msg:
-                        sock.sendto(b"GLYPHIX_PC_DISCOVERY_RESPONSE", addr)
-                        self.log(f"Discovery: Sent PC announcement to Phone ({addr[0]})")
-                except socket.timeout:
-                    continue
-                except:
-                    break
-        except Exception as e:
-            self.log(f"Discovery responder error: {e}")
-        finally:
-            try: sock.close()
-            except: pass
 
     def _stream_worker(self, addr, device, port=UDP_PORT):
         p = pyaudio.PyAudio()

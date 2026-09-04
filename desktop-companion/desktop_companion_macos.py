@@ -144,11 +144,24 @@ def get_broadcast_addresses():
         hostname = socket.gethostname()
         for info in socket.getaddrinfo(hostname, None, socket.AF_INET):
             ip = info[4][0]
-            if ip != '127.0.0.1':
+            if ip and not ip.startswith('127.'):
                 parts = ip.split('.')
+                if len(parts) == 4:
+                    broadcasts.add(".".join(parts[:-1] + ["255"]))
+    except Exception: pass
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        if local_ip and not local_ip.startswith('127.'):
+            parts = local_ip.split('.')
+            if len(parts) == 4:
                 broadcasts.add(".".join(parts[:-1] + ["255"]))
     except Exception: pass
-    return [b for b in broadcasts]
+
+    return list(broadcasts)
 
 def get_macos_audio_devices():
     p = pyaudio.PyAudio()

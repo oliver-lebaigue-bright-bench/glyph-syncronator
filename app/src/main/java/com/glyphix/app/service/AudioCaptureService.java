@@ -73,13 +73,15 @@ import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
 import android.os.ParcelUuid;
-import java.util.UUID;
 import java.util.ArrayList;
+import java.util.List;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
 import java.net.NetworkInterface;
+import java.net.InterfaceAddress;
 import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.function.Consumer;
 
@@ -606,6 +608,7 @@ public class AudioCaptureService extends Service {
 
         resetVisualizerState();
         if (mSelectedDevice != DeviceProfile.DEVICE_UNKNOWN && Build.VERSION.SDK_INT >= 31) ensureGlyphManagerInitialized();
+        startDiscoveryResponder();
         mMainHandler.post(mIdlePulseRunnable);
     }
 
@@ -1165,6 +1168,7 @@ public class AudioCaptureService extends Service {
 
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
         stopBleAdvertisement();
+        stopDiscoveryResponder();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
     private void releaseAudioRecord() {
@@ -1172,7 +1176,6 @@ public class AudioCaptureService extends Service {
         if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
         if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
         releaseBluetoothSockets();
-        stopDiscoveryResponder();
     }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
@@ -1687,49 +1690,66 @@ public class AudioCaptureService extends Service {
         }
     }
 
+    private volatile boolean mDiscoveryRunning = false;
     private Thread mDiscoveryThread;
-    private void startDiscoveryResponder() {
-        stopDiscoveryResponder();
+    private java.net.DatagramSocket mDiscoverySocket;
+
+    private synchronized void startDiscoveryResponder() {
+        if (mDiscoveryRunning && mDiscoveryThread != null && mDiscoveryThread.isAlive()) {
+            return;
+        }
+        mDiscoveryRunning = true;
         mDiscoveryThread = new Thread(() -> {
-            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes();
+            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes(java.nio.charset.StandardCharsets.UTF_8);
             Log.d(TAG, "Discovery responder started on port " + DISCOVERY_PORT);
             
-            try (java.net.DatagramSocket socket = new java.net.DatagramSocket(DISCOVERY_PORT)) {
-                socket.setSoTimeout(5000);
-                byte[] buffer = new byte[1024];
-                
-                while (mCapturing && mCaptureSource == CaptureSource.NETWORK) {
-                    try {
-                        java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
-                        socket.receive(packet);
-                        
-                        Log.d(TAG, "Discovery Port: Received " + packet.getLength() + " bytes from " + packet.getAddress().getHostAddress());
-                        
-                        String message = new String(packet.getData(), 0, packet.getLength());
-                        if ("GLYPHIX_DISCOVERY_REQUEST".equals(message)) {
-                            Log.d(TAG, "Discovery request received from " + packet.getAddress().getHostAddress());
-                            java.net.DatagramPacket response = new java.net.DatagramPacket(
-                                    responseData, responseData.length, packet.getAddress(), packet.getPort());
-                            socket.send(response);
-                        }
-                    } catch (java.net.SocketTimeoutException e) {
-                        // Just check mCapturing again
-                    } catch (Exception e) {
-                        if (mCapturing) {
-                            Log.e(TAG, "Discovery responder error", e);
-                            Thread.sleep(2000);
+            while (mDiscoveryRunning) {
+                try {
+                    mDiscoverySocket = new java.net.DatagramSocket(null);
+                    mDiscoverySocket.setReuseAddress(true);
+                    mDiscoverySocket.bind(new java.net.InetSocketAddress(DISCOVERY_PORT));
+                    mDiscoverySocket.setSoTimeout(3000);
+                    byte[] buffer = new byte[1024];
+                    
+                    while (mDiscoveryRunning) {
+                        try {
+                            java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                            mDiscoverySocket.receive(packet);
+                            
+                            String message = new String(packet.getData(), 0, packet.getLength(), java.nio.charset.StandardCharsets.UTF_8);
+                            Log.d(TAG, "Discovery Port: Received '" + message + "' from " + packet.getAddress().getHostAddress());
+                            
+                            if (message.contains("GLYPHIX") || message.contains("DISCOVERY")) {
+                                java.net.DatagramPacket response = new java.net.DatagramPacket(
+                                        responseData, responseData.length, packet.getAddress(), packet.getPort());
+                                mDiscoverySocket.send(response);
+                                Log.d(TAG, "Discovery response sent to " + packet.getAddress().getHostAddress() + ":" + packet.getPort());
+                            }
+                        } catch (java.net.SocketTimeoutException ignored) {
+                            // Check mDiscoveryRunning
                         }
                     }
+                } catch (Exception e) {
+                    if (mDiscoveryRunning) {
+                        Log.e(TAG, "Discovery responder socket error (will retry in 3s)", e);
+                        try { Thread.sleep(3000); } catch (InterruptedException ignored) { break; }
+                    }
+                } finally {
+                    if (mDiscoverySocket != null && !mDiscoverySocket.isClosed()) {
+                        mDiscoverySocket.close();
+                    }
                 }
-            } catch (Exception e) {
-                Log.e(TAG, "Could not start discovery responder", e);
             }
             Log.d(TAG, "Discovery responder stopped");
         }, "DiscoveryResponder");
         mDiscoveryThread.start();
     }
 
-    private void stopDiscoveryResponder() {
+    private synchronized void stopDiscoveryResponder() {
+        mDiscoveryRunning = false;
+        if (mDiscoverySocket != null && !mDiscoverySocket.isClosed()) {
+            mDiscoverySocket.close();
+        }
         if (mDiscoveryThread != null) {
             mDiscoveryThread.interrupt();
             mDiscoveryThread = null;
@@ -1836,39 +1856,67 @@ public class AudioCaptureService extends Service {
         } catch (Exception ignored) {}
     }
 
+    public static List<InetAddress> getAllBroadcastAddresses() {
+        List<InetAddress> broadcastList = new ArrayList<>();
+        try {
+            broadcastList.add(InetAddress.getByName("255.255.255.255"));
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces != null && interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+                    continue;
+                }
+                for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                    InetAddress broadcast = interfaceAddress.getBroadcast();
+                    if (broadcast != null && !broadcastList.contains(broadcast)) {
+                        broadcastList.add(broadcast);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return broadcastList;
+    }
+
     public void discoverPcCompanion(Consumer<String> onFound) {
         new Thread(() -> {
             try (DatagramSocket socket = new DatagramSocket()) {
                 socket.setBroadcast(true);
-                socket.setSoTimeout(1500);
-                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes();
+                socket.setSoTimeout(3500);
+                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes(java.nio.charset.StandardCharsets.UTF_8);
                 
-                ArrayList<String> broadcasts = new ArrayList<>();
-                broadcasts.add("255.255.255.255");
-                String localIp = getLocalIpAddress();
-                if (!"Unknown".equals(localIp) && localIp.contains(".")) {
-                    String subnet = localIp.substring(0, localIp.lastIndexOf('.')) + ".255";
-                    broadcasts.add(subnet);
-                }
+                List<InetAddress> broadcasts = getAllBroadcastAddresses();
                 
-                for (String b : broadcasts) {
-                    try {
-                        DatagramPacket p = new DatagramPacket(req, req.length, InetAddress.getByName(b), DISCOVERY_PORT);
-                        socket.send(p);
-                    } catch (Exception ignored) {}
+                for (int attempt = 0; attempt < 3; attempt++) {
+                    for (InetAddress b : broadcasts) {
+                        try {
+                            DatagramPacket p = new DatagramPacket(req, req.length, b, DISCOVERY_PORT);
+                            socket.send(p);
+                        } catch (Exception ignored) {}
+                    }
+                    try { Thread.sleep(100); } catch (InterruptedException ignored) {}
                 }
                 
                 byte[] buf = new byte[1024];
-                DatagramPacket resp = new DatagramPacket(buf, buf.length);
-                socket.receive(resp);
-                String msg = new String(resp.getData(), 0, resp.getLength());
-                if (msg.contains("GLYPHIX_PC_DISCOVERY_RESPONSE") || msg.contains("GLYPHIX")) {
-                    String pcIp = resp.getAddress().getHostAddress();
-                    if (onFound != null && mMainHandler != null) {
-                        mMainHandler.post(() -> onFound.accept(pcIp));
+                long startTime = System.currentTimeMillis();
+                while (System.currentTimeMillis() - startTime < 3500) {
+                    try {
+                        DatagramPacket resp = new DatagramPacket(buf, buf.length);
+                        socket.receive(resp);
+                        String msg = new String(resp.getData(), 0, resp.getLength(), java.nio.charset.StandardCharsets.UTF_8);
+                        if (msg.contains("GLYPHIX") || msg.contains("RESPONSE")) {
+                            String pcIp = resp.getAddress().getHostAddress();
+                            if (onFound != null && mMainHandler != null) {
+                                mMainHandler.post(() -> onFound.accept(pcIp));
+                            }
+                            return;
+                        }
+                    } catch (SocketTimeoutException e) {
+                        break;
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Log.e(TAG, "discoverPcCompanion error", e);
+            }
         }, "PcDiscoveryThread").start();
     }
 
