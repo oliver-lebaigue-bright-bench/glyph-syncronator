@@ -319,11 +319,11 @@ fun FloatingBottomBar(
                 
                 // Calculate current slot widths based on expansion
                 val currentBaseWidthPx = (totalWidthPx - (extraWidthPx * expansion)) / 4f
-                
+
                 fun getCenterForIndex(idx: Float, isExpanded: Float): Float {
                     val base = (totalWidthPx - (extraWidthPx * isExpanded)) / 4f
                     val slotIndex = idx.roundToInt()
-                    
+
                     // Start position
                     var x = 0f
                     for (j in 0 until slotIndex) {
