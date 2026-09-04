@@ -48,6 +48,7 @@ import kotlin.math.sqrt
 enum class Tab(val label: String, val labelRes: Int) {
     Audio("Audio", R.string.tab_audio), 
     Glyphs("Glyphs", R.string.tab_glyphs), 
+    Spotify("Spotify", R.string.tab_audio),
     Visuals("Visuals", R.string.tab_visuals),
     Haptics("Haptics", R.string.tab_haptics), 
     Flashlight("Flashlight", R.string.tab_flashlight), 
@@ -76,6 +77,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val globalStatsRepository = GlobalStatsRepository()
     val userRepository = UserRepository()
     val analytics = AnalyticsHelper(application)
+    val spotifyAuthManager = com.glyphix.app.spotify.SpotifyAuthManager.getInstance(application)
+    val spotifyRepository = com.glyphix.app.spotify.SpotifyRepository.getInstance(application)
+
+    val _isSpotifyInputActive = MutableStateFlow(false)
+    val isSpotifyInputActive: StateFlow<Boolean> = _isSpotifyInputActive.asStateFlow()
+
+    fun setSpotifyInputActive(active: Boolean) {
+        _isSpotifyInputActive.value = active
+    }
 
     val hasHapticMotor: Boolean by lazy {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -113,6 +123,46 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _bluetoothDeviceAddress = MutableStateFlow("")
     val bluetoothDeviceAddress = _bluetoothDeviceAddress.asStateFlow()
 
+    fun setNetworkPacketsReceived(count: Int) {
+        _networkPacketsReceived.value = count
+    }
+
+    fun setBluetoothDeviceName(name: String) {
+        _bluetoothDeviceName.value = name
+    }
+
+    fun setBluetoothDeviceAddress(address: String) {
+        _bluetoothDeviceAddress.value = address
+    }
+
+    val _pcPacketsSent = MutableStateFlow(0)
+    val pcPacketsSent = _pcPacketsSent.asStateFlow()
+
+    val _desktopSyncDirection = MutableStateFlow("PHONE_TO_PC")
+    val desktopSyncDirection = _desktopSyncDirection.asStateFlow()
+
+    val _pcCompanionIp = MutableStateFlow("")
+    val pcCompanionIp = _pcCompanionIp.asStateFlow()
+
+    val _isPcStreamingActive = MutableStateFlow(false)
+    val isPcStreamingActive = _isPcStreamingActive.asStateFlow()
+
+    fun setPcPacketsSent(count: Int) {
+        _pcPacketsSent.value = count
+    }
+
+    fun setDesktopSyncDirection(direction: String) {
+        _desktopSyncDirection.value = direction
+    }
+
+    fun setPcCompanionIp(ip: String) {
+        _pcCompanionIp.value = ip
+    }
+
+    fun setPcStreamingActive(active: Boolean) {
+        _isPcStreamingActive.value = active
+    }
+
     val _totalIdleTime = MutableStateFlow(0L)
     val totalIdleTime = _totalIdleTime.asStateFlow()
 
@@ -127,6 +177,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val _totalFlashlightTime = MutableStateFlow(0L)
     val totalFlashlightTime = _totalFlashlightTime.asStateFlow()
+
+    val _todayUsageMs = MutableStateFlow(0L)
+    val todayUsageMs = _todayUsageMs.asStateFlow()
+
+    val _weeklyUsageMs = MutableStateFlow(0L)
+    val weeklyUsageMs = _weeklyUsageMs.asStateFlow()
 
     val _userNickname = MutableStateFlow("Anonymous")
     val userNickname = _userNickname.asStateFlow()
@@ -209,6 +265,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isShowingProfileSetup = _isShowingProfileSetup.asStateFlow()
     fun showProfileSetup() { _isShowingProfileSetup.value = true }
     fun hideProfileSetup() { _isShowingProfileSetup.value = false }
+
+    private val _isShowingProfile = MutableStateFlow(false)
+    val isShowingProfile = _isShowingProfile.asStateFlow()
+    fun showProfile() { _isShowingProfile.value = true }
+    fun hideProfile() { _isShowingProfile.value = false }
+
+    private val _isShowingStats = MutableStateFlow(false)
+    val isShowingStats = _isShowingStats.asStateFlow()
+    fun showStats() { _isShowingStats.value = true }
+    fun hideStats() { _isShowingStats.value = false }
+
+    fun updateDisplayName(name: String) {
+        val current = _userProfile.value
+        val updated = current?.copy(displayName = name) ?: UserProfile(
+            userId = userId.value ?: "anon",
+            displayName = name,
+            createdAt = System.currentTimeMillis()
+        )
+        _userProfile.value = updated
+        _userNickname.value = name
+        viewModelScope.launch(Dispatchers.IO) {
+            userRepository.saveUserProfile(updated)
+        }
+    }
+
+    fun updateProfile(name: String) = updateDisplayName(name)
+
+    private val _isHamburgerMenuOpen = MutableStateFlow(false)
+    val isHamburgerMenuOpen = _isHamburgerMenuOpen.asStateFlow()
+    fun setHamburgerMenuOpen(open: Boolean) { _isHamburgerMenuOpen.value = open }
+    fun toggleHamburgerMenu() { _isHamburgerMenuOpen.value = !_isHamburgerMenuOpen.value }
+
+    private val _isFabMenuExpanded = MutableStateFlow(false)
+    val isFabMenuExpanded = _isFabMenuExpanded.asStateFlow()
+    fun setFabMenuExpanded(expanded: Boolean) { _isFabMenuExpanded.value = expanded }
+    fun toggleFabMenu() { _isFabMenuExpanded.value = !_isFabMenuExpanded.value }
 
 
     private val _flashlightMultiIntensityForced = MutableStateFlow(false)
@@ -637,10 +729,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showLeaderboard() { _isShowingLeaderboard.value = true }
     fun hideLeaderboard() { _isShowingLeaderboard.value = false }
 
-    private val _isShowingStats = MutableStateFlow(false)
-    val isShowingStats = _isShowingStats.asStateFlow()
-    fun showStats() { _isShowingStats.value = true }
-    fun hideStats() { _isShowingStats.value = false }
 
     fun deleteCustomPreset(key: String) {
         viewModelScope.launch {
@@ -1224,7 +1312,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _favoritePresets.value = prefs.getStringSet("favorite_presets", emptySet()) ?: emptySet()
         
         val savedSource = prefs.getString("capture_source", AudioCaptureService.CaptureSource.INTERNAL.name)
-        _captureSource.value = AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
+        _captureSource.value = try {
+            AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
+        } catch (e: Exception) {
+            AudioCaptureService.CaptureSource.INTERNAL
+        }
 
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _bananaModeEnabled.value = prefs.getBoolean("banana_mode_enabled", false)
@@ -1330,6 +1422,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _totalHapticTime.value = (baseHaptic + s.sessionHapticMs).coerceAtLeast(0L)
                     _totalFlashlightTime.value = (baseFlashlight + s.sessionFlashlightMs).coerceAtLeast(0L)
 
+                    // Compute Today & Weekly usage with live session
+                    val sdf = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                    val cal = java.util.Calendar.getInstance()
+                    val todayKey = "usage_day_" + sdf.format(cal.time)
+                    val todayStored = prefs.getLong(todayKey, 0L)
+                    _todayUsageMs.value = todayStored + s.sessionTimeMs
+
+                    var weekSum = s.sessionTimeMs
+                    for (d in 0 until 7) {
+                        val k = "usage_day_" + sdf.format(cal.time)
+                        weekSum += prefs.getLong(k, 0L)
+                        cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+                    }
+                    _weeklyUsageMs.value = weekSum
+
                     // Update leaderboard periodically if running
                     if (SystemClock.elapsedRealtime() % 60000 < 600) {
                         updateLeaderboard()
@@ -1345,6 +1452,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _totalGlyphTime.value = prefs.getLong("total_glyph_time", 0L)
                     _totalHapticTime.value = prefs.getLong("total_haptic_time", 0L)
                     _totalFlashlightTime.value = prefs.getLong("total_flashlight_time", 0L)
+
+                    val sdf = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+                    val cal = java.util.Calendar.getInstance()
+                    val todayKey = "usage_day_" + sdf.format(cal.time)
+                    _todayUsageMs.value = prefs.getLong(todayKey, 0L)
+
+                    var weekSum = 0L
+                    for (d in 0 until 7) {
+                        val k = "usage_day_" + sdf.format(cal.time)
+                        weekSum += prefs.getLong(k, 0L)
+                        cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
+                    }
+                    _weeklyUsageMs.value = weekSum
                 }
             }
         }

@@ -435,13 +435,16 @@ fun GlyphixTheme(
         val uiAmplitude by MainViewModel.instance!!.uiAmplitude.collectAsStateWithLifecycle()
         val isMonsterTheme = themeName.startsWith("Monster")
 
+        val activeFontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily
+
         CompositionLocalProvider(
             LocalAppSpacing provides appSpacing,
             LocalM3EEnabled provides m3eEnabled,
             LocalBananaMode provides bananaMode,
             LocalPenisMode provides penisMode,
             LocalUIAmplitude provides uiAmplitude,
-            LocalIsGlassTheme provides (themeName == "Glass")
+            LocalIsGlassTheme provides (themeName == "Glass"),
+            LocalAppFontFamily provides activeFontFamily
         ) {
             Box(
                 modifier = Modifier
@@ -574,3 +577,4 @@ val LocalBananaMode = compositionLocalOf { false }
 val LocalPenisMode = compositionLocalOf { false }
 val LocalUIAmplitude = compositionLocalOf { 1.0f }
 val LocalIsGlassTheme = compositionLocalOf { false }
+val LocalAppFontFamily = compositionLocalOf { NDot55FontFamily }

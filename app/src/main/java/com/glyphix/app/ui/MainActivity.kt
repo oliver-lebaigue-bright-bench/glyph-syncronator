@@ -63,8 +63,10 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import kotlin.math.pow
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.core.net.toUri
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MainViewModel by viewModels()
@@ -105,6 +107,15 @@ class MainActivity : ComponentActivity() {
             service = localBinder.service
             serviceStatic = service
             bound = true
+
+            // Restore PC Stream settings
+            service?.let { s ->
+                viewModel.setPcStreamingActive(s.pcStreamEnabled)
+                val savedIp = s.pcStreamTargetIp
+                if (!savedIp.isNullOrEmpty()) {
+                    viewModel.setPcCompanionIp(savedIp)
+                }
+            }
 
             applyServiceSettings()
 
@@ -216,6 +227,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        intent?.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+
         setContent {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
@@ -233,6 +250,18 @@ class MainActivity : ComponentActivity() {
                             s.currentLightState?.let {
                                 viewModel.setVisualizerState(it)
                             }
+
+                            // Collect network diagnostic if applicable
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
+                            }
+
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
+                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
+                            }
+
+                            viewModel.setPcPacketsSent(AudioCaptureService.sPcPacketsSent.value)
                             
                             // Collect network diagnostic if applicable
                             if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
@@ -296,11 +325,16 @@ class MainActivity : ComponentActivity() {
                         onOverlayPermissionRequest = {
                             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
                             overlayPermissionLauncher.launch(intent)
-                        }
+                        },
+                        onSwitchCaptureSource = { switchCaptureSource(it) }
                     )
 
                     // Overlays
-                    MainOverlays(viewModel = viewModel, selectedDevice = viewModel.selectedDevice.collectAsState().value)
+                    MainOverlays(
+                        viewModel = viewModel,
+                        selectedDevice = viewModel.selectedDevice.collectAsState().value,
+                        onGoogleSignIn = { launchGoogleSignIn() }
+                    )
                     CommunityOverlays(viewModel = viewModel)
                 }
             }
@@ -329,6 +363,7 @@ class MainActivity : ComponentActivity() {
             startForegroundService(intent)
 
             val source = viewModel.captureSource.value
+            s.setCaptureSource(source)
             when (source) {
                 AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
                 AudioCaptureService.CaptureSource.MIC -> {
@@ -339,9 +374,30 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.SPOTIFY -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
+        }
+    }
+
+    private fun switchCaptureSource(source: AudioCaptureService.CaptureSource) {
+        viewModel.setCaptureSource(source)
+        val s = service
+        if (s != null && s.isVisualizerRunning) {
+            when (source) {
+                AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
+                AudioCaptureService.CaptureSource.MIC -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        s.setCaptureSource(source)
+                    } else {
+                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+                else -> s.setCaptureSource(source)
+            }
+        } else {
+            toggleVisualizer()
         }
     }
 
@@ -411,6 +467,11 @@ class MainActivity : ComponentActivity() {
             it.setEdgeCornerRadius(viewModel.edgeCornerRadius.value)
             it.setEdgeTopEnabled(viewModel.edgeTopEnabled.value)
             it.setEdgeBottomEnabled(viewModel.edgeBottomEnabled.value)
+
+            it.setPcStreamEnabled(viewModel.isPcStreamingActive.value)
+            if (viewModel.pcCompanionIp.value.isNotEmpty()) {
+                it.setPcStreamTargetIp(viewModel.pcCompanionIp.value)
+            }
         }
     }
 
@@ -466,6 +527,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+    }
 }
 
 fun AudioDeviceInfo.isBluetoothOutput(): Boolean {
@@ -496,7 +567,8 @@ internal fun GlyphixApp(
     viewModel: MainViewModel,
     onToggleVisualizer: () -> Unit,
     onGoogleSignIn: () -> Unit,
-    onOverlayPermissionRequest: () -> Unit
+    onOverlayPermissionRequest: () -> Unit,
+    onSwitchCaptureSource: (AudioCaptureService.CaptureSource) -> Unit = {}
 ) {
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val isRunning by viewModel.runningState.collectAsStateWithLifecycle()
@@ -567,28 +639,75 @@ internal fun GlyphixApp(
     val penisMode = LocalPenisMode.current
     val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
     val isMonster = selectedTheme.startsWith("Monster")
+    val isFabMenuExpanded by viewModel.isFabMenuExpanded.collectAsStateWithLifecycle()
+    val isHamburgerMenuOpen by viewModel.isHamburgerMenuOpen.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
+    val developerModeEnabled by viewModel.developerModeEnabled.collectAsStateWithLifecycle()
 
-    Scaffold(
-        bottomBar = {
-            NativeBottomBar(
-                selectedTab = selectedTab,
-                visibleTabs = visibleTabs,
-                onTabSelected = { viewModel.selectTab(it) }
+    val screenTitle = when (selectedTab) {
+        Tab.Audio -> "Glyphix"
+        Tab.Spotify -> "Spotify"
+        Tab.Glyphs -> "Glyphs"
+        Tab.Visuals -> "Visuals"
+        Tab.Haptics -> "Haptics"
+        Tab.Flashlight -> "Torch"
+        Tab.Settings -> "Settings"
+    }
+
+    val pagePadding = PaddingValues(bottom = 100.dp, top = 6.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+        // Top Bar Container: Top Bar + seamlessly attached Hamburger Dropdown Menu
+        Box(modifier = Modifier.fillMaxWidth()) {
+            val context = LocalContext.current
+            FloatingTopBar(
+                title = screenTitle,
+                onMenuClick = { viewModel.toggleHamburgerMenu() },
+                onProfileClick = { viewModel.showProfile() },
+                avatarUrl = userProfile?.profilePictureUrl,
+                isProfileActive = false,
+                onTitleLongClick = if (selectedTab == Tab.Settings) {
+                    {
+                        val newState = !developerModeEnabled
+                        viewModel.setDeveloperModeEnabled(newState)
+                        Toast.makeText(
+                            context,
+                            if (newState) "Developer mode enabled" else "Developer mode disabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                } else null
             )
-        },
-        floatingActionButton = {
-            StartStopButton(running = isRunning, onClick = onToggleVisualizer)
-        },
-        containerColor = if (isGlass || bananaMode || penisMode || isMonster) Color.Transparent else MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        modifier = Modifier.fillMaxSize()
-    ) { padding ->
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize(),
-            beyondViewportPageCount = visibleTabs.size,
-            userScrollEnabled = true
-        ) { page ->
+
+            // Quick Configuration Dropdown Menu (Assets/Hamburger Menu.png)
+            HamburgerDropdownMenu(
+                isOpen = isHamburgerMenuOpen,
+                onDismiss = { viewModel.setHamburgerMenuOpen(false) },
+                onSelectGlyphs = { viewModel.selectTab(Tab.Glyphs) },
+                onSelectSpotify = { viewModel.selectTab(Tab.Spotify) },
+                onSelectHaptics = { viewModel.selectTab(Tab.Haptics) },
+                onSelectOverlays = { viewModel.selectTab(Tab.Visuals) },
+                onSelectTorch = { viewModel.selectTab(Tab.Flashlight) }
+            )
+        }
+
+        // Main Page Box: HorizontalPager fills full area; FloatingBottomBar OVERLAPS at bottom
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = visibleTabs.size,
+                userScrollEnabled = true
+            ) { page ->
             if (page >= visibleTabs.size) return@HorizontalPager
             val tab = visibleTabs[page]
             Box(
@@ -599,15 +718,16 @@ internal fun GlyphixApp(
                         val absOffset = pageOffset.coerceIn(-1f, 1f).let { kotlin.math.abs(it) }
                         val fraction = 1f - absOffset
 
-                        val scale = 0.85f + (1f - 0.85f) * fraction
+                        val scale = 0.82f + (1f - 0.82f) * fraction
                         scaleX = scale
                         scaleY = scale
-                        alpha = fraction
+                        alpha = fraction.pow(1.5f) // Softer fade
 
-                        val maxRotation = 8f
+                        val maxRotation = 10f
                         val rotationAmount = maxRotation * (1f - fraction)
-
                         rotationZ = if (pageOffset > 0) -rotationAmount else rotationAmount
+                        
+                        translationY = 50f * (1f - fraction)
                     }
             ) {
                 when (tab) {
@@ -615,15 +735,20 @@ internal fun GlyphixApp(
                         val latencyMs by viewModel.latencyMs.collectAsStateWithLifecycle()
                         val latencyPresets by viewModel.latencyPresets.collectAsStateWithLifecycle()
                         val autoDeviceEnabled by viewModel.autoDeviceMemorize.collectAsStateWithLifecycle()
-                        val fftData by viewModel.fftState.collectAsStateWithLifecycle()
                         val captureSource by viewModel.captureSource.collectAsStateWithLifecycle()
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
+                        val spotifyPlaybackState by viewModel.spotifyRepository.playbackState.collectAsStateWithLifecycle()
                         val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
                         val bluetoothDeviceName by viewModel.bluetoothDeviceName.collectAsStateWithLifecycle()
                         val bluetoothDeviceAddress by viewModel.bluetoothDeviceAddress.collectAsStateWithLifecycle()
+                        val pcPacketsSent by viewModel.pcPacketsSent.collectAsStateWithLifecycle()
+                        val desktopSyncDirection by viewModel.desktopSyncDirection.collectAsStateWithLifecycle()
+                        val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
+                        val isPcStreamingActive by viewModel.isPcStreamingActive.collectAsStateWithLifecycle()
 
+                        val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
                             isRunning = isRunning,
                             sessionDuration = totalVisualizedTime,
@@ -635,18 +760,71 @@ internal fun GlyphixApp(
                             onAutoDeviceToggle = { viewModel.setAutoDeviceMemorize(it) },
                             connectedDeviceName = MainActivity.serviceStatic?.getActiveAudioRouteName()
                                 ?: "Unknown",
-                            fftData = fftData,
+                            fftData = { fftDataState.value },
                             captureSource = captureSource,
-                            onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
+                            onCaptureSourceChanged = { onSwitchCaptureSource(it) },
                             networkPacketsReceived = networkPacketsReceived,
                             bluetoothDeviceName = bluetoothDeviceName,
                             bluetoothDeviceAddress = bluetoothDeviceAddress,
+                            pcPacketsSent = pcPacketsSent,
+                            desktopSyncDirection = desktopSyncDirection,
+                            pcCompanionIp = pcCompanionIp,
+                            isPcStreamingActive = isPcStreamingActive,
+                            onTogglePcStream = { enabled ->
+                                viewModel.setPcStreamingActive(enabled)
+                                MainActivity.serviceStatic?.setPcStreamEnabled(enabled)
+                                if (enabled && !isRunning) {
+                                    onToggleVisualizer()
+                                }
+                            },
+                            onPcIpChanged = { ip ->
+                                viewModel.setPcCompanionIp(ip)
+                                MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                            },
+                            onDiscoverPc = {
+                                MainActivity.serviceStatic?.discoverPcCompanion { ip ->
+                                    viewModel.setPcCompanionIp(ip)
+                                    MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                                    Toast.makeText(context, "Found PC Companion at $ip", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onSyncDirectionChanged = { direction ->
+                                viewModel.setDesktopSyncDirection(direction)
+                                if (direction == "PC_TO_PHONE") {
+                                    onSwitchCaptureSource(AudioCaptureService.CaptureSource.NETWORK)
+                                } else {
+                                    if (captureSource == AudioCaptureService.CaptureSource.NETWORK || captureSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                        onSwitchCaptureSource(AudioCaptureService.CaptureSource.INTERNAL)
+                                    }
+                                }
+                            },
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
                             penisMode = penisMode,
-                            padding = padding
+                            spotifyPlaybackState = spotifyPlaybackState,
+                            onSpotifyTogglePlay = { viewModel.spotifyRepository.togglePlayPause() },
+                            onSpotifyNext = { viewModel.spotifyRepository.skipNext() },
+                            onSpotifyPrevious = { viewModel.spotifyRepository.skipPrevious() },
+                            onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
+                            onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
+                            onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
+                            onOpenSpotifyTab = { viewModel.selectTab(Tab.Spotify) },
+                            onToggleVisualizer = onToggleVisualizer,
+                            padding = pagePadding
+                        )
+                    }
+                    Tab.Spotify -> {
+                        SpotifyScreen(
+                            spotifyRepo = viewModel.spotifyRepository,
+                            authManager = viewModel.spotifyAuthManager,
+                            onStartVisualizer = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
+                                MainActivity.serviceStatic?.startCapture(0, null)
+                                viewModel.selectTab(Tab.Audio)
+                            },
+                            modifier = Modifier.padding(pagePadding)
                         )
                     }
                     Tab.Glyphs -> {
@@ -656,6 +834,7 @@ internal fun GlyphixApp(
                         val selectedPreset by viewModel.selectedPreset.collectAsStateWithLifecycle()
                         val selectedDevice by viewModel.selectedDevice.collectAsStateWithLifecycle()
 
+                        val vizStateState = viewModel.visualizerState.collectAsStateWithLifecycle()
                         GlyphsScreen(
                             gammaValue = gammaValue,
                             onGammaChanged = {
@@ -671,7 +850,8 @@ internal fun GlyphixApp(
                             isRunning = isRunning,
                             selectedDevice = selectedDevice,
                             viewModel = viewModel,
-                            padding = padding
+                            vizStateProvider = { vizStateState.value },
+                            padding = pagePadding
                         )
                     }
                     Tab.Visuals -> {
@@ -681,7 +861,7 @@ internal fun GlyphixApp(
                             overlayEnabled = overlayEnabled,
                             onOverlayEnabledChanged = { viewModel.setOverlayEnabled(it) },
                             onOverlayPermissionRequest = { onOverlayPermissionRequest() },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Haptics -> {
@@ -696,6 +876,7 @@ internal fun GlyphixApp(
                         val hapticBeatGamma by viewModel.hapticBeatGamma.collectAsStateWithLifecycle()
                         val isBeatDetected by viewModel.isBeatDetected.collectAsStateWithLifecycle()
 
+                        val hapticAmplitudeState = viewModel.hapticAmplitude.collectAsStateWithLifecycle()
                         HapticsScreen(
                             hapticMotorEnabled = hapticMotorEnabled,
                             onHapticMotorEnabledChanged = {
@@ -727,9 +908,9 @@ internal fun GlyphixApp(
                             },
                             hapticBeatGamma = hapticBeatGamma,
                             onHapticBeatGammaChanged = { viewModel.setHapticBeatGamma(it) },
-                            hapticAmplitudeProvider = { viewModel.hapticAmplitude.value },
+                            hapticAmplitudeProvider = { hapticAmplitudeState.value },
                             isBeatDetectedProvider = { isBeatDetected },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Flashlight -> {
@@ -744,6 +925,7 @@ internal fun GlyphixApp(
                         val flashlightLevel by viewModel.flashlightLevel.collectAsStateWithLifecycle()
                         val isFlashlightBeatDetected by viewModel.isFlashlightBeatDetected.collectAsStateWithLifecycle()
 
+                        val flashlightAmplitudeState = viewModel.flashlightAmplitude.collectAsStateWithLifecycle()
                         FlashlightScreen(
                             flashlightEnabled = flashlightEnabled,
                             onFlashlightEnabledChanged = { viewModel.setFlashlightEnabled(it) },
@@ -773,9 +955,9 @@ internal fun GlyphixApp(
                             },
                             flashlightIntensityLevels = flashlightIntensityLevels,
                             flashlightCurrentLevel = flashlightLevel,
-                            flashlightAmplitudeProvider = { viewModel.flashlightAmplitude.value },
+                            flashlightAmplitudeProvider = { flashlightAmplitudeState.value },
                             isBeatDetectedProvider = { isFlashlightBeatDetected },
-                            padding = padding
+                            padding = pagePadding
                         )
                     }
                     Tab.Settings -> {
@@ -803,11 +985,41 @@ internal fun GlyphixApp(
                                 )
                             },
                             onGoogleSignIn = onGoogleSignIn,
-                            padding = padding
+                            padding = pagePadding,
+                            onOpenProfile = { viewModel.showProfile() },
+                            onOpenMenu = { viewModel.toggleHamburgerMenu() }
                         )
                     }
                 }
             }
         }
+
+        // Floating Bottom Navigation Bar (Floats directly over pages with no reserved space)
+        FloatingBottomBar(
+            selectedTab = selectedTab,
+            onTabSelected = { viewModel.selectTab(it) },
+            isRunning = isRunning,
+            onToggleVisualizer = onToggleVisualizer,
+            isFabMenuExpanded = isFabMenuExpanded,
+            onToggleFabMenu = { viewModel.toggleFabMenu() },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        )
+
+        // Speed-Dial Capture Source Menu (Assets/FAB menu.png)
+        SpeedDialFabMenu(
+            isExpanded = isFabMenuExpanded,
+            currentSource = captureSource,
+            onSelectSource = { source ->
+                onSwitchCaptureSource(source)
+                viewModel.setFabMenuExpanded(false)
+            },
+            onDismiss = { viewModel.setFabMenuExpanded(false) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+        )
     }
+}
 }

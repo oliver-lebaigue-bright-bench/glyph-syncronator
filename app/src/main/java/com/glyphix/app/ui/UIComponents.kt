@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.FlashlightOn
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
@@ -39,21 +40,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import kotlin.math.*
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOutCubic
+import androidx.compose.animation.core.EaseOutQuart
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -93,6 +99,12 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -307,6 +319,15 @@ fun DashboardTile(
     val isGlass = LocalIsGlassTheme.current
     val bananaMode = LocalBananaMode.current
     val penisMode = LocalPenisMode.current
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "tileScale"
+    )
     
     val backgroundColor by animateColorAsState(
         if (active) {
@@ -330,8 +351,13 @@ fun DashboardTile(
             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             onClick()
         },
+        interactionSource = interactionSource,
         modifier = modifier
-            .height(140.dp),
+            .height(140.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
         shape = MaterialTheme.shapes.large,
         color = Color.Transparent
     ) {
@@ -406,8 +432,8 @@ fun DashboardTile(
 
 @Composable
 fun MorphingPolygon(
-    isBeatDetected: Boolean,
-    amplitude: Float,
+    isBeatDetectedProvider: () -> Boolean,
+    amplitudeProvider: () -> Float,
     color: Color,
     modifier: Modifier = Modifier
 ) {
@@ -435,44 +461,42 @@ fun MorphingPolygon(
     var targetPoly by remember { mutableStateOf(polygonBase) }
     val progress = remember { Animatable(1f) }
 
-    LaunchedEffect(isBeatDetected) {
-        if (isBeatDetected) {
-            sourcePoly = targetPoly
-            targetPoly = RoundedPolygon.star(
-                numVerticesPerRadius = (3..24).random(),
-                innerRadius = (25..85).random() / 100f,
-                rounding = CornerRounding((4..20).random() / 100f)
-            )
-            progress.snapTo(0f)
-            progress.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
+    LaunchedEffect(Unit) {
+        snapshotFlow { isBeatDetectedProvider() }.collect { isBeat ->
+            if (isBeat) {
+                sourcePoly = targetPoly
+                targetPoly = RoundedPolygon.star(
+                    numVerticesPerRadius = (3..24).random(),
+                    innerRadius = (25..85).random() / 100f,
+                    rounding = CornerRounding((4..20).random() / 100f)
                 )
-            )
+                progress.snapTo(0f)
+                progress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
+                )
+            }
         }
     }
-
-    // Smooth amplitude to avoid jitter, but kept responsive
-    val animatedAmplitude by animateFloatAsState(
-        targetValue = (amplitude * 2.5f).coerceAtMost(1.2f),
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "animatedAmplitude"
-    )
 
     val morph = remember(sourcePoly, targetPoly) {
         Morph(sourcePoly, targetPoly)
     }
 
     val path = remember { AndroidPath() }
-    val composePath = remember { AndroidPath().asComposePath() }
     val matrix = remember { Matrix() }
 
     Canvas(modifier = modifier) {
         val size = size.minDimension
-        // Base scale 0.15 + up to 0.85 from amplitude
-        val scale = size * (0.15f + (animatedAmplitude * 0.7f))
+        val amplitude = amplitudeProvider()
+        // Smooth amplitude is harder to do inside Canvas without state, 
+        // but we can just use the raw provider value if we want to avoid recomposition.
+        // Or we could use a custom Animatable driven by snapshotFlow.
+        // For now, let's just use the provider directly for maximum perf.
+        val scale = size * (0.15f + (amplitude.coerceIn(0f, 1f) * 0.7f))
         
         path.reset()
         matrix.reset()
@@ -480,8 +504,6 @@ fun MorphingPolygon(
         matrix.translate(size / (2 * scale), size / (2 * scale))
         
         morph.toPath(progress.value, path)
-        // Note: asComposePath() usually wraps the same underlying object, 
-        // but we need to ensure the transformation is applied correctly.
         val currentComposePath = path.asComposePath()
         currentComposePath.transform(matrix)
 
@@ -656,7 +678,7 @@ fun FlowRowScope.OptionTile(
     val targetWeight = if (isWeightExpanded && enabled) 1.2f else 1f
     val uiAmp = LocalUIAmplitude.current
     val animatedWeight by animateFloatAsState(
-        targetValue = targetWeight * uiAmp,
+        targetValue = targetWeight,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -668,6 +690,10 @@ fun FlowRowScope.OptionTile(
         modifier = modifier
             .weight(animatedWeight)
             .height(64.dp)
+            .graphicsLayer {
+                scaleX = uiAmp
+                scaleY = uiAmp
+            }
             .clip(RoundedCornerShape(animatedRadius))
             .combinedClickable(
                 onClick = if (enabled) onClick else ({}),
@@ -1216,19 +1242,52 @@ fun StartStopButton(
         label = "buttonScale"
     )
 
-    val buttonHeight = (60 + (uiAmp - 1) * 50).dp
-    val buttonWidthMin = (130 + (uiAmp - 1) * 50).dp
-    val cornerRadius = (18 + (uiAmp - 1) * 50).dp
+    val buttonHeight = 60.dp
+    val buttonWidthMin = 130.dp
+    val cornerRadius = 18.dp
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
 
     Box(
         modifier = modifier
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                scaleX = scale * uiAmp
+                scaleY = scale * uiAmp
             }
             .padding(8.dp),
         contentAlignment = Alignment.Center
     ) {
+        if (running && !isGlass) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        scaleX = pulseScale
+                        scaleY = pulseScale
+                        alpha = pulseAlpha
+                    }
+                    .background(MaterialTheme.colorScheme.error, RoundedCornerShape(cornerRadius))
+            )
+        }
+
         Surface(
             onClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
@@ -1382,13 +1441,13 @@ fun NativeBottomBar(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        val iconScale = scale + (if (isSelected) (uiAmp - 1f) * 0.45f else 0f)
                         val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.65f)
                         
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .graphicsLayer {
+                                    val iconScale = scale + (if (isSelected) (uiAmp - 1f) * 0.45f else 0f)
                                     scaleX = iconScale
                                     scaleY = iconScale
                                 },
@@ -1425,6 +1484,7 @@ fun NativeBottomBar(
                                 when (tab) {
                                     Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier, tint = contentColor)
                                     Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier, tint = contentColor)
+                                    Tab.Spotify -> Icon(Icons.Default.MusicNote, null, iconModifier, tint = contentColor)
                                     Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier, tint = contentColor)
                                     Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier, tint = contentColor)
                                     Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier, tint = contentColor)
@@ -1493,6 +1553,7 @@ fun NativeBottomBar(
                             when (tab) {
                                 Tab.Audio -> Icon(FontAwesomeIcons.Solid.Music, null, iconModifier)
                                 Tab.Glyphs -> Icon(painterResource(R.drawable.ic_nav_glyphs), null, iconModifier)
+                                Tab.Spotify -> Icon(Icons.Default.MusicNote, null, iconModifier)
                                 Tab.Visuals -> Icon(FontAwesomeIcons.Solid.LayerGroup, null, iconModifier)
                                 Tab.Haptics -> Icon(FontAwesomeIcons.Solid.MobileAlt, null, iconModifier)
                                 Tab.Flashlight -> Icon(FontAwesomeIcons.Solid.Bolt, null, iconModifier)
@@ -1591,11 +1652,7 @@ fun <T> ExpressiveSplitButton(
                         label = "ExpressiveWeightAnimationBase"
                     )
                     
-                    val animatedWeight = if (isSelected) {
-                        baseWeight * uiAmp
-                    } else {
-                        baseWeight
-                    }
+                    val animatedWeight = baseWeight
 
                     // Color transitions
                     val targetContainerColor = if (isSelected) {
@@ -1654,6 +1711,12 @@ fun <T> ExpressiveSplitButton(
                         shape = dynamicButtonShape,
                         modifier = Modifier
                             .weight(animatedWeight)
+                            .graphicsLayer {
+                                if (isSelected) {
+                                    scaleX = uiAmp
+                                    scaleY = uiAmp
+                                }
+                            }
                             .pointerInput(item, isSelected) {
                                 detectTapGestures(
                                     onPress = {
@@ -1839,28 +1902,33 @@ fun ExpressiveSlider(
             val shaftColor = if (penisMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
             // TRACK: Gets THICKER
             // Radius: We want it to look like a pill when thin, but less rounded when thick
-            val trackHeight = 16.dp * animationFactor * uiAmp
+            val trackHeight = 16.dp
 
             Box(contentAlignment = Alignment.CenterStart) {
                 if (penisMode) {
-                    val ballSize = trackHeight * 1.6f
-                    // Two balls stacked vertically at the start of the track
+                    val baseBallSize = trackHeight * 1.6f
                     Box(
                         modifier = Modifier
-                            .offset(x = -ballSize * 0.8f)
-                            .height(ballSize * 1.8f),
+                            .graphicsLayer {
+                                val s = animationFactor * uiAmp
+                                scaleX = s
+                                scaleY = s
+                                translationX = -baseBallSize.toPx() * 0.8f * s
+                            }
+                            .height(baseBallSize * 1.8f)
+                            .width(baseBallSize),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
                             modifier = Modifier
-                                .offset(y = -ballSize * 0.35f)
-                                .size(ballSize)
+                                .offset(y = -(baseBallSize * 0.35f))
+                                .size(baseBallSize)
                                 .background(shaftColor, CircleShape)
                         )
                         Box(
                             modifier = Modifier
-                                .offset(y = ballSize * 0.35f)
-                                .size(ballSize)
+                                .offset(y = baseBallSize * 0.35f)
+                                .size(baseBallSize)
                                 .background(shaftColor, CircleShape)
                         )
                     }
@@ -1869,7 +1937,10 @@ fun ExpressiveSlider(
                 SliderDefaults.Track(
                     sliderState = sliderState,
                     modifier = Modifier
-                        .height(trackHeight),
+                        .height(trackHeight)
+                        .graphicsLayer {
+                            scaleY = animationFactor * uiAmp
+                        },
                     thumbTrackGapSize = 4.dp,
                     trackInsideCornerSize = 2.dp,
                     colors = SliderDefaults.colors(
@@ -1967,34 +2038,43 @@ fun ExpressiveRangeSlider(
         track = { rangeSliderState ->
             val penisMode = LocalPenisMode.current
             val shaftColor = if (penisMode) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
-            val trackHeight = 12.dp * animationFactor * uiAmp
+            val trackHeight = 12.dp
             Box(contentAlignment = Alignment.CenterStart) {
                 if (penisMode) {
-                    val ballSize = trackHeight * 1.6f
-                    // Two balls stacked vertically at the start of the track
+                    val baseBallSize = trackHeight * 1.6f
                     Box(
                         modifier = Modifier
-                            .offset(x = -ballSize * 0.8f)
-                            .height(ballSize * 1.8f),
+                            .graphicsLayer {
+                                val s = animationFactor * uiAmp
+                                scaleX = s
+                                scaleY = s
+                                translationX = -baseBallSize.toPx() * 0.8f * s
+                            }
+                            .height(baseBallSize * 1.8f)
+                            .width(baseBallSize),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
                             modifier = Modifier
-                                .offset(y = -ballSize * 0.35f)
-                                .size(ballSize)
+                                .offset(y = -(baseBallSize * 0.35f))
+                                .size(baseBallSize)
                                 .background(shaftColor, CircleShape)
                         )
                         Box(
                             modifier = Modifier
-                                .offset(y = ballSize * 0.35f)
-                                .size(ballSize)
+                                .offset(y = baseBallSize * 0.35f)
+                                .size(baseBallSize)
                                 .background(shaftColor, CircleShape)
                         )
                     }
                 }
                 SliderDefaults.Track(
                     rangeSliderState = rangeSliderState,
-                    modifier = Modifier.height(trackHeight),
+                    modifier = Modifier
+                        .height(trackHeight)
+                        .graphicsLayer {
+                            scaleY = animationFactor * uiAmp
+                        },
                     thumbTrackGapSize = 4.dp,
                     drawStopIndicator = null,
                     colors = SliderDefaults.colors(
@@ -2228,4 +2308,54 @@ private fun AnimatedToggleCardLayout(
 
 private fun lerpInt(start: Int, end: Int, progress: Float): Int {
     return (start + (end - start) * progress).roundToInt()
+}
+
+@Composable
+fun StaggeredEntranceColumn(
+    modifier: Modifier = Modifier,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    content: @Composable StaggeredEntranceScope.() -> Unit
+) {
+    val scope = remember { StaggeredEntranceScope() }
+    scope.reset()
+    Column(
+        modifier = modifier,
+        verticalArrangement = verticalArrangement,
+        horizontalAlignment = horizontalAlignment
+    ) {
+        scope.content()
+    }
+}
+
+class StaggeredEntranceScope {
+    private var index = 0
+    fun reset() { index = 0 }
+
+    @Composable
+    fun AnimatedItem(
+        modifier: Modifier = Modifier,
+        content: @Composable () -> Unit
+    ) {
+        val currentIndex = index++
+        val animProgress = remember { Animatable(0f) }
+        
+        LaunchedEffect(Unit) {
+            delay(currentIndex * 60L)
+            animProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(600, easing = EaseOutQuart)
+            )
+        }
+
+        Box(
+            modifier = modifier
+                .graphicsLayer {
+                    alpha = animProgress.value
+                    translationY = (1f - animProgress.value) * 40f
+                }
+        ) {
+            content()
+        }
+    }
 }

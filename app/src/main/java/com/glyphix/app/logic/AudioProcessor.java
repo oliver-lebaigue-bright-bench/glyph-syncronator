@@ -123,20 +123,15 @@ public class AudioProcessor {
             return null;
         }
 
-        // Fill ring buffer with DC removal and HPF
-        for (int i = 0; i < length; i++) {
-            float input = hopBuffer[i] / 32768f;
-            // Simple 1st-order high-pass
-            mHpfState = HPF_ALPHA * (mHpfState + input - input); // This is just a placeholder for the logic
-            // Wait, standard HPF: y[n] = alpha * (y[n-1] + x[n] - x[n-1])
-            // Let's use a simpler one: y[n] = x[n] - lowpass_x[n]
-            // mHpfState = alpha * mHpfState + (1 - alpha) * input
-            // filtered = input - mHpfState
-            mHpfState = HPF_ALPHA * mHpfState + (1f - HPF_ALPHA) * input;
-            ring[ringPosition] = input - mHpfState;
-            ringPosition = (ringPosition + 1) % analysisWindow;
+        // Fill ring buffer
+        int count = Math.min(length, hopBuffer.length);
+        for (int i = 0; i < count; i++) {
+            if (ringPosition >= 0 && ringPosition < ring.length) {
+                ring[ringPosition] = hopBuffer[i] / 32768f;
+                ringPosition = (ringPosition + 1) % analysisWindow;
+            }
         }
-        filled = Math.min(filled + length, analysisWindow);
+        filled = Math.min(filled + count, analysisWindow);
 
         if (filled < analysisWindow) {
             return null; // Not enough data yet
