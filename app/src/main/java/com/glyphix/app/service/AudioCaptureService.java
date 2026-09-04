@@ -679,9 +679,11 @@ public class AudioCaptureService extends Service {
     @Override
     public void onDestroy() {
         sInstance = null; stopCapture(); clearGlyphSession();
+        stopDiscoveryResponder();
         if (mGM != null) mGM.unInit(); if (mGMM != null) mGMM.unInit();
         if (mAudioManager != null) mAudioManager.unregisterAudioDeviceCallback(mAudioDeviceCallback);
         if (mWorkerThread != null) mWorkerThread.quitSafely();
+        if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
         super.onDestroy();
     }
 
@@ -696,7 +698,11 @@ public class AudioCaptureService extends Service {
     public void stopVisualizer() { stopCapture(); }
 
     public void setCaptureSource(CaptureSource source) {
-        if (mCaptureSource != source) { mCaptureSource = source; if (sIsRunning) restartCapture(); requestWidgetRefresh(); }
+        if (mCaptureSource != source) { 
+            mCaptureSource = source; 
+            if (sIsRunning) restartCapture(); 
+            requestWidgetRefresh(); 
+        }
     }
 
     private void restartCapture() {
@@ -1136,7 +1142,13 @@ public class AudioCaptureService extends Service {
                     
                     if (localRecord != null) {
                         if (localRecord.getState() == AudioRecord.STATE_INITIALIZED) {
-                            synchronized (mCaptureLock) { if (!mCapturing) { localRecord.release(); return; } mAudioRecord = localRecord; }
+                            synchronized (mCaptureLock) { 
+                                if (!mCapturing) { 
+                                    localRecord.release(); 
+                                    return; 
+                                } 
+                                mAudioRecord = localRecord; 
+                            }
                             localRecord.startRecording();
                             if (localRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
                                 Log.d(TAG, "AudioRecord started recording successfully");
@@ -1150,8 +1162,19 @@ public class AudioCaptureService extends Service {
                     } else {
                         Log.e(TAG, "Failed to create AudioRecord instance");
                     }
-                } catch (Exception e) { Log.e(TAG, "Capture failed", e); stopSelf(); }
-                finally { synchronized (mCaptureLock) { releaseAudioRecord(); } }
+                } catch (Exception e) { 
+                    Log.e(TAG, "Capture failed", e); 
+                } finally { 
+                    if (localRecord != null) {
+                        try { localRecord.stop(); } catch (Exception ignored) {}
+                        try { localRecord.release(); } catch (Exception ignored) {}
+                        synchronized (mCaptureLock) {
+                            if (mAudioRecord == localRecord) {
+                                mAudioRecord = null;
+                            }
+                        }
+                    }
+                }
             });
         }
         refreshNotification();
@@ -1168,13 +1191,11 @@ public class AudioCaptureService extends Service {
 
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
         stopBleAdvertisement();
-        stopDiscoveryResponder();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
     private void releaseAudioRecord() {
         if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; }
         if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
-        if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
         releaseBluetoothSockets();
     }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
@@ -1435,12 +1456,17 @@ public class AudioCaptureService extends Service {
     }
 
     private void setupNetworkCapture() {
-        if (mNetworkSocket != null) { mNetworkSocket.close(); mNetworkSocket = null; }
+        if (mNetworkSocket != null) { 
+            try { mNetworkSocket.close(); } catch (Exception ignored) {}
+            mNetworkSocket = null; 
+        }
         sNetworkPacketsReceived.setValue(0);
         showToast("Network Thread Started");
         Log.i(TAG, "Starting Network Capture. Local IP displayed: " + getLocalIpAddress());
         try {
-            mNetworkSocket = new java.net.DatagramSocket(UDP_PORT);
+            mNetworkSocket = new java.net.DatagramSocket(null);
+            mNetworkSocket.setReuseAddress(true);
+            mNetworkSocket.bind(new java.net.InetSocketAddress(UDP_PORT));
             mNetworkSocket.setReceiveBufferSize(256 * 1024);
             mNetworkSocket.setSoTimeout(500); // 500ms timeout for responsiveness
             Log.i(TAG, "Network socket opened on port " + UDP_PORT);
@@ -1456,7 +1482,7 @@ public class AudioCaptureService extends Service {
             
             startDiscoveryResponder();
 
-            while (mCapturing && mNetworkSocket != null) {
+            while (mCapturing && mNetworkSocket != null && !mNetworkSocket.isClosed()) {
                 try {
                     java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
                     
@@ -1515,6 +1541,11 @@ public class AudioCaptureService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Failed to setup network capture", e);
             showToast("Failed to open network port: " + e.getMessage());
+        } finally {
+            if (mNetworkSocket != null) {
+                try { mNetworkSocket.close(); } catch (Exception ignored) {}
+                mNetworkSocket = null;
+            }
         }
     }
 
@@ -1820,7 +1851,11 @@ public class AudioCaptureService extends Service {
     }
 
     public void setPcStreamTargetIp(String ip) {
-        mPcStreamTargetIp = (ip != null) ? ip.trim() : "";
+        String cleanIp = (ip != null) ? ip.trim() : "";
+        if (cleanIp.contains(":") && !cleanIp.contains("::")) {
+            cleanIp = cleanIp.substring(0, cleanIp.indexOf(":"));
+        }
+        mPcStreamTargetIp = cleanIp;
         getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putString("pc_stream_target_ip", mPcStreamTargetIp).apply();
         if (mWorkerHandler != null) {
             mWorkerHandler.post(() -> {
