@@ -1740,18 +1740,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setNetworkPacketsReceived(count: Int) {
-        _networkPacketsReceived.value = count
-    }
-
-    fun setBluetoothDeviceName(name: String) {
-        _bluetoothDeviceName.value = name
-    }
-
-    fun setBluetoothDeviceAddress(addr: String) {
-        _bluetoothDeviceAddress.value = addr
-    }
-
     val _selectedPreset = MutableStateFlow("Default")
     val selectedPreset = _selectedPreset.asStateFlow()
 

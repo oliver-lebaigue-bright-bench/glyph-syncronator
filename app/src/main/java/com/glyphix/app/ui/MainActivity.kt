@@ -263,16 +263,6 @@ class MainActivity : ComponentActivity() {
 
                             viewModel.setPcPacketsSent(AudioCaptureService.sPcPacketsSent.value)
                             
-                            // Collect network diagnostic if applicable
-                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
-                                viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
-                            }
-                            
-                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
-                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
-                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
-                            }
-
                             // Use the magnitudes already computed by the service instead of re-calculating
                             val latestMags = s.latestMagnitudes
                             if (latestMags != null && latestMags.size == 512) {

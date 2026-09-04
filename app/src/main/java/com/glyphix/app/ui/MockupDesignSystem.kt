@@ -243,12 +243,8 @@ fun FloatingBottomBar(
     val accentColor = mockupAccentColor()
     val contentColor = mockupTextColor()
 
-    val navItems = listOf(
-        TabItem(Tab.Audio, Icons.Default.MusicNote, "Audio"),
-        TabItem(Tab.Glyphs, Icons.AutoMirrored.Filled.TrendingUp, "Glyphs"),
-        TabItem(Tab.Visuals, Icons.Default.Info, "Visuals"),
-        TabItem(Tab.Settings, Icons.Default.Settings, "Settings")
-    )
+    val navItems = remember(selectedTab) { getNavItemsForTab(selectedTab) }
+    val itemCount = navItems.size
 
     val navBgColor = if (isGlass) {
         Color.White.copy(alpha = 0.15f)
@@ -263,15 +259,15 @@ fun FloatingBottomBar(
     }
 
     // Animation orchestration for the "Collapse -> Bounce -> Expand" sequence
-    val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.toFloat()) }
+    val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0).toFloat()) }
     val animExpansion = remember { Animatable(1f) }
     
-    var targetIndex by remember { mutableIntStateOf(navItems.indexOfFirst { it.tab == selectedTab }) }
+    var targetIndex by remember { mutableIntStateOf(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0)) }
     var previousTab by remember { mutableStateOf(selectedTab) }
 
     LaunchedEffect(selectedTab) {
         if (selectedTab != previousTab) {
-            val newIndex = navItems.indexOfFirst { it.tab == selectedTab }
+            val newIndex = navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0)
             targetIndex = newIndex
             
             // 1. QUICK COLLAPSE
@@ -314,15 +310,16 @@ fun FloatingBottomBar(
                 contentAlignment = Alignment.CenterStart
             ) {
                 val totalWidthPx = constraints.maxWidth.toFloat()
-                val extraWidthPx = with(LocalDensity.current) { 84.dp.toPx() }
+                val count = itemCount.toFloat()
+                val extraWidthPx = with(LocalDensity.current) { (if (itemCount > 4) 68.dp else 84.dp).toPx() }
                 val expansion = animExpansion.value
                 
                 // Calculate current slot widths based on expansion
-                val currentBaseWidthPx = (totalWidthPx - (extraWidthPx * expansion)) / 4f
+                val currentBaseWidthPx = (totalWidthPx - (extraWidthPx * expansion)) / count
 
                 fun getCenterForIndex(idx: Float, isExpanded: Float): Float {
-                    val base = (totalWidthPx - (extraWidthPx * isExpanded)) / 4f
-                    val slotIndex = idx.roundToInt()
+                    val base = (totalWidthPx - (extraWidthPx * isExpanded)) / count
+                    val slotIndex = idx.roundToInt().coerceIn(0, itemCount - 1)
 
                     // Start position
                     var x = 0f
@@ -335,13 +332,15 @@ fun FloatingBottomBar(
                     
                     // If we are sliding (isExpanded is near 0), idx is the slide position
                     return if (isExpanded < 0.1f) {
-                        idx * (totalWidthPx / 4f) + (totalWidthPx / 8f)
+                        idx * (totalWidthPx / count) + (totalWidthPx / (count * 2f))
                     } else {
                         x + currentSlotW / 2f
                     }
                 }
 
-                val pillWidth = with(LocalDensity.current) { (56f + 84f * expansion).dp }
+                val basePillWidth = if (itemCount > 4) 48.dp else 56.dp
+                val extraPillWidth = if (itemCount > 4) 68.dp else 84.dp
+                val pillWidth = with(LocalDensity.current) { (basePillWidth.toPx() + extraPillWidth.toPx() * expansion).toDp() }
                 
                 // The Selection Indicator: Bouncy and Precisely Calculated
                 Box(
@@ -384,7 +383,7 @@ fun FloatingBottomBar(
                                 // Icon container
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(if (itemCount > 4) 36.dp else 40.dp)
                                         .clip(CircleShape)
                                         .background(
                                             color = if (isSelected) Color.White.copy(alpha = expansion.coerceIn(0f, 1f) * 0.9f) else Color.Transparent,
@@ -392,14 +391,25 @@ fun FloatingBottomBar(
                                         ),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val iconModifier = Modifier.size(24.dp)
+                                    val iconModifier = Modifier.size(if (itemCount > 4) 22.dp else 24.dp)
                                     if (bananaMode && isSelected) {
                                         Icon(painterResource(R.drawable.banana), null, tint = Color.Unspecified, modifier = iconModifier)
                                     } else if (penisMode && isSelected) {
                                         Icon(painterResource(R.drawable.penis), null, tint = Color.Unspecified, modifier = iconModifier)
-                                    } else {
+                                    } else if (item.icon != null) {
                                         Icon(
                                             imageVector = item.icon,
+                                            contentDescription = item.label,
+                                            tint = if (isSelected) {
+                                                if (expansion > 0.5f) Color.Black else contentColor.copy(alpha = 0.7f)
+                                            } else {
+                                                contentColor.copy(alpha = 0.7f)
+                                            },
+                                            modifier = iconModifier
+                                        )
+                                    } else if (item.iconRes != null) {
+                                        Icon(
+                                            painter = painterResource(item.iconRes),
                                             contentDescription = item.label,
                                             tint = if (isSelected) {
                                                 if (expansion > 0.5f) Color.Black else contentColor.copy(alpha = 0.7f)
@@ -413,13 +423,13 @@ fun FloatingBottomBar(
 
                                 // Text Label: Never clipped, always sharp
                                 if (isSelected && expansion > 0.3f) {
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(if (itemCount > 4) 6.dp else 8.dp))
                                     Text(
                                         text = item.label,
                                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = expansion),
                                         style = MaterialTheme.typography.labelLarge.copy(
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp
+                                            fontSize = if (itemCount > 4) 14.sp else 15.sp
                                         ),
                                         maxLines = 1,
                                         softWrap = false,
@@ -448,15 +458,16 @@ fun FloatingBottomBar(
             isRunning -> MaterialTheme.colorScheme.error
             isFabMenuExpanded -> accentColor
             isGlass -> Color.White.copy(alpha = 0.25f)
-            else -> accentColor
+            else -> navBgColor
         }
         val fabIconTint = when {
-            isRunning -> MaterialTheme.colorScheme.onError
-            isFabMenuExpanded -> if (isGlass) Color.White else MaterialTheme.colorScheme.onPrimary
+            isRunning -> Color.White
+            isFabMenuExpanded -> MaterialTheme.colorScheme.onPrimary
             isGlass -> Color.White
-            else -> MaterialTheme.colorScheme.onPrimary
+            else -> accentColor
         }
 
+        // Action FAB Button
         Surface(
             modifier = Modifier
                 .size(72.dp)
@@ -466,17 +477,21 @@ fun FloatingBottomBar(
                 ),
             shape = RoundedCornerShape(fabCornerRadius),
             color = fabBg,
-            border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)) else borderStroke,
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                if (isRunning) onToggleVisualizer() else onToggleFabMenu()
-            }
+            border = borderStroke
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onToggleFabMenu()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = when {
-                        isRunning -> Icons.Default.Stop
                         isFabMenuExpanded -> Icons.Default.Close
+                        isRunning -> Icons.Default.GraphicEq
                         else -> Icons.Default.PlayArrow
                     },
                     contentDescription = null,
@@ -488,7 +503,54 @@ fun FloatingBottomBar(
     }
 }
 
-private data class TabItem(val tab: Tab, val icon: ImageVector, val label: String)
+private data class TabItem(
+    val tab: Tab,
+    val icon: ImageVector? = null,
+    val iconRes: Int? = null,
+    val label: String
+)
+
+private fun getTabItem(tab: Tab): TabItem = when (tab) {
+    Tab.Audio -> TabItem(Tab.Audio, icon = Icons.Default.MusicNote, label = "Audio")
+    Tab.Glyphs -> TabItem(Tab.Glyphs, icon = Icons.AutoMirrored.Filled.TrendingUp, iconRes = R.drawable.ic_nav_glyphs, label = "Glyphs")
+    Tab.Spotify -> TabItem(Tab.Spotify, icon = Icons.Default.GraphicEq, label = "Spotify")
+    Tab.Visuals -> TabItem(Tab.Visuals, icon = Icons.Default.Info, label = "Visuals")
+    Tab.Haptics -> TabItem(Tab.Haptics, icon = Icons.Default.Vibration, label = "Haptics")
+    Tab.Flashlight -> TabItem(Tab.Flashlight, icon = Icons.Default.FlashOn, label = "Torch")
+    Tab.Settings -> TabItem(Tab.Settings, icon = Icons.Default.Settings, label = "Settings")
+}
+
+private fun getNavItemsForTab(tab: Tab): List<TabItem> {
+    return when (tab) {
+        Tab.Spotify -> listOf(
+            getTabItem(Tab.Audio),
+            getTabItem(Tab.Spotify),
+            getTabItem(Tab.Glyphs),
+            getTabItem(Tab.Visuals),
+            getTabItem(Tab.Settings)
+        )
+        Tab.Haptics -> listOf(
+            getTabItem(Tab.Audio),
+            getTabItem(Tab.Glyphs),
+            getTabItem(Tab.Haptics),
+            getTabItem(Tab.Visuals),
+            getTabItem(Tab.Settings)
+        )
+        Tab.Flashlight -> listOf(
+            getTabItem(Tab.Audio),
+            getTabItem(Tab.Glyphs),
+            getTabItem(Tab.Flashlight),
+            getTabItem(Tab.Visuals),
+            getTabItem(Tab.Settings)
+        )
+        else -> listOf(
+            getTabItem(Tab.Audio),
+            getTabItem(Tab.Glyphs),
+            getTabItem(Tab.Visuals),
+            getTabItem(Tab.Settings)
+        )
+    }
+}
 
 /**
  * Speed-Dial Capture Source Menu replicating `Assets/FAB menu.png`.
