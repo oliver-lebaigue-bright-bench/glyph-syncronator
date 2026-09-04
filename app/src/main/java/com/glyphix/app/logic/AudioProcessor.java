@@ -105,19 +105,24 @@ public class AudioProcessor {
     }
 
     public AudioFrameResult processAudioFrame(short[] hopBuffer, VisualizerConfig config, FrequencyRange hapticRange, FrequencyRange flashlightRange, boolean isInternalSource) {
+        return processAudioFrame(hopBuffer, hopBuffer != null ? hopBuffer.length : 0, config, hapticRange, flashlightRange, isInternalSource);
+    }
+
+    public AudioFrameResult processAudioFrame(short[] hopBuffer, int length, VisualizerConfig config, FrequencyRange hapticRange, FrequencyRange flashlightRange, boolean isInternalSource) {
         if (hopBuffer == null || ring == null || hann == null || fftData == null) {
             Log.e("AudioProcessor", "processAudioFrame: One or more buffers are null");
             return null;
         }
 
         // Fill ring buffer
-        for (short value : hopBuffer) {
+        int count = Math.min(length, hopBuffer.length);
+        for (int i = 0; i < count; i++) {
             if (ringPosition >= 0 && ringPosition < ring.length) {
-                ring[ringPosition] = value / 32768f;
+                ring[ringPosition] = hopBuffer[i] / 32768f;
                 ringPosition = (ringPosition + 1) % analysisWindow;
             }
         }
-        filled = Math.min(filled + hopBuffer.length, analysisWindow);
+        filled = Math.min(filled + count, analysisWindow);
 
         if (filled < analysisWindow) {
             return null; // Not enough data yet

@@ -1,0 +1,6 @@
+PyAudioWPatch
+numpy
+openrgb-python
+customtkinter
+Pillow
+bleak

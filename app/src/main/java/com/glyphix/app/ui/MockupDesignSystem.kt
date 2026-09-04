@@ -522,7 +522,10 @@ fun SpeedDialFabMenu(
         Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
         Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
         Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
-        Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC)
+        Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC),
+        Triple("Spotify Player", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
+        Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK),
+        Triple("Desktop Companion (BT)", Icons.Outlined.Bluetooth, AudioCaptureService.CaptureSource.BLUETOOTH)
     )
 
     val density = LocalDensity.current
@@ -617,6 +620,7 @@ fun HamburgerDropdownMenu(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onSelectGlyphs: () -> Unit,
+    onSelectSpotify: () -> Unit = {},
     onSelectHaptics: () -> Unit,
     onSelectOverlays: () -> Unit,
     onSelectTorch: () -> Unit,
@@ -678,6 +682,25 @@ fun HamburgerDropdownMenu(
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                 onSelectGlyphs()
+                                onDismiss()
+                            }
+                        )
+                    }
+                    AnimatedItem {
+                        HorizontalDivider(
+                            color = textPrimary.copy(alpha = 0.06f),
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
+
+                    AnimatedItem {
+                        HamburgerMenuItem(
+                            title = "Spotify Player",
+                            subtitle = "Inbuilt music & search",
+                            icon = Icons.Default.MusicNote,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectSpotify()
                                 onDismiss()
                             }
                         )

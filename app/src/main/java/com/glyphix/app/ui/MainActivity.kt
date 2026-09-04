@@ -108,6 +108,15 @@ class MainActivity : ComponentActivity() {
             serviceStatic = service
             bound = true
 
+            // Restore PC Stream settings
+            service?.let { s ->
+                viewModel.setPcStreamingActive(s.pcStreamEnabled)
+                val savedIp = s.pcStreamTargetIp
+                if (!savedIp.isNullOrEmpty()) {
+                    viewModel.setPcCompanionIp(savedIp)
+                }
+            }
+
             applyServiceSettings()
 
             lifecycleScope.launch {
@@ -218,6 +227,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        intent?.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+
         setContent {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
@@ -235,6 +250,18 @@ class MainActivity : ComponentActivity() {
                             s.currentLightState?.let {
                                 viewModel.setVisualizerState(it)
                             }
+
+                            // Collect network diagnostic if applicable
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
+                            }
+
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
+                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
+                            }
+
+                            viewModel.setPcPacketsSent(AudioCaptureService.sPcPacketsSent.value)
                             
                             // Use the magnitudes already computed by the service instead of re-calculating
                             val latestMags = s.latestMagnitudes
@@ -289,7 +316,8 @@ class MainActivity : ComponentActivity() {
                         onOverlayPermissionRequest = {
                             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
                             overlayPermissionLauncher.launch(intent)
-                        }
+                        },
+                        onSwitchCaptureSource = { switchCaptureSource(it) }
                     )
 
                     // Overlays
@@ -326,6 +354,7 @@ class MainActivity : ComponentActivity() {
             startForegroundService(intent)
 
             val source = viewModel.captureSource.value
+            s.setCaptureSource(source)
             when (source) {
                 AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
                 AudioCaptureService.CaptureSource.MIC -> {
@@ -336,7 +365,30 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.SPOTIFY -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
+        }
+    }
+
+    private fun switchCaptureSource(source: AudioCaptureService.CaptureSource) {
+        viewModel.setCaptureSource(source)
+        val s = service
+        if (s != null && s.isVisualizerRunning) {
+            when (source) {
+                AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
+                AudioCaptureService.CaptureSource.MIC -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        s.setCaptureSource(source)
+                    } else {
+                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+                else -> s.setCaptureSource(source)
+            }
+        } else {
+            toggleVisualizer()
         }
     }
 
@@ -406,6 +458,11 @@ class MainActivity : ComponentActivity() {
             it.setEdgeCornerRadius(viewModel.edgeCornerRadius.value)
             it.setEdgeTopEnabled(viewModel.edgeTopEnabled.value)
             it.setEdgeBottomEnabled(viewModel.edgeBottomEnabled.value)
+
+            it.setPcStreamEnabled(viewModel.isPcStreamingActive.value)
+            if (viewModel.pcCompanionIp.value.isNotEmpty()) {
+                it.setPcStreamTargetIp(viewModel.pcCompanionIp.value)
+            }
         }
     }
 
@@ -461,6 +518,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+    }
 }
 
 fun AudioDeviceInfo.isBluetoothOutput(): Boolean {
@@ -491,7 +558,8 @@ internal fun GlyphixApp(
     viewModel: MainViewModel,
     onToggleVisualizer: () -> Unit,
     onGoogleSignIn: () -> Unit,
-    onOverlayPermissionRequest: () -> Unit
+    onOverlayPermissionRequest: () -> Unit,
+    onSwitchCaptureSource: (AudioCaptureService.CaptureSource) -> Unit = {}
 ) {
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val isRunning by viewModel.runningState.collectAsStateWithLifecycle()
@@ -570,6 +638,7 @@ internal fun GlyphixApp(
 
     val screenTitle = when (selectedTab) {
         Tab.Audio -> "Glyphix"
+        Tab.Spotify -> "Spotify"
         Tab.Glyphs -> "Glyphs"
         Tab.Visuals -> "Visuals"
         Tab.Haptics -> "Haptics"
@@ -611,6 +680,7 @@ internal fun GlyphixApp(
                 isOpen = isHamburgerMenuOpen,
                 onDismiss = { viewModel.setHamburgerMenuOpen(false) },
                 onSelectGlyphs = { viewModel.selectTab(Tab.Glyphs) },
+                onSelectSpotify = { viewModel.selectTab(Tab.Spotify) },
                 onSelectHaptics = { viewModel.selectTab(Tab.Haptics) },
                 onSelectOverlays = { viewModel.selectTab(Tab.Visuals) },
                 onSelectTorch = { viewModel.selectTab(Tab.Flashlight) }
@@ -660,6 +730,14 @@ internal fun GlyphixApp(
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
+                        val spotifyPlaybackState by viewModel.spotifyRepository.playbackState.collectAsStateWithLifecycle()
+                        val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
+                        val bluetoothDeviceName by viewModel.bluetoothDeviceName.collectAsStateWithLifecycle()
+                        val bluetoothDeviceAddress by viewModel.bluetoothDeviceAddress.collectAsStateWithLifecycle()
+                        val pcPacketsSent by viewModel.pcPacketsSent.collectAsStateWithLifecycle()
+                        val desktopSyncDirection by viewModel.desktopSyncDirection.collectAsStateWithLifecycle()
+                        val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
+                        val isPcStreamingActive by viewModel.isPcStreamingActive.collectAsStateWithLifecycle()
 
                         val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
@@ -675,13 +753,69 @@ internal fun GlyphixApp(
                                 ?: "Unknown",
                             fftData = { fftDataState.value },
                             captureSource = captureSource,
-                            onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
+                            onCaptureSourceChanged = { onSwitchCaptureSource(it) },
+                            networkPacketsReceived = networkPacketsReceived,
+                            bluetoothDeviceName = bluetoothDeviceName,
+                            bluetoothDeviceAddress = bluetoothDeviceAddress,
+                            pcPacketsSent = pcPacketsSent,
+                            desktopSyncDirection = desktopSyncDirection,
+                            pcCompanionIp = pcCompanionIp,
+                            isPcStreamingActive = isPcStreamingActive,
+                            onTogglePcStream = { enabled ->
+                                viewModel.setPcStreamingActive(enabled)
+                                MainActivity.serviceStatic?.setPcStreamEnabled(enabled)
+                                if (enabled && !isRunning) {
+                                    onToggleVisualizer()
+                                }
+                            },
+                            onPcIpChanged = { ip ->
+                                viewModel.setPcCompanionIp(ip)
+                                MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                            },
+                            onDiscoverPc = {
+                                MainActivity.serviceStatic?.discoverPcCompanion { ip ->
+                                    viewModel.setPcCompanionIp(ip)
+                                    MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                                    Toast.makeText(context, "Found PC Companion at $ip", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onSyncDirectionChanged = { direction ->
+                                viewModel.setDesktopSyncDirection(direction)
+                                if (direction == "PC_TO_PHONE") {
+                                    onSwitchCaptureSource(AudioCaptureService.CaptureSource.NETWORK)
+                                } else {
+                                    if (captureSource == AudioCaptureService.CaptureSource.NETWORK || captureSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                        onSwitchCaptureSource(AudioCaptureService.CaptureSource.INTERNAL)
+                                    }
+                                }
+                            },
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
                             penisMode = penisMode,
+                            spotifyPlaybackState = spotifyPlaybackState,
+                            onSpotifyTogglePlay = { viewModel.spotifyRepository.togglePlayPause() },
+                            onSpotifyNext = { viewModel.spotifyRepository.skipNext() },
+                            onSpotifyPrevious = { viewModel.spotifyRepository.skipPrevious() },
+                            onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
+                            onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
+                            onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
+                            onOpenSpotifyTab = { viewModel.selectTab(Tab.Spotify) },
+                            onToggleVisualizer = onToggleVisualizer,
                             padding = pagePadding
+                        )
+                    }
+                    Tab.Spotify -> {
+                        SpotifyScreen(
+                            spotifyRepo = viewModel.spotifyRepository,
+                            authManager = viewModel.spotifyAuthManager,
+                            onStartVisualizer = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
+                                MainActivity.serviceStatic?.startCapture(0, null)
+                                viewModel.selectTab(Tab.Audio)
+                            },
+                            modifier = Modifier.padding(pagePadding)
                         )
                     }
                     Tab.Glyphs -> {
@@ -869,11 +1003,8 @@ internal fun GlyphixApp(
             isExpanded = isFabMenuExpanded,
             currentSource = captureSource,
             onSelectSource = { source ->
-                viewModel.setCaptureSource(source)
+                onSwitchCaptureSource(source)
                 viewModel.setFabMenuExpanded(false)
-                if (!isRunning) {
-                    onToggleVisualizer()
-                }
             },
             onDismiss = { viewModel.setFabMenuExpanded(false) },
             modifier = Modifier
