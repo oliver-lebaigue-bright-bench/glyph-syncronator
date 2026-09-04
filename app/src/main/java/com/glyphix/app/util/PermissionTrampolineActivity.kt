@@ -56,7 +56,7 @@ class PermissionTrampolineActivity : ComponentActivity() {
             AudioCaptureService.CaptureSource.INTERNAL
         }
 
-        if (source == AudioCaptureService.CaptureSource.MIC || source == AudioCaptureService.CaptureSource.VIZUALIZER) {
+        if (source == AudioCaptureService.CaptureSource.MIC || source == AudioCaptureService.CaptureSource.VIZUALIZER || source == AudioCaptureService.CaptureSource.NETWORK) {
             val serviceIntent = Intent(this, AudioCaptureService::class.java).apply {
                 action = AudioCaptureService.ACTION_START
                 putExtra(AudioCaptureService.EXTRA_PRESET_KEY, getDefaultPreset())

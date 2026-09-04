@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +32,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.ContentScale
@@ -40,6 +44,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -51,6 +57,9 @@ import androidx.compose.ui.geometry.Rect
 import coil3.compose.AsyncImage
 import com.glyphix.app.R
 import com.glyphix.app.service.AudioCaptureService
+import compose.icons.FontAwesomeIcons
+import compose.icons.fontawesomeicons.Solid
+import compose.icons.fontawesomeicons.solid.Trophy
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -98,6 +107,7 @@ fun FloatingTopBar(
     onProfileClick: () -> Unit,
     avatarUrl: String? = null,
     isProfileActive: Boolean = false,
+    showBackButton: Boolean = false,
     onTitleLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -139,19 +149,26 @@ fun FloatingTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Left: Hamburger Menu Button
-            IconButton(
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                    onMenuClick()
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = contentColor,
-                    modifier = Modifier.size(24.dp)
+            // Left: Hamburger Menu Button or Back Button
+            if (showBackButton) {
+                GlyphixBackButton(
+                    onClick = onMenuClick,
+                    modifier = Modifier.size(40.dp).background(Color.Transparent, CircleShape)
                 )
+            } else {
+                IconButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onMenuClick()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Menu",
+                        tint = contentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
 
             // Center: Screen Title
@@ -240,15 +257,72 @@ fun FloatingBottomBar(
     val bananaMode = LocalBananaMode.current
     val penisMode = LocalPenisMode.current
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
     val accentColor = mockupAccentColor()
     val contentColor = mockupTextColor()
 
-    val navItems = listOf(
-        TabItem(Tab.Audio, Icons.Default.MusicNote, "Audio"),
-        TabItem(Tab.Glyphs, Icons.AutoMirrored.Filled.TrendingUp, "Glyphs"),
-        TabItem(Tab.Visuals, Icons.Default.Info, "Visuals"),
-        TabItem(Tab.Settings, Icons.Default.Settings, "Settings")
+    val navItems = remember(selectedTab) { getNavItemsForTab(selectedTab) }
+    val itemCount = navItems.size
+
+    // Adaptive width measurement for the pill
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val labelStyle = MaterialTheme.typography.labelLarge.copy(
+        fontWeight = FontWeight.Bold,
+        fontSize = if (itemCount > 4) 14.sp else 15.sp
     )
+    
+    val itemExtraWidthsPx = remember(navItems, labelStyle, density) {
+        navItems.map { item ->
+            val textWidth = textMeasurer.measure(
+                text = item.label,
+                style = labelStyle,
+                maxLines = 1,
+                softWrap = false
+            ).size.width.toFloat()
+            val spacing = with(density) { (if (itemCount > 4) 6.dp else 8.dp).toPx() }
+
+            val extraPaddingDp = when (item.tab) {
+                Tab.Leaderboard -> 14.dp
+                Tab.Settings -> 10.dp
+                else -> 6.dp
+            }
+            
+            val extraPadding = with(density) { (if (itemCount > 4) (extraPaddingDp * 0.6f) else extraPaddingDp).toPx() }
+            textWidth + spacing + extraPadding
+        }
+    }
+
+    // Animation orchestration for the "Collapse -> Bounce -> Expand" sequence
+    val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0).toFloat()) }
+    val animExpansion = remember { Animatable(1f) }
+    
+    var targetIndex by remember { mutableIntStateOf(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0)) }
+    var previousTab by remember { mutableStateOf(selectedTab) }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab != previousTab) {
+            val newIndex = navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0)
+            targetIndex = newIndex
+            
+            // Overlapping "Liquid" Transition
+            // Dip the expansion slightly to create a stretching/sliding effect
+            this.launch {
+                animExpansion.animateTo(0.10f, tween(140, easing = FastOutSlowInEasing))
+                animExpansion.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMediumLow))
+            }
+            
+            this.launch {
+                // Move the index indicator with a snappy spring
+                animActiveIndex.animateTo(
+                    newIndex.toFloat(), 
+                    spring(dampingRatio = 0.58f, stiffness = Spring.StiffnessLow)
+                )
+            }
+            
+            previousTab = selectedTab
+        }
+    }
 
     val navBgColor = if (isGlass) {
         Color.White.copy(alpha = 0.15f)
@@ -260,31 +334,6 @@ fun FloatingBottomBar(
         BorderStroke(1.dp, Color.White.copy(alpha = 0.30f))
     } else {
         BorderStroke(1.dp, Color.White.copy(alpha = 0.05f))
-    }
-
-    // Animation orchestration for the "Collapse -> Bounce -> Expand" sequence
-    val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.toFloat()) }
-    val animExpansion = remember { Animatable(1f) }
-    
-    var targetIndex by remember { mutableIntStateOf(navItems.indexOfFirst { it.tab == selectedTab }) }
-    var previousTab by remember { mutableStateOf(selectedTab) }
-
-    LaunchedEffect(selectedTab) {
-        if (selectedTab != previousTab) {
-            val newIndex = navItems.indexOfFirst { it.tab == selectedTab }
-            targetIndex = newIndex
-            
-            // 1. QUICK COLLAPSE
-            animExpansion.animateTo(0f, tween(100))
-            
-            // 2. BOUNCE OVER
-            animActiveIndex.animateTo(newIndex.toFloat(), spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow))
-            
-            // 3. EXPAND
-            animExpansion.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow))
-            
-            previousTab = selectedTab
-        }
     }
 
     Row(
@@ -314,34 +363,43 @@ fun FloatingBottomBar(
                 contentAlignment = Alignment.CenterStart
             ) {
                 val totalWidthPx = constraints.maxWidth.toFloat()
-                val extraWidthPx = with(LocalDensity.current) { 84.dp.toPx() }
+                val count = itemCount.toFloat()
+                
+                // Use the adaptive width for the current target tab
+                val targetExtraWidthPx = itemExtraWidthsPx.getOrNull(targetIndex) ?: 0f
                 val expansion = animExpansion.value
                 
                 // Calculate current slot widths based on expansion
-                val currentBaseWidthPx = (totalWidthPx - (extraWidthPx * expansion)) / 4f
+                val currentBaseWidthPx = (totalWidthPx - (targetExtraWidthPx * expansion)) / count
 
                 fun getCenterForIndex(idx: Float, isExpanded: Float): Float {
-                    val base = (totalWidthPx - (extraWidthPx * isExpanded)) / 4f
-                    val slotIndex = idx.roundToInt()
+                    val activeExtraWidth = targetExtraWidthPx * isExpanded
+                    val base = (totalWidthPx - activeExtraWidth) / count
+                    val slotIndex = idx.roundToInt().coerceIn(0, itemCount - 1)
 
                     // Start position
                     var x = 0f
                     for (j in 0 until slotIndex) {
-                        x += base + (if (j == targetIndex) extraWidthPx * isExpanded else 0f)
+                        x += base + (if (j == targetIndex) activeExtraWidth else 0f)
                     }
                     
                     // Current slot width
-                    val currentSlotW = base + (if (slotIndex == targetIndex) extraWidthPx * isExpanded else 0f)
+                    val currentSlotW = base + (if (slotIndex == targetIndex) activeExtraWidth else 0f)
                     
-                    // If we are sliding (isExpanded is near 0), idx is the slide position
-                    return if (isExpanded < 0.1f) {
-                        idx * (totalWidthPx / 4f) + (totalWidthPx / 8f)
-                    } else {
-                        x + currentSlotW / 2f
-                    }
+                    // Improved smooth transition calculation
+                    val totalSlotsWidth = totalWidthPx / count
+                    val linearX = idx * totalSlotsWidth + (totalSlotsWidth / 2f)
+                    val logicX = x + currentSlotW / 2f
+                    
+                    // Blend between linear and logic based on expansion to avoid jumps
+                    val frac = isExpanded.coerceIn(0f, 1f)
+                    return linearX + frac * (logicX - linearX)
                 }
 
-                val pillWidth = with(LocalDensity.current) { (56f + 84f * expansion).dp }
+                val basePillWidthPx = with(density) { (if (itemCount > 4) 48.dp else 56.dp).toPx() }
+                val pillWidth = with(density) { 
+                    (basePillWidthPx + targetExtraWidthPx * expansion).toDp()
+                }
                 
                 // The Selection Indicator: Bouncy and Precisely Calculated
                 Box(
@@ -357,9 +415,17 @@ fun FloatingBottomBar(
                 Row(modifier = Modifier.fillMaxSize()) {
                     navItems.forEachIndexed { i, item ->
                         val isSelected = selectedTab == item.tab
-                        val currentSlotWidth = with(LocalDensity.current) { 
-                            (currentBaseWidthPx + (if (i == targetIndex) extraWidthPx * expansion else 0f)).toDp() 
+                        val currentSlotWidth = with(density) { 
+                            (currentBaseWidthPx + (if (i == targetIndex) targetExtraWidthPx * expansion else 0f)).toDp() 
                         }
+                        
+                        // Icon Pop Animation
+                        val iconScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.15f else 1.0f,
+                            animationSpec = spring(dampingRatio = 0.48f, stiffness = Spring.StiffnessMediumLow),
+                            label = "icon_pop"
+                        )
+                        val shakeRotation = remember { Animatable(0f) }
 
                         Box(
                             modifier = Modifier
@@ -369,6 +435,18 @@ fun FloatingBottomBar(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
+                                    scope.launch {
+                                        // Delay the shake if we are moving the pill to a new tab
+                                        if (!isSelected) {
+                                            delay(320)
+                                        }
+                                        
+                                        // Playful shake: Right -> Left -> Settle
+                                        shakeRotation.animateTo(15f, spring(0.35f, Spring.StiffnessHigh))
+                                        shakeRotation.animateTo(-15f, spring(0.35f, Spring.StiffnessHigh))
+                                        shakeRotation.animateTo(0f, spring(Spring.DampingRatioHighBouncy, Spring.StiffnessMedium))
+                                    }
+                                    
                                     if (!isSelected) {
                                         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                         onTabSelected(item.tab)
@@ -379,27 +457,46 @@ fun FloatingBottomBar(
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.wrapContentWidth(unbounded = true)
+                                modifier = Modifier
+                                    .wrapContentWidth(unbounded = true)
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    }
                             ) {
                                 // Icon container
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(if (itemCount > 4) 36.dp else 40.dp)
                                         .clip(CircleShape)
                                         .background(
                                             color = if (isSelected) Color.White.copy(alpha = expansion.coerceIn(0f, 1f) * 0.9f) else Color.Transparent,
                                             shape = CircleShape
-                                        ),
+                                        )
+                                        .graphicsLayer {
+                                            rotationZ = shakeRotation.value
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val iconModifier = Modifier.size(24.dp)
+                                    val iconModifier = Modifier.size(if (itemCount > 4) 22.dp else 24.dp)
                                     if (bananaMode && isSelected) {
                                         Icon(painterResource(R.drawable.banana), null, tint = Color.Unspecified, modifier = iconModifier)
                                     } else if (penisMode && isSelected) {
                                         Icon(painterResource(R.drawable.penis), null, tint = Color.Unspecified, modifier = iconModifier)
-                                    } else {
+                                    } else if (item.icon != null) {
                                         Icon(
                                             imageVector = item.icon,
+                                            contentDescription = item.label,
+                                            tint = if (isSelected) {
+                                                if (expansion > 0.5f) Color.Black else contentColor.copy(alpha = 0.7f)
+                                            } else {
+                                                contentColor.copy(alpha = 0.7f)
+                                            },
+                                            modifier = iconModifier
+                                        )
+                                    } else if (item.iconRes != null) {
+                                        Icon(
+                                            painter = painterResource(item.iconRes),
                                             contentDescription = item.label,
                                             tint = if (isSelected) {
                                                 if (expansion > 0.5f) Color.Black else contentColor.copy(alpha = 0.7f)
@@ -413,13 +510,13 @@ fun FloatingBottomBar(
 
                                 // Text Label: Never clipped, always sharp
                                 if (isSelected && expansion > 0.3f) {
-                                    Spacer(Modifier.width(8.dp))
+                                    Spacer(Modifier.width(if (itemCount > 4) 6.dp else 8.dp))
                                     Text(
                                         text = item.label,
                                         color = MaterialTheme.colorScheme.onPrimary.copy(alpha = expansion),
                                         style = MaterialTheme.typography.labelLarge.copy(
                                             fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp
+                                            fontSize = if (itemCount > 4) 14.sp else 15.sp
                                         ),
                                         maxLines = 1,
                                         softWrap = false,
@@ -445,18 +542,19 @@ fun FloatingBottomBar(
         )
 
         val fabBg = when {
-            isRunning -> MaterialTheme.colorScheme.error
+            isRunning -> MaterialTheme.colorScheme.error // Stop is Red
             isFabMenuExpanded -> accentColor
             isGlass -> Color.White.copy(alpha = 0.25f)
-            else -> accentColor
+            else -> Color(0xFF4CAF50) // Start is Green
         }
         val fabIconTint = when {
-            isRunning -> MaterialTheme.colorScheme.onError
-            isFabMenuExpanded -> if (isGlass) Color.White else MaterialTheme.colorScheme.onPrimary
+            isRunning -> Color.White
+            isFabMenuExpanded -> MaterialTheme.colorScheme.onPrimary
             isGlass -> Color.White
-            else -> MaterialTheme.colorScheme.onPrimary
+            else -> Color.White
         }
 
+        // Action FAB Button
         Surface(
             modifier = Modifier
                 .size(72.dp)
@@ -466,17 +564,25 @@ fun FloatingBottomBar(
                 ),
             shape = RoundedCornerShape(fabCornerRadius),
             color = fabBg,
-            border = if (isGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)) else borderStroke,
-            onClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-                if (isRunning) onToggleVisualizer() else onToggleFabMenu()
-            }
+            border = borderStroke
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        if (isRunning && !isFabMenuExpanded) {
+                            onToggleVisualizer()
+                        } else {
+                            onToggleFabMenu()
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = when {
-                        isRunning -> Icons.Default.Stop
                         isFabMenuExpanded -> Icons.Default.Close
+                        isRunning -> Icons.Default.Stop
                         else -> Icons.Default.PlayArrow
                     },
                     contentDescription = null,
@@ -488,7 +594,30 @@ fun FloatingBottomBar(
     }
 }
 
-private data class TabItem(val tab: Tab, val icon: ImageVector, val label: String)
+private data class TabItem(
+    val tab: Tab,
+    val icon: ImageVector? = null,
+    val iconRes: Int? = null,
+    val label: String
+)
+
+private fun getTabItem(tab: Tab): TabItem = when (tab) {
+    Tab.Audio -> TabItem(Tab.Audio, icon = Icons.Default.MusicNote, label = "Audio")
+    Tab.Leaderboard -> TabItem(Tab.Leaderboard, icon = FontAwesomeIcons.Solid.Trophy, label = "Leaderboard")
+    Tab.Spotify -> TabItem(Tab.Spotify, icon = Icons.Default.GraphicEq, label = "Spotify")
+    Tab.Info -> TabItem(Tab.Info, icon = Icons.Default.Info, label = "Info")
+    Tab.Settings -> TabItem(Tab.Settings, icon = Icons.Default.Settings, label = "Settings")
+    else -> TabItem(tab, label = tab.label)
+}
+
+private fun getNavItemsForTab(tab: Tab): List<TabItem> {
+    return listOf(
+        getTabItem(Tab.Audio),
+        getTabItem(Tab.Leaderboard),
+        getTabItem(Tab.Info),
+        getTabItem(Tab.Settings)
+    )
+}
 
 /**
  * Speed-Dial Capture Source Menu replicating `Assets/FAB menu.png`.
@@ -497,6 +626,8 @@ private data class TabItem(val tab: Tab, val icon: ImageVector, val label: Strin
 @Composable
 fun SpeedDialFabMenu(
     isExpanded: Boolean,
+    isRunning: Boolean = false,
+    onToggleVisualizer: (() -> Unit)? = null,
     currentSource: AudioCaptureService.CaptureSource,
     onSelectSource: (AudioCaptureService.CaptureSource) -> Unit,
     onDismiss: () -> Unit,
@@ -518,12 +649,22 @@ fun SpeedDialFabMenu(
     }
     val haptics = LocalHapticFeedback.current
 
-    val sources = listOf(
-        Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
-        Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
-        Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
-        Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC)
-    )
+    val sources = remember(isRunning) {
+        val list = mutableListOf<Triple<String, ImageVector, AudioCaptureService.CaptureSource>>()
+        if (isRunning) {
+            list.add(Triple("Stop Visualizer", Icons.Default.Stop, AudioCaptureService.CaptureSource.INTERNAL))
+        }
+        list.addAll(listOf(
+            Triple("Smart Capture", Icons.Outlined.StarOutline, AudioCaptureService.CaptureSource.INTERNAL),
+            Triple("Screen Capture", Icons.Outlined.Image, AudioCaptureService.CaptureSource.INTERNAL),
+            Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
+            Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC),
+            Triple("Spotify Player", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
+            Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK),
+            Triple("Desktop Companion (BT)", Icons.Outlined.Bluetooth, AudioCaptureService.CaptureSource.BLUETOOTH)
+        ))
+        list
+    }
 
     val density = LocalDensity.current
     val xOffsetPx = with(density) { (-16).dp.roundToPx() }
@@ -553,10 +694,43 @@ fun SpeedDialFabMenu(
             ) + fadeOut(animationSpec = tween(150))
         ) {
             StaggeredEntranceColumn(
-                horizontalAlignment = Alignment.End,
+                modifier = modifier.padding(end = 16.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = modifier.padding(end = 16.dp, bottom = 8.dp)
+                horizontalAlignment = Alignment.End
             ) {
+                if (isRunning) {
+                    AnimatedItem {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            color = MaterialTheme.colorScheme.error,
+                            shadowElevation = if (isGlass) 0.dp else 4.dp,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                                onToggleVisualizer?.invoke()
+                                onDismiss()
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Stop,
+                                    contentDescription = "Stop",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(
+                                    text = "Stop Visualizer",
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
                 sources.forEach { (name, icon, source) ->
                     AnimatedItem {
                         val itemBg = pillBg
@@ -617,6 +791,7 @@ fun HamburgerDropdownMenu(
     isOpen: Boolean,
     onDismiss: () -> Unit,
     onSelectGlyphs: () -> Unit,
+    onSelectSpotify: () -> Unit = {},
     onSelectHaptics: () -> Unit,
     onSelectOverlays: () -> Unit,
     onSelectTorch: () -> Unit,
@@ -691,6 +866,25 @@ fun HamburgerDropdownMenu(
 
                     AnimatedItem {
                         HamburgerMenuItem(
+                            title = "Spotify Player",
+                            subtitle = "Inbuilt music & search",
+                            icon = Icons.Default.MusicNote,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onSelectSpotify()
+                                onDismiss()
+                            }
+                        )
+                    }
+                    AnimatedItem {
+                        HorizontalDivider(
+                            color = textPrimary.copy(alpha = 0.06f),
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
+
+                    AnimatedItem {
+                        HamburgerMenuItem(
                             title = "Haptics",
                             subtitle = "Configure Haptic Viz",
                             icon = Icons.Outlined.GraphicEq,
@@ -711,8 +905,8 @@ fun HamburgerDropdownMenu(
                     AnimatedItem {
                         HamburgerMenuItem(
                             title = "Overlays",
-                            subtitle = "Configure Overlays",
-                            icon = Icons.Outlined.Layers,
+                            subtitle = "Visuals & configurations",
+                            icon = Icons.Outlined.Info,
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                 onSelectOverlays()

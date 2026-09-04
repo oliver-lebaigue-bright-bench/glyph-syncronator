@@ -1,9 +1,12 @@
 package com.glyphix.app.ui.PrimaryScreens
 
+import androidx.activity.compose.BackHandler
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
@@ -31,7 +34,11 @@ fun VisualsScreen(
     onOverlayEnabledChanged: (Boolean) -> Unit,
     onOverlayPermissionRequest: () -> Unit,
     padding: PaddingValues = PaddingValues(),
+    onDismiss: (() -> Unit)? = null
 ) {
+    if (onDismiss != null) {
+        BackHandler { onDismiss() }
+    }
     val overlayWidth by viewModel.overlayWidth.collectAsStateWithLifecycle()
     val overlayHeight by viewModel.overlayHeight.collectAsStateWithLifecycle()
     val overlayHeightBottom by viewModel.overlayHeightBottom.collectAsStateWithLifecycle()
@@ -60,6 +67,22 @@ fun VisualsScreen(
             .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (onDismiss != null) {
+            Spacer(Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
+            AnimatedItem {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    GlyphixBackButton(onClick = onDismiss)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    ScreenTitle(text = "Overlays", modifier = Modifier.padding(bottom = 0.dp))
+                }
+            }
+        }
+
         AnimatedItem {
             ExpressiveCard {
                 Row(

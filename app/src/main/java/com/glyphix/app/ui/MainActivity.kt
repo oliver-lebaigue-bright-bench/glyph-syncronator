@@ -56,6 +56,7 @@ import com.glyphix.app.model.DeviceProfile
 import com.glyphix.app.service.AudioCaptureService
 import com.glyphix.app.service.GlyphNotificationListener
 import com.glyphix.app.ui.PrimaryScreens.*
+import com.glyphix.app.ui.SecondaryScreens.*
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.GoogleAuthProvider
@@ -107,6 +108,15 @@ class MainActivity : ComponentActivity() {
             service = localBinder.service
             serviceStatic = service
             bound = true
+
+            // Restore PC Stream settings
+            service?.let { s ->
+                viewModel.setPcStreamingActive(s.pcStreamEnabled)
+                val savedIp = s.pcStreamTargetIp
+                if (!savedIp.isNullOrEmpty()) {
+                    viewModel.setPcCompanionIp(savedIp)
+                }
+            }
 
             applyServiceSettings()
 
@@ -218,6 +228,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        intent?.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+
         setContent {
             val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
             val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
@@ -235,20 +251,31 @@ class MainActivity : ComponentActivity() {
                             s.currentLightState?.let {
                                 viewModel.setVisualizerState(it)
                             }
+
+                            // Collect network diagnostic if applicable
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
+                            }
+
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
+                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
+                            }
+
+                            viewModel.setPcPacketsSent(AudioCaptureService.sPcPacketsSent.value)
                             
                             // Use the magnitudes already computed by the service instead of re-calculating
                             val latestMags = s.latestMagnitudes
                             if (latestMags != null && latestMags.size == 512) {
-                                // We still need to pass new arrays to StateFlow to trigger recomposition if it uses reference equality
-                                // But we can at least avoid the manual loop and division
-                                viewModel.setFftState(latestMags, latestMags) // Using same for both to reduce work if raw isn't strictly needed
+                                viewModel.setFftState(latestMags, latestMags) 
                             }
                         }
-                        delay(16.milliseconds) // Target 60fps for smoother UI
+                        delay(16.milliseconds) 
                     }
                 } else {
                     viewModel.setFftStateEmpty()
                     viewModel.setVisualizerState(floatArrayOf())
+                    viewModel.setNetworkPacketsReceived(0)
                 }
             }
 
@@ -286,17 +313,17 @@ class MainActivity : ComponentActivity() {
                         viewModel = viewModel,
                         onToggleVisualizer = { toggleVisualizer() },
                         onGoogleSignIn = { launchGoogleSignIn() },
+                        onSwitchCaptureSource = { switchCaptureSource(it) }
+                    )
+
+                    MainOverlays(
+                        viewModel = viewModel,
+                        selectedDevice = viewModel.selectedDevice.collectAsState().value,
+                        onGoogleSignIn = { launchGoogleSignIn() },
                         onOverlayPermissionRequest = {
                             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri())
                             overlayPermissionLauncher.launch(intent)
                         }
-                    )
-
-                    // Overlays
-                    MainOverlays(
-                        viewModel = viewModel,
-                        selectedDevice = viewModel.selectedDevice.collectAsState().value,
-                        onGoogleSignIn = { launchGoogleSignIn() }
                     )
                     CommunityOverlays(viewModel = viewModel)
                 }
@@ -326,6 +353,7 @@ class MainActivity : ComponentActivity() {
             startForegroundService(intent)
 
             val source = viewModel.captureSource.value
+            s.setCaptureSource(source)
             when (source) {
                 AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
                 AudioCaptureService.CaptureSource.MIC -> {
@@ -336,7 +364,30 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.SPOTIFY -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
+                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
+        }
+    }
+
+    private fun switchCaptureSource(source: AudioCaptureService.CaptureSource) {
+        viewModel.setCaptureSource(source)
+        val s = service
+        if (s != null && s.isVisualizerRunning) {
+            when (source) {
+                AudioCaptureService.CaptureSource.INTERNAL -> launchProjection()
+                AudioCaptureService.CaptureSource.MIC -> {
+                    if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        s.setCaptureSource(source)
+                    } else {
+                        audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
+                else -> s.setCaptureSource(source)
+            }
+        } else {
+            toggleVisualizer()
         }
     }
 
@@ -406,6 +457,11 @@ class MainActivity : ComponentActivity() {
             it.setEdgeCornerRadius(viewModel.edgeCornerRadius.value)
             it.setEdgeTopEnabled(viewModel.edgeTopEnabled.value)
             it.setEdgeBottomEnabled(viewModel.edgeBottomEnabled.value)
+
+            it.setPcStreamEnabled(viewModel.isPcStreamingActive.value)
+            if (viewModel.pcCompanionIp.value.isNotEmpty()) {
+                it.setPcStreamTargetIp(viewModel.pcCompanionIp.value)
+            }
         }
     }
 
@@ -461,6 +517,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.data?.let { uri ->
+            if (uri.scheme == "glyphix" && uri.host == "spotify-callback") {
+                viewModel.spotifyAuthManager.handleAuthCallback(uri)
+            }
+        }
+    }
 }
 
 fun AudioDeviceInfo.isBluetoothOutput(): Boolean {
@@ -491,7 +557,7 @@ internal fun GlyphixApp(
     viewModel: MainViewModel,
     onToggleVisualizer: () -> Unit,
     onGoogleSignIn: () -> Unit,
-    onOverlayPermissionRequest: () -> Unit
+    onSwitchCaptureSource: (AudioCaptureService.CaptureSource) -> Unit = {}
 ) {
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val isRunning by viewModel.runningState.collectAsStateWithLifecycle()
@@ -500,25 +566,19 @@ internal fun GlyphixApp(
 
     val context = LocalContext.current
 
-    val visibleTabs = remember(selectedDevice) {
-        var tabs = if (selectedDevice == DeviceProfile.DEVICE_UNKNOWN) {
-            Tab.entries.filter { it != Tab.Glyphs }
-        } else {
-            Tab.entries.toList()
-        }
-        if (!viewModel.hasHapticMotor) {
-            tabs = tabs.filter { it != Tab.Haptics }
-        }
-        if (!viewModel.hasFlashlight) {
-            tabs = tabs.filter { it != Tab.Flashlight }
-        }
-        tabs
+    val visibleTabs = remember {
+        listOf(
+            Tab.Audio,
+            Tab.Leaderboard,
+            Tab.Info,
+            Tab.Settings
+        )
     }
 
     val pagerState = rememberPagerState(initialPage = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)) { visibleTabs.size }
     var isProgrammaticScroll by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedTab) {
+    LaunchedEffect(selectedTab, visibleTabs) {
         val target = visibleTabs.indexOf(selectedTab).coerceAtLeast(0)
         if (pagerState.currentPage != target) {
             isProgrammaticScroll = true
@@ -546,7 +606,7 @@ internal fun GlyphixApp(
         }
     }
 
-    LaunchedEffect(pagerState) {
+    LaunchedEffect(pagerState, visibleTabs) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (page < visibleTabs.size) {
                 val tab = visibleTabs[page]
@@ -570,8 +630,10 @@ internal fun GlyphixApp(
 
     val screenTitle = when (selectedTab) {
         Tab.Audio -> "Glyphix"
+        Tab.Leaderboard -> "Leaderboard"
+        Tab.Spotify -> "Spotify"
         Tab.Glyphs -> "Glyphs"
-        Tab.Visuals -> "Visuals"
+        Tab.Info -> "Info"
         Tab.Haptics -> "Haptics"
         Tab.Flashlight -> "Torch"
         Tab.Settings -> "Settings"
@@ -610,10 +672,11 @@ internal fun GlyphixApp(
             HamburgerDropdownMenu(
                 isOpen = isHamburgerMenuOpen,
                 onDismiss = { viewModel.setHamburgerMenuOpen(false) },
-                onSelectGlyphs = { viewModel.selectTab(Tab.Glyphs) },
-                onSelectHaptics = { viewModel.selectTab(Tab.Haptics) },
-                onSelectOverlays = { viewModel.selectTab(Tab.Visuals) },
-                onSelectTorch = { viewModel.selectTab(Tab.Flashlight) }
+                onSelectGlyphs = { viewModel.showGlyphs() },
+                onSelectSpotify = { viewModel.showSpotify() },
+                onSelectHaptics = { viewModel.showHaptics() },
+                onSelectOverlays = { viewModel.showVisuals() },
+                onSelectTorch = { viewModel.showFlashlight() }
             )
         }
 
@@ -660,6 +723,14 @@ internal fun GlyphixApp(
                         val latencyWizardState by viewModel.latencyWizardState.collectAsStateWithLifecycle()
                         val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
+                        val spotifyPlaybackState by viewModel.spotifyRepository.playbackState.collectAsStateWithLifecycle()
+                        val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
+                        val bluetoothDeviceName by viewModel.bluetoothDeviceName.collectAsStateWithLifecycle()
+                        val bluetoothDeviceAddress by viewModel.bluetoothDeviceAddress.collectAsStateWithLifecycle()
+                        val pcPacketsSent by viewModel.pcPacketsSent.collectAsStateWithLifecycle()
+                        val desktopSyncDirection by viewModel.desktopSyncDirection.collectAsStateWithLifecycle()
+                        val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
+                        val isPcStreamingActive by viewModel.isPcStreamingActive.collectAsStateWithLifecycle()
 
                         val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
@@ -675,146 +746,72 @@ internal fun GlyphixApp(
                                 ?: "Unknown",
                             fftData = { fftDataState.value },
                             captureSource = captureSource,
-                            onCaptureSourceChanged = { viewModel.setCaptureSource(it) },
+                            onCaptureSourceChanged = { onSwitchCaptureSource(it) },
+                            networkPacketsReceived = networkPacketsReceived,
+                            bluetoothDeviceName = bluetoothDeviceName,
+                            bluetoothDeviceAddress = bluetoothDeviceAddress,
+                            pcPacketsSent = pcPacketsSent,
+                            desktopSyncDirection = desktopSyncDirection,
+                            pcCompanionIp = pcCompanionIp,
+                            isPcStreamingActive = isPcStreamingActive,
+                            onTogglePcStream = { enabled ->
+                                viewModel.setPcStreamingActive(enabled)
+                                MainActivity.serviceStatic?.setPcStreamEnabled(enabled)
+                                if (enabled && !isRunning) {
+                                    onToggleVisualizer()
+                                }
+                            },
+                            onPcIpChanged = { ip ->
+                                viewModel.setPcCompanionIp(ip)
+                                MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                            },
+                            onDiscoverPc = {
+                                MainActivity.serviceStatic?.discoverPcCompanion { ip ->
+                                    viewModel.setPcCompanionIp(ip)
+                                    MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                                    Toast.makeText(context, "Found PC Companion at $ip", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onSyncDirectionChanged = { direction ->
+                                viewModel.setDesktopSyncDirection(direction)
+                                if (direction == "PC_TO_PHONE") {
+                                    onSwitchCaptureSource(AudioCaptureService.CaptureSource.NETWORK)
+                                } else {
+                                    if (captureSource == AudioCaptureService.CaptureSource.NETWORK || captureSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                        onSwitchCaptureSource(AudioCaptureService.CaptureSource.INTERNAL)
+                                    }
+                                }
+                            },
                             latencyWizardState = latencyWizardState,
                             onRunLatencyWizard = { viewModel.runLatencyWizard() },
                             onResetLatencyWizard = { viewModel.resetLatencyWizard() },
                             bananaMode = bananaMode,
                             penisMode = penisMode,
+                            spotifyPlaybackState = spotifyPlaybackState,
+                            onSpotifyTogglePlay = { viewModel.spotifyRepository.togglePlayPause() },
+                            onSpotifyNext = { viewModel.spotifyRepository.skipNext() },
+                            onSpotifyPrevious = { viewModel.spotifyRepository.skipPrevious() },
+                            onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
+                            onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
+                            onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
+                            onOpenSpotifyTab = { viewModel.selectTab(Tab.Spotify) },
+                            onToggleVisualizer = onToggleVisualizer,
                             padding = pagePadding
                         )
                     }
-                    Tab.Glyphs -> {
-                        val gammaValue by viewModel.gammaValue.collectAsStateWithLifecycle()
-                        val maxBrightness by viewModel.maxBrightness.collectAsStateWithLifecycle()
-                        val presets by viewModel.presetInfos.collectAsStateWithLifecycle()
-                        val selectedPreset by viewModel.selectedPreset.collectAsStateWithLifecycle()
-                        val selectedDevice by viewModel.selectedDevice.collectAsStateWithLifecycle()
-
-                        val vizStateState = viewModel.visualizerState.collectAsStateWithLifecycle()
-                        GlyphsScreen(
-                            gammaValue = gammaValue,
-                            onGammaChanged = {
-                                viewModel.setGammaValue(it); viewModel.persistGamma(
-                                it
-                            )
-                            },
-                            maxBrightness = maxBrightness,
-                            onMaxBrightnessChanged = { viewModel.setMaxBrightness(it) },
-                            presets = presets,
-                            selectedPreset = selectedPreset,
-                            onPresetSelected = { viewModel.setSelectedPreset(it) },
-                            isRunning = isRunning,
-                            selectedDevice = selectedDevice,
+                    Tab.Leaderboard -> {
+                        val leaderboardEntries by viewModel.leaderboardEntries.collectAsStateWithLifecycle()
+                        LeaderboardScreen(
+                            entries = leaderboardEntries,
+                            onDismiss = { viewModel.navigateBack() },
+                            showTopBar = false,
+                            modifier = Modifier.padding(paddingValues = pagePadding)
+                        )
+                    }
+                    Tab.Info -> {
+                        AboutScreen(
                             viewModel = viewModel,
-                            vizStateProvider = { vizStateState.value },
-                            padding = pagePadding
-                        )
-                    }
-                    Tab.Visuals -> {
-                        val overlayEnabled by viewModel.overlayEnabled.collectAsStateWithLifecycle()
-                        VisualsScreen(
-                            viewModel = viewModel,
-                            overlayEnabled = overlayEnabled,
-                            onOverlayEnabledChanged = { viewModel.setOverlayEnabled(it) },
-                            onOverlayPermissionRequest = { onOverlayPermissionRequest() },
-                            padding = pagePadding
-                        )
-                    }
-                    Tab.Haptics -> {
-                        val hapticMotorEnabled by viewModel.hapticMotorEnabled.collectAsStateWithLifecycle()
-                        val hapticMode by viewModel.hapticMode.collectAsStateWithLifecycle()
-                        val hapticFreqMin by viewModel.hapticFreqMin.collectAsStateWithLifecycle()
-                        val hapticFreqMax by viewModel.hapticFreqMax.collectAsStateWithLifecycle()
-                        val hapticMultiplier by viewModel.hapticMultiplier.collectAsStateWithLifecycle()
-                        val hapticAudioGain by viewModel.hapticAudioGain.collectAsStateWithLifecycle()
-                        val hapticGamma by viewModel.hapticGamma.collectAsStateWithLifecycle()
-                        val hapticBeatSensitivity by viewModel.hapticBeatSensitivity.collectAsStateWithLifecycle()
-                        val hapticBeatGamma by viewModel.hapticBeatGamma.collectAsStateWithLifecycle()
-                        val isBeatDetected by viewModel.isBeatDetected.collectAsStateWithLifecycle()
-
-                        val hapticAmplitudeState = viewModel.hapticAmplitude.collectAsStateWithLifecycle()
-                        HapticsScreen(
-                            hapticMotorEnabled = hapticMotorEnabled,
-                            onHapticMotorEnabledChanged = {
-                                viewModel.setHapticMotorEnabled(
-                                    it
-                                )
-                            },
-                            hapticMode = hapticMode,
-                            onHapticModeChanged = { viewModel.setHapticMode(it) },
-                            hapticFreqMin = hapticFreqMin,
-                            hapticFreqMax = hapticFreqMax,
-                            onHapticFreqRangeChanged = { min, max ->
-                                viewModel.setHapticFreqRange(
-                                    min,
-                                    max
-                                )
-                            },
-                            hapticMultiplier = hapticMultiplier,
-                            onHapticMultiplierChanged = { viewModel.setHapticMultiplier(it) },
-                            hapticAudioGain = hapticAudioGain,
-                            onHapticAudioGainChanged = { viewModel.setHapticAudioGain(it) },
-                            hapticGamma = hapticGamma,
-                            onHapticGammaChanged = { viewModel.setHapticGamma(it) },
-                            hapticBeatSensitivity = hapticBeatSensitivity,
-                            onHapticBeatSensitivityChanged = {
-                                viewModel.setHapticBeatSensitivity(
-                                    it
-                                )
-                            },
-                            hapticBeatGamma = hapticBeatGamma,
-                            onHapticBeatGammaChanged = { viewModel.setHapticBeatGamma(it) },
-                            hapticAmplitudeProvider = { hapticAmplitudeState.value },
-                            isBeatDetectedProvider = { isBeatDetected },
-                            padding = pagePadding
-                        )
-                    }
-                    Tab.Flashlight -> {
-                        val flashlightEnabled by viewModel.flashlightEnabled.collectAsStateWithLifecycle()
-                        val flashlightMode by viewModel.flashlightMode.collectAsStateWithLifecycle()
-                        val flashlightFreqMin by viewModel.flashlightFreqMin.collectAsStateWithLifecycle()
-                        val flashlightFreqMax by viewModel.flashlightFreqMax.collectAsStateWithLifecycle()
-                        val flashlightThreshold by viewModel.flashlightThreshold.collectAsStateWithLifecycle()
-                        val flashlightSpeedMs by viewModel.flashlightSpeedMs.collectAsStateWithLifecycle()
-                        val flashlightBeatSensitivity by viewModel.flashlightBeatSensitivity.collectAsStateWithLifecycle()
-                        val flashlightIntensityLevels by viewModel.flashlightIntensityLevels.collectAsStateWithLifecycle()
-                        val flashlightLevel by viewModel.flashlightLevel.collectAsStateWithLifecycle()
-                        val isFlashlightBeatDetected by viewModel.isFlashlightBeatDetected.collectAsStateWithLifecycle()
-
-                        val flashlightAmplitudeState = viewModel.flashlightAmplitude.collectAsStateWithLifecycle()
-                        FlashlightScreen(
-                            flashlightEnabled = flashlightEnabled,
-                            onFlashlightEnabledChanged = { viewModel.setFlashlightEnabled(it) },
-                            flashlightMode = flashlightMode,
-                            onFlashlightModeChanged = { viewModel.setFlashlightMode(it) },
-                            flashlightFreqMin = flashlightFreqMin,
-                            flashlightFreqMax = flashlightFreqMax,
-                            onFlashlightFreqRangeChanged = { min, max ->
-                                viewModel.setFlashlightFreqRange(
-                                    min,
-                                    max
-                                )
-                            },
-                            flashlightThreshold = flashlightThreshold,
-                            onFlashlightThresholdChanged = {
-                                viewModel.setFlashlightThreshold(
-                                    it
-                                )
-                            },
-                            flashlightSpeedMs = flashlightSpeedMs,
-                            onFlashlightSpeedMsChanged = { viewModel.setFlashlightSpeedMs(it) },
-                            flashlightBeatSensitivity = flashlightBeatSensitivity,
-                            onFlashlightBeatSensitivityChanged = {
-                                viewModel.setFlashlightBeatSensitivity(
-                                    it
-                                )
-                            },
-                            flashlightIntensityLevels = flashlightIntensityLevels,
-                            flashlightCurrentLevel = flashlightLevel,
-                            flashlightAmplitudeProvider = { flashlightAmplitudeState.value },
-                            isBeatDetectedProvider = { isFlashlightBeatDetected },
-                            padding = pagePadding
+                            onDismiss = null
                         )
                     }
                     Tab.Settings -> {
@@ -847,6 +844,7 @@ internal fun GlyphixApp(
                             onOpenMenu = { viewModel.toggleHamburgerMenu() }
                         )
                     }
+                    else -> {}
                 }
             }
         }
@@ -867,13 +865,12 @@ internal fun GlyphixApp(
         // Speed-Dial Capture Source Menu (Assets/FAB menu.png)
         SpeedDialFabMenu(
             isExpanded = isFabMenuExpanded,
+            isRunning = isRunning,
+            onToggleVisualizer = onToggleVisualizer,
             currentSource = captureSource,
             onSelectSource = { source ->
-                viewModel.setCaptureSource(source)
+                onSwitchCaptureSource(source)
                 viewModel.setFabMenuExpanded(false)
-                if (!isRunning) {
-                    onToggleVisualizer()
-                }
             },
             onDismiss = { viewModel.setFabMenuExpanded(false) },
             modifier = Modifier

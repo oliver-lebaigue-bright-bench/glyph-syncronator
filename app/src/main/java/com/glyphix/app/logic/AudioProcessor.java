@@ -48,9 +48,18 @@ public class AudioProcessor {
     private float mTargetPeak = 0.45f;
     private float mAutoGain = 1.0f;
 
-    private static final float DECAY_SLOW = 0.998f;
+    private float mHpfState = 0f;
+    private static final float HPF_ALPHA = 0.997f; // ~20Hz @ 48kHz
+    private static final float SPECTRUM_NOISE_FLOOR = 0.005f;
+    private final int[] mSmoothedFFT = new int[512];
+
+    private static final float DECAY_SLOW = 0.985f;
     private static final float GAIN_SMOOTHING_ATTACK = 0.15f;
     private static final float GAIN_SMOOTHING_DECAY = 0.02f;
+
+    private long mLastProcessMs = 0;
+    private static final float TARGET_DT_MS = 1000f / 60f; // 60 FPS target
+    private static final float BASE_DECAY = 0.85f;
 
     public AudioProcessor() {
         updateFFTSize(); // Default
@@ -105,19 +114,24 @@ public class AudioProcessor {
     }
 
     public AudioFrameResult processAudioFrame(short[] hopBuffer, VisualizerConfig config, FrequencyRange hapticRange, FrequencyRange flashlightRange, boolean isInternalSource) {
+        return processAudioFrame(hopBuffer, hopBuffer != null ? hopBuffer.length : 0, config, hapticRange, flashlightRange, isInternalSource);
+    }
+
+    public AudioFrameResult processAudioFrame(short[] hopBuffer, int length, VisualizerConfig config, FrequencyRange hapticRange, FrequencyRange flashlightRange, boolean isInternalSource) {
         if (hopBuffer == null || ring == null || hann == null || fftData == null) {
             Log.e("AudioProcessor", "processAudioFrame: One or more buffers are null");
             return null;
         }
 
         // Fill ring buffer
-        for (short value : hopBuffer) {
+        int count = Math.min(length, hopBuffer.length);
+        for (int i = 0; i < count; i++) {
             if (ringPosition >= 0 && ringPosition < ring.length) {
-                ring[ringPosition] = value / 32768f;
+                ring[ringPosition] = hopBuffer[i] / 32768f;
                 ringPosition = (ringPosition + 1) % analysisWindow;
             }
         }
-        filled = Math.min(filled + hopBuffer.length, analysisWindow);
+        filled = Math.min(filled + count, analysisWindow);
 
         if (filled < analysisWindow) {
             return null; // Not enough data yet
@@ -141,7 +155,9 @@ public class AudioProcessor {
         float frameMax = 0f;
 
         // First pass: compute raw magnitudes and find frame peak
-        for (int i = 0; i <= halfFftSize; i++) {
+        // Start from bin 1 to skip DC (bin 0)
+        magnitude[0] = 0;
+        for (int i = 1; i <= halfFftSize; i++) {
             if (2 * i + 1 >= fftData.length) break;
             
             double re = fftData[2 * i];
@@ -175,21 +191,33 @@ public class AudioProcessor {
         }
 
         // Map linear magnitude to 512 centralized logarithmic bins
-        float decayFactor = 0.85f; // Usual decay at ~60fps
+        long now = android.os.SystemClock.elapsedRealtime();
+        float dt = (mLastProcessMs == 0) ? TARGET_DT_MS : (now - mLastProcessMs);
+        mLastProcessMs = now;
+
+        // Dynamic decay based on time elapsed
+        float decayFactor = (float) Math.pow(BASE_DECAY, dt / TARGET_DT_MS);
+        decayFactor = Math.max(0.5f, Math.min(0.95f, decayFactor));
+
         for (int i = 0; i < 512; i++) {
-            int startBin = mLogBinToLinearRange[i][0];
-            int endBin = mLogBinToLinearRange[i][1];
-            float logMag = 0f;
+            // Linear Interpolation Log Sampler for better resolution at low frequencies
+            float fCenter = (FFT_FREQ_RANGES[i][0] + FFT_FREQ_RANGES[i][1]) / 2f;
+            float binIdx = fCenter / hzPerBin;
+            int iIdx = (int) binIdx;
+            float frac = binIdx - iIdx;
             
-            // Use MAX for building the centralized FFT to preserve peaks
-            for (int b = startBin; b <= endBin && b < magnitude.length; b++) {
-                if (magnitude[b] > logMag) logMag = magnitude[b];
+            float logMag = 0f;
+            if (iIdx < magnitude.length - 1) {
+                logMag = magnitude[iIdx] * (1f - frac) + magnitude[iIdx + 1] * frac;
             }
+            
+            // Apply Noise Floor subtraction to remove phantom frequencies
+            logMag = Math.max(0f, logMag - SPECTRUM_NOISE_FLOOR);
             
             int rawVal = (int) Math.min(4095, logMag * 4095f);
             mRawFFT[i] = rawVal;
             
-            // Apply decay
+            // Apply temporal decay
             if (rawVal > mDecayedFFT[i]) {
                 mDecayedFFT[i] = rawVal;
             } else {
@@ -197,7 +225,17 @@ public class AudioProcessor {
             }
         }
 
-        // Compute peaks using the decayed FFT and the selected ReadMethod
+        // Horizontal Smoothing (3-tap box filter) to stabilize adjacent bars
+        for (int i = 0; i < 512; i++) {
+            int val = mDecayedFFT[i];
+            if (i > 0 && i < 511) {
+                val = (mDecayedFFT[i - 1] + mDecayedFFT[i] * 2 + mDecayedFFT[i + 1]) / 4;
+            }
+            mSmoothedFFT[i] = val;
+        }
+        System.arraycopy(mSmoothedFFT, 0, mDecayedFFT, 0, 512);
+
+        // Compute peaks using the decayed and smoothed FFT and the selected ReadMethod
         float hapticPeak = hapticRange != null ? computeRangeMagnitude(hapticRange) : 0f;
         float flashlightPeak = flashlightRange != null ? computeRangeMagnitude(flashlightRange) : 0f;
         float uiPeak = mUiRange != null ? computeRangeMagnitude(mUiRange) : 0f;

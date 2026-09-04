@@ -16,6 +16,7 @@ import com.glyphix.app.logic.AudioProcessor
 import com.glyphix.app.model.DeviceProfile
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
+import com.glyphix.app.ui.*
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.*
@@ -271,9 +272,7 @@ fun CustomPresetEditorScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(FontAwesomeIcons.Solid.ArrowLeft, contentDescription = stringResource(AppR.string.back))
-                    }
+                    GlyphixBackButton(onClick = onDismiss)
                 },
                 actions = {
                     IconButton(onClick = ::undo, enabled = undoStack.isNotEmpty()) {

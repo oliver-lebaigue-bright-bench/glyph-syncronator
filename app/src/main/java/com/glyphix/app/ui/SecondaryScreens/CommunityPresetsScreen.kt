@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.glyphix.app.ui.*
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.solid.*
@@ -38,9 +39,7 @@ fun CommunityPresetsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.community_presets), color = Color.White) },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(FontAwesomeIcons.Solid.ArrowLeft, contentDescription = stringResource(R.string.back), tint = Color.White)
-                    }
+                    GlyphixBackButton(onClick = onDismiss)
                 },
                 actions = {
                     IconButton(onClick = onShowLeaderboard) {

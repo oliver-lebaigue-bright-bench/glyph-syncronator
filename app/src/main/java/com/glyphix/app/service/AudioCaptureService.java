@@ -48,12 +48,40 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.service.quicksettings.TileService;
 import android.util.Log;
+import androidx.core.app.ActivityCompat;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.le.AdvertiseData;
+import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.os.ParcelUuid;
+import java.util.UUID;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.graphics.PixelFormat;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothServerSocket;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.AdvertiseCallback;
+import android.bluetooth.le.AdvertiseData;
+import android.bluetooth.le.AdvertiseSettings;
+import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.os.ParcelUuid;
+import java.util.UUID;
+import java.util.ArrayList;
+import java.net.DatagramSocket;
+import java.net.DatagramPacket;
+import java.net.NetworkInterface;
+import java.net.InetAddress;
+import java.net.Inet4Address;
+import java.util.Enumeration;
+import java.util.function.Consumer;
 
 import com.glyphix.app.ui.VisualizerOverlayView;
 import com.glyphix.app.ui.EdgeVisualizerView;
@@ -97,7 +125,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SPOTIFY, NETWORK, BLUETOOTH }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";
@@ -130,9 +158,24 @@ public class AudioCaptureService extends Service {
 
     private static volatile boolean sIsRunning = false;
     private static final MutableStateFlow<Boolean> sIsRunningFlow = StateFlowKt.MutableStateFlow(false);
+    private static final MutableStateFlow<Integer> sNetworkPacketsReceived = StateFlowKt.MutableStateFlow(0);
+    private static final MutableStateFlow<String> sBluetoothDeviceName = StateFlowKt.MutableStateFlow("");
+    private static final MutableStateFlow<String> sBluetoothDeviceAddress = StateFlowKt.MutableStateFlow("");
     
     public StateFlow<Boolean> isRunningFlow() {
         return sIsRunningFlow;
+    }
+
+    public StateFlow<Integer> networkPacketsReceivedFlow() {
+        return sNetworkPacketsReceived;
+    }
+
+    public StateFlow<String> bluetoothDeviceNameFlow() {
+        return sBluetoothDeviceName;
+    }
+
+    public StateFlow<String> bluetoothDeviceAddressFlow() {
+        return sBluetoothDeviceAddress;
     }
 
     private void setRunning(boolean running) {
@@ -145,6 +188,10 @@ public class AudioCaptureService extends Service {
             mMainHandler.post(mIdlePulseRunnable);
         }
     }
+    public CaptureSource getCaptureSource() {
+        return mCaptureSource;
+    }
+
     public static AudioCaptureService sInstance = null;
 
     private GlobalStatsRepository mGlobalStatsRepository;
@@ -445,7 +492,7 @@ public class AudioCaptureService extends Service {
                 }
 
                 if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
-                if (mCaptureSource == CaptureSource.VIZUALIZER) {
+                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH) {
                     synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
                     // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
                     // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
@@ -540,6 +587,8 @@ public class AudioCaptureService extends Service {
         mGlyphRenderer.setSpectrumGain(appPrefs.getFloat("spectrum_gain", 4.0f));
         mHapticEnabled = hasHapticMotor(this) && appPrefs.getBoolean("haptic_motor_enabled", false);
         mFlashlightEnabled = hasFlashlight(this) && appPrefs.getBoolean("flashlight_enabled", false);
+        mPcStreamEnabled = appPrefs.getBoolean("pc_stream_enabled", false);
+        setPcStreamTargetIp(appPrefs.getString("pc_stream_target_ip", ""));
         refreshLatencyForCurrentAudioRoute();
 
         // Offload heavy file I/O and JSON parsing to background thread to prevent ANR on startup
@@ -565,6 +614,16 @@ public class AudioCaptureService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        try {
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIF_ID, buildNotification(), 0);
+            } else {
+                startForeground(NOTIF_ID, buildNotification());
+            }
+        } catch (Throwable ignored) {}
+
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_STOP.equals(action)) { stopCapture(); stopSelf(); return START_NOT_STICKY; }
@@ -627,6 +686,9 @@ public class AudioCaptureService extends Service {
     public void startVisualizer() {
         if (mCaptureSource == CaptureSource.MIC) startMicCapture();
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+        else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
+        else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
+        else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -639,6 +701,9 @@ public class AudioCaptureService extends Service {
             stopCapture();
             if (mCaptureSource == CaptureSource.MIC) startMicCapture();
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
+            else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
+            else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
+            else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
         });
     }
 
@@ -948,19 +1013,67 @@ public class AudioCaptureService extends Service {
 
     public void startVizualizerCapture() { startCaptureInternal(CaptureSource.VIZUALIZER, 0, null); }
 
+    public void startSpotifyCapture() { startCaptureInternal(CaptureSource.SPOTIFY, 0, null); }
+
+    public void startNetworkCapture() { startCaptureInternal(CaptureSource.NETWORK, 0, null); }
+
+    public void startBluetoothCapture() { startCaptureInternal(CaptureSource.BLUETOOTH, 0, null); }
+
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
         if (source == CaptureSource.INTERNAL) projectionManager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         synchronized (mCaptureLock) {
             stopCaptureLocked();
-            if (source == CaptureSource.INTERNAL) {
-                if (projectionManager == null) return;
-                if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION); else startForeground(NOTIF_ID, buildNotification());
-                mProjection = projectionManager.getMediaProjection(resultCode, data);
-                if (mProjection == null) { stopForeground(STOP_FOREGROUND_REMOVE); setRunning(false); return; }
-                mProjection.registerCallback(mProjectionCallback, mWorkerHandler);
-            } else if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE); else startForeground(NOTIF_ID, buildNotification());
+            try {
+                if (source == CaptureSource.INTERNAL) {
+                    if (projectionManager == null) return;
+                    if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                    mProjection = projectionManager.getMediaProjection(resultCode, data);
+                    if (mProjection == null) { stopForeground(STOP_FOREGROUND_REMOVE); setRunning(false); return; }
+                    mProjection.registerCallback(mProjectionCallback, mWorkerHandler);
+                } else if (source == CaptureSource.MIC) {
+                    if (Build.VERSION.SDK_INT >= 29 && ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+                    } else if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                    } else if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), 0);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                } else if (source == CaptureSource.BLUETOOTH) {
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+                    } else if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), 0);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                } else {
+                    if (Build.VERSION.SDK_INT >= 34) {
+                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                    } else if (Build.VERSION.SDK_INT >= 29) {
+                        startForeground(NOTIF_ID, buildNotification(), 0);
+                    } else {
+                        startForeground(NOTIF_ID, buildNotification());
+                    }
+                }
+            } catch (Throwable fgsError) {
+                Log.w(TAG, "startForeground fallback", fgsError);
+                try {
+                    startForeground(NOTIF_ID, buildNotification());
+                } catch (Throwable ignored) {}
+            }
+
+            if (source == CaptureSource.BLUETOOTH) {
+                startBleAdvertisement();
+            }
+
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
             ensureCaptureExecutor();
             mCaptureExecutor.execute(() -> {
@@ -997,9 +1110,25 @@ public class AudioCaptureService extends Service {
                         } else {
                             Log.e(TAG, "MediaProjection is null or SDK < Q for internal capture");
                         }
-                    } else if (source == CaptureSource.VIZUALIZER) { setupVisualizerCapture(); return; }
-                    else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                        localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                    } else if (source == CaptureSource.VIZUALIZER || source == CaptureSource.SPOTIFY) {
+                        setupVisualizerCapture();
+                        return;
+                    } else if (source == CaptureSource.NETWORK) {
+                        setupNetworkCapture();
+                        return;
+                    } else if (source == CaptureSource.BLUETOOTH) {
+                        setupBluetoothCapture();
+                        return;
+                    } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        try {
+                            localRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                            if (localRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                                localRecord.release();
+                                localRecord = new AudioRecord(MediaRecorder.AudioSource.UNPROCESSED, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "AudioRecord initialization error", e);
+                        }
                     }
                     
                     if (localRecord != null) {
@@ -1035,9 +1164,16 @@ public class AudioCaptureService extends Service {
         mSessionGlyphMs = 0; mSessionHapticMs = 0; mSessionFlashlightMs = 0;
 
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
+        stopBleAdvertisement();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
-    private void releaseAudioRecord() { if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; } }
+    private void releaseAudioRecord() {
+        if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; }
+        if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
+        if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
+        releaseBluetoothSockets();
+        stopDiscoveryResponder();
+    }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
     private void releaseVisualizer() { if (mVisualizer != null) { try { mVisualizer.release(); } catch (Exception ignored) {} mVisualizer = null; } synchronized (mVisualizerPendingFrames) { mVisualizerPendingFrames.clear(); } }
     private void ensureCaptureExecutor() { if (mCaptureExecutor == null || mCaptureExecutor.isShutdown()) mCaptureExecutor = Executors.newSingleThreadExecutor(); }
@@ -1054,6 +1190,7 @@ public class AudioCaptureService extends Service {
 
         // Persist locally
         SharedPreferences prefs = getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE);
+        String todayKey = "usage_day_" + new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(new java.util.Date());
         prefs.edit()
             .putLong("total_visualized_time", prefs.getLong("total_visualized_time", 0L) + t)
             .putLong("total_active_time", prefs.getLong("total_active_time", 0L) + a)
@@ -1061,6 +1198,7 @@ public class AudioCaptureService extends Service {
             .putLong("total_glyph_time", prefs.getLong("total_glyph_time", 0L) + g)
             .putLong("total_haptic_time", prefs.getLong("total_haptic_time", 0L) + h)
             .putLong("total_flashlight_time", prefs.getLong("total_flashlight_time", 0L) + f)
+            .putLong(todayKey, prefs.getLong(todayKey, 0L) + t)
             .apply();
 
         // Reset local counters for next sync block
@@ -1104,7 +1242,7 @@ public class AudioCaptureService extends Service {
                 clearGlyphSession();
             }
             
-            if (now - mLastSendMs < MIN_SEND_INTERVAL_MS) return;
+            if (now - mLastSendMs < (mCaptureSource == CaptureSource.NETWORK ? 8L : MIN_SEND_INTERVAL_MS)) return;
 
             // Reuse boosted buffer
             if (uniqueMagnitudes != null) {
@@ -1195,13 +1333,407 @@ public class AudioCaptureService extends Service {
             mAudioProcessor.updateFFTSize();
             mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
             mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
-            mVisualizer = new Visualizer(0); int captureSize = Math.min(Visualizer.getCaptureSizeRange()[1], 1024); mVisualizer.setCaptureSize(captureSize);
-            mVisualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
-                @Override public void onWaveFormDataCapture(Visualizer v, byte[] w, int sr) { processVisualizerWaveform(w, sr); }
-                @Override public void onFftDataCapture(Visualizer v, byte[] f, int sr) {}
-            }, Visualizer.getMaxCaptureRate(), true, false);
-            mVisualizer.setEnabled(true);
-        } catch (Exception e) { Log.e(TAG, "Failed to start Visualizer capture", e); releaseVisualizer(); }
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                mVisualizer = new Visualizer(0);
+                int captureSize = Math.min(Visualizer.getCaptureSizeRange()[1], 1024);
+                mVisualizer.setCaptureSize(captureSize);
+                mVisualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
+                    @Override public void onWaveFormDataCapture(Visualizer v, byte[] w, int sr) { processVisualizerWaveform(w, sr); }
+                    @Override public void onFftDataCapture(Visualizer v, byte[] f, int sr) {}
+                }, Visualizer.getMaxCaptureRate(), true, false);
+                mVisualizer.setEnabled(true);
+                Log.d(TAG, "Visualizer capture initialized successfully");
+            } else {
+                Log.w(TAG, "RECORD_AUDIO not granted for Visualizer(0), waiting for permission or in-app sync");
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "Failed to start Visualizer capture safely handled", e);
+            releaseVisualizer();
+        }
+    }
+
+    public void pushSpotifyFrame(float[] magnitudes, float peak) {
+        if (!mCapturing) {
+            mCapturing = true;
+            setRunning(true);
+            ensureGlyphSession();
+        }
+        if (mVisualizerConfig == null) return;
+        long now = SystemClock.elapsedRealtime();
+        if (magnitudes != null && magnitudes.length > 0) {
+            int[] emptyFft = new int[0];
+            PendingFrame frame = new PendingFrame(
+                magnitudes,
+                emptyFft,
+                emptyFft,
+                peak,
+                peak,
+                peak,
+                mVisualizerConfig,
+                mPresetConfigVersion.get(),
+                now
+            );
+            synchronized (mVisualizerPendingFrames) {
+                mVisualizerPendingFrames.addLast(frame);
+                dispatchDueFrames(mVisualizerPendingFrames);
+            }
+        }
+    }
+
+    private java.net.DatagramSocket mNetworkSocket;
+    private BluetoothServerSocket mBtServerSocket;
+    private BluetoothSocket mBtSocket;
+    private static final int UDP_PORT = 12347;
+    private static final int DISCOVERY_PORT = 12348;
+    private static final UUID BT_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e45");
+    private static final UUID BLE_SERVICE_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e46");
+    
+    private BluetoothLeAdvertiser mAdvertiser;
+    private final AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
+        @Override
+        public void onStartSuccess(AdvertiseSettings settingsInEffect) {
+            super.onStartSuccess(settingsInEffect);
+            Log.i(TAG, "BLE Advertisement started successfully");
+        }
+
+        @Override
+        public void onStartFailure(int errorCode) {
+            super.onStartFailure(errorCode);
+            Log.e(TAG, "BLE Advertisement failed with error: " + errorCode);
+        }
+    };
+
+    public static String getLocalIpAddress() {
+        try {
+            ArrayList<String> addresses = new ArrayList<>();
+            for (java.util.Enumeration<java.net.NetworkInterface> en = java.net.NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                java.net.NetworkInterface intf = en.nextElement();
+                for (java.util.Enumeration<java.net.InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    java.net.InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof java.net.Inet4Address) {
+                        String ip = inetAddress.getHostAddress();
+                        if (ip != null) addresses.add(ip);
+                    }
+                }
+            }
+            
+            // Prioritize standard home network ranges
+            for (String addr : addresses) {
+                if (addr.startsWith("192.168.") || addr.startsWith("10.0.") || addr.startsWith("172.")) {
+                    return addr;
+                }
+            }
+            
+            if (!addresses.isEmpty()) return addresses.get(0);
+        } catch (Exception ex) {
+            Log.e(TAG, "IP Address error", ex);
+        }
+        return "Unknown";
+    }
+
+    private void setupNetworkCapture() {
+        if (mNetworkSocket != null) { mNetworkSocket.close(); mNetworkSocket = null; }
+        sNetworkPacketsReceived.setValue(0);
+        showToast("Network Thread Started");
+        Log.i(TAG, "Starting Network Capture. Local IP displayed: " + getLocalIpAddress());
+        try {
+            mNetworkSocket = new java.net.DatagramSocket(UDP_PORT);
+            mNetworkSocket.setReceiveBufferSize(256 * 1024);
+            mNetworkSocket.setSoTimeout(500); // 500ms timeout for responsiveness
+            Log.i(TAG, "Network socket opened on port " + UDP_PORT);
+            mCurrentSampleRate = 48000;
+            mAudioProcessor.updateFFTSize(mCurrentSampleRate);
+            mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+            mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+            
+            byte[] buffer = new byte[8192];
+            short[] pcm = new short[4096];
+            int packetsReceived = 0;
+            Log.i(TAG, "Network capture loop started. Listening for UDP packets on port " + UDP_PORT);
+            
+            startDiscoveryResponder();
+
+            while (mCapturing && mNetworkSocket != null) {
+                try {
+                    java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                    
+                    // Blocking receive for the first packet in a burst
+                    mNetworkSocket.receive(packet);
+                    
+                    // Burst processing: catch up if multiple packets are waiting
+                    int burstCount = 0;
+                    while (true) {
+                        packetsReceived++;
+                        sNetworkPacketsReceived.setValue(packetsReceived);
+                        
+                        int len = packet.getLength();
+                        if (packetsReceived == 1) {
+                            showToast("Audio link established!");
+                            Log.i(TAG, "Network Audio: First packet received from " + packet.getAddress().getHostAddress());
+                        }
+                        
+                        int samples = len / 2;
+                        for (int i = 0; i < samples; i++) {
+                            pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
+                        }
+                        
+                        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(pcm, samples, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
+                        if (result != null) {
+                            PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
+                            synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
+                        }
+
+                        // Try to get another packet immediately without blocking too much
+                        if (burstCount++ < 10) { // Limit burst to prevent starvation
+                            try {
+                                mNetworkSocket.setSoTimeout(1); // Near-instant check
+                                mNetworkSocket.receive(packet);
+                                continue;
+                            } catch (java.net.SocketTimeoutException ste) {
+                                mNetworkSocket.setSoTimeout(500); // Restore normal timeout
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (java.net.SocketTimeoutException e) {
+                    // Just check mCapturing and try again
+                } catch (Exception e) {
+                    if (mCapturing && mNetworkSocket != null && !mNetworkSocket.isClosed()) {
+                        Log.e(TAG, "Network capture loop error", e);
+                        Thread.sleep(10); // Prevent tight error loop
+                    } else {
+                        break; // Socket closed or capturing stopped
+                    }
+                }
+            }
+            Log.i(TAG, "Network capture loop exiting. Total packets received: " + packetsReceived);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to setup network capture", e);
+            showToast("Failed to open network port: " + e.getMessage());
+        }
+    }
+
+    private void showNetworkDebugToast(int packetSize) {
+         mMainHandler.post(() -> android.widget.Toast.makeText(this, "Received packet: " + packetSize + " bytes", android.widget.Toast.LENGTH_SHORT).show());
+    }
+
+    private void setupBluetoothCapture() {
+        sNetworkPacketsReceived.setValue(0);
+        
+        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter btAdapter = btManager != null ? btManager.getAdapter() : null;
+        
+        if (btAdapter == null) {
+            showToast("Bluetooth not supported on this device");
+            return;
+        }
+
+        if (!btAdapter.isEnabled()) {
+            showToast("Please turn on Bluetooth");
+            return;
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            showToast("Bluetooth permission missing");
+            return;
+        }
+
+        // Start listening in a background thread to prevent ANR
+        new Thread(() -> {
+            Log.i(TAG, "Starting Bluetooth Capture Background Thread. UUID: " + BT_UUID);
+            try {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return;
+                
+                mBtServerSocket = btAdapter.listenUsingRfcommWithServiceRecord("Glyphix Companion", BT_UUID);
+                mCurrentSampleRate = 48000;
+                mAudioProcessor.updateFFTSize(mCurrentSampleRate);
+                mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+                mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+
+                showToast("Waiting for Bluetooth Companion...");
+                mBtSocket = mBtServerSocket.accept(); // Blocking call, now in background thread
+                
+                if (mBtSocket != null) {
+                    showToast("Bluetooth link established!");
+                    Log.i(TAG, "Bluetooth Audio: Connection received from " + mBtSocket.getRemoteDevice().getName());
+
+                    java.io.InputStream inputStream = mBtSocket.getInputStream();
+                    byte[] buffer = new byte[8192];
+                    short[] pcm = new short[4096];
+                    int packetsReceived = 0;
+
+                    while (mCapturing && mBtSocket != null && mBtSocket.isConnected()) {
+                        int read = inputStream.read(buffer);
+                        if (read <= 0) break;
+
+                        packetsReceived++;
+                        sNetworkPacketsReceived.setValue(packetsReceived);
+
+                        int samples = read / 2;
+                        for (int i = 0; i < samples; i++) {
+                            pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
+                        }
+
+                        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(pcm, samples, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
+                        if (result != null) {
+                            PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
+                            synchronized (mVisualizerPendingFrames) {
+                                mVisualizerPendingFrames.addLast(frame);
+                                dispatchDueFrames(mVisualizerPendingFrames);
+                            }
+                        }
+                    }
+                }
+                Log.i(TAG, "Bluetooth capture loop exiting.");
+            } catch (Exception e) {
+                Log.e(TAG, "Bluetooth capture error", e);
+                if (mCapturing) showToast("Bluetooth error: " + e.getMessage());
+            } finally {
+                releaseBluetoothSockets();
+            }
+        }, "BT-Capture-Thread").start();
+    }
+
+    private void releaseBluetoothSockets() {
+        if (mBtSocket != null) { try { mBtSocket.close(); } catch (Exception ignored) {} mBtSocket = null; }
+        if (mBtServerSocket != null) { try { mBtServerSocket.close(); } catch (Exception ignored) {} mBtServerSocket = null; }
+    }
+
+    private void startBleAdvertisement() {
+        stopBleAdvertisement();
+
+        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter adapter = btManager != null ? btManager.getAdapter() : null;
+        
+        if (adapter == null) {
+            showToast("Bluetooth adapter missing");
+            return;
+        }
+
+        if (!adapter.isMultipleAdvertisementSupported()) {
+            showToast("BLE Peripheral mode not supported - Use manual IP/MAC");
+            Log.e(TAG, "BLE Advertising not supported");
+            return;
+        }
+
+        mAdvertiser = adapter.getBluetoothLeAdvertiser();
+        if (mAdvertiser == null) {
+            Log.e(TAG, "Failed to get BLE Advertiser");
+            return;
+        }
+
+        AdvertiseSettings settings = new AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                .setConnectable(true)
+                .setTimeout(0)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                .build();
+
+        AdvertiseData data = new AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .setIncludeTxPowerLevel(true)
+                .addServiceUuid(new ParcelUuid(BLE_SERVICE_UUID))
+                .build();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Missing BLUETOOTH_ADVERTISE permission");
+            return;
+        }
+        
+        mAdvertiser.startAdvertising(settings, data, mAdvertiseCallback);
+        String deviceName = adapter.getName();
+        sBluetoothDeviceName.setValue(deviceName);
+        sBluetoothDeviceAddress.setValue("See in System Settings");
+        showToast("Bluetooth Discovery ON\nDevice: " + deviceName);
+        Log.i(TAG, "BLE Advertisement requested with UUID: " + BLE_SERVICE_UUID);
+    }
+
+    private void stopBleAdvertisement() {
+        if (mAdvertiser != null) {
+            try {
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED) {
+                    mAdvertiser.stopAdvertising(mAdvertiseCallback);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping BLE advertisement", e);
+            }
+            mAdvertiser = null;
+        }
+    }
+
+    private void startForegroundSafe(int id, Notification notification, int type) {
+        if (Build.VERSION.SDK_INT >= 34) {
+            try {
+                // On Android 14+, a type is MANDATORY. Fall back to SPECIAL_USE if needed.
+                int effectiveType = (type == 0) ? ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE : type;
+                startForeground(id, notification, effectiveType);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to start foreground with type " + type + ", trying SPECIAL_USE fallback", e);
+                try {
+                    startForeground(id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } catch (Exception e2) {
+                    Log.e(TAG, "Critical failure starting FGS", e2);
+                    showToast("Error: Background service restricted by system");
+                    stopSelf();
+                }
+            }
+        } else if (Build.VERSION.SDK_INT >= 29) {
+            if (type != 0) startForeground(id, notification, type);
+            else startForeground(id, notification);
+        } else {
+            startForeground(id, notification);
+        }
+    }
+
+    private Thread mDiscoveryThread;
+    private void startDiscoveryResponder() {
+        stopDiscoveryResponder();
+        mDiscoveryThread = new Thread(() -> {
+            byte[] responseData = "GLYPHIX_DISCOVERY_RESPONSE".getBytes();
+            Log.d(TAG, "Discovery responder started on port " + DISCOVERY_PORT);
+            
+            try (java.net.DatagramSocket socket = new java.net.DatagramSocket(DISCOVERY_PORT)) {
+                socket.setSoTimeout(5000);
+                byte[] buffer = new byte[1024];
+                
+                while (mCapturing && mCaptureSource == CaptureSource.NETWORK) {
+                    try {
+                        java.net.DatagramPacket packet = new java.net.DatagramPacket(buffer, buffer.length);
+                        socket.receive(packet);
+                        
+                        Log.d(TAG, "Discovery Port: Received " + packet.getLength() + " bytes from " + packet.getAddress().getHostAddress());
+                        
+                        String message = new String(packet.getData(), 0, packet.getLength());
+                        if ("GLYPHIX_DISCOVERY_REQUEST".equals(message)) {
+                            Log.d(TAG, "Discovery request received from " + packet.getAddress().getHostAddress());
+                            java.net.DatagramPacket response = new java.net.DatagramPacket(
+                                    responseData, responseData.length, packet.getAddress(), packet.getPort());
+                            socket.send(response);
+                        }
+                    } catch (java.net.SocketTimeoutException e) {
+                        // Just check mCapturing again
+                    } catch (Exception e) {
+                        if (mCapturing) {
+                            Log.e(TAG, "Discovery responder error", e);
+                            Thread.sleep(2000);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Could not start discovery responder", e);
+            }
+            Log.d(TAG, "Discovery responder stopped");
+        }, "DiscoveryResponder");
+        mDiscoveryThread.start();
+    }
+
+    private void stopDiscoveryResponder() {
+        if (mDiscoveryThread != null) {
+            mDiscoveryThread.interrupt();
+            mDiscoveryThread = null;
+        }
     }
 
     private short[] mWaveformHopBuffer = new short[0];
@@ -1218,6 +1750,7 @@ public class AudioCaptureService extends Service {
         }
         
         AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(mWaveformHopBuffer, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
+        sendPcmToPc(mWaveformHopBuffer, waveform.length);
         if (result == null) return;
         PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
         synchronized (mVisualizerPendingFrames) { 
@@ -1240,12 +1773,103 @@ public class AudioCaptureService extends Service {
             }
             if (read == 0) continue;
             
+            sendPcmToPc(hop, read);
             AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
             if (result == null) continue;
             PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
             synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
         }
         Log.d(TAG, "Exited capture loop");
+    }
+
+    private boolean mPcStreamEnabled = false;
+    private String mPcStreamTargetIp = "";
+    private volatile InetAddress mPcStreamTargetAddr = null;
+    private volatile DatagramSocket mPcStreamSocket = null;
+    private static final int PC_STREAM_PORT = 12347;
+    public static final kotlinx.coroutines.flow.MutableStateFlow<Integer> sPcPacketsSent = kotlinx.coroutines.flow.StateFlowKt.MutableStateFlow(0);
+    public kotlinx.coroutines.flow.StateFlow<Integer> pcPacketsSentFlow() { return sPcPacketsSent; }
+
+    public void setPcStreamEnabled(boolean enabled) {
+        mPcStreamEnabled = enabled;
+        getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putBoolean("pc_stream_enabled", enabled).apply();
+    }
+
+    public boolean getPcStreamEnabled() {
+        return mPcStreamEnabled;
+    }
+
+    public void setPcStreamTargetIp(String ip) {
+        mPcStreamTargetIp = (ip != null) ? ip.trim() : "";
+        getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putString("pc_stream_target_ip", mPcStreamTargetIp).apply();
+        if (mWorkerHandler != null) {
+            mWorkerHandler.post(() -> {
+                try {
+                    mPcStreamTargetAddr = (!mPcStreamTargetIp.isEmpty()) ? InetAddress.getByName(mPcStreamTargetIp) : null;
+                } catch (Exception e) {
+                    mPcStreamTargetAddr = null;
+                }
+            });
+        }
+    }
+
+    public String getPcStreamTargetIp() {
+        return mPcStreamTargetIp;
+    }
+
+    private void sendPcmToPc(short[] pcm, int samples) {
+        if (!mPcStreamEnabled || mPcStreamTargetAddr == null || pcm == null || samples <= 0) return;
+        try {
+            if (mPcStreamSocket == null || mPcStreamSocket.isClosed()) {
+                mPcStreamSocket = new DatagramSocket();
+                mPcStreamSocket.setSendBufferSize(64 * 1024);
+            }
+            int byteCount = samples * 2;
+            byte[] buf = new byte[byteCount];
+            for (int i = 0; i < samples; i++) {
+                buf[i * 2] = (byte) (pcm[i] & 0xFF);
+                buf[i * 2 + 1] = (byte) ((pcm[i] >> 8) & 0xFF);
+            }
+            DatagramPacket packet = new DatagramPacket(buf, byteCount, mPcStreamTargetAddr, PC_STREAM_PORT);
+            mPcStreamSocket.send(packet);
+            sPcPacketsSent.setValue(sPcPacketsSent.getValue() + 1);
+        } catch (Exception ignored) {}
+    }
+
+    public void discoverPcCompanion(Consumer<String> onFound) {
+        new Thread(() -> {
+            try (DatagramSocket socket = new DatagramSocket()) {
+                socket.setBroadcast(true);
+                socket.setSoTimeout(1500);
+                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes();
+                
+                ArrayList<String> broadcasts = new ArrayList<>();
+                broadcasts.add("255.255.255.255");
+                String localIp = getLocalIpAddress();
+                if (!"Unknown".equals(localIp) && localIp.contains(".")) {
+                    String subnet = localIp.substring(0, localIp.lastIndexOf('.')) + ".255";
+                    broadcasts.add(subnet);
+                }
+                
+                for (String b : broadcasts) {
+                    try {
+                        DatagramPacket p = new DatagramPacket(req, req.length, InetAddress.getByName(b), DISCOVERY_PORT);
+                        socket.send(p);
+                    } catch (Exception ignored) {}
+                }
+                
+                byte[] buf = new byte[1024];
+                DatagramPacket resp = new DatagramPacket(buf, buf.length);
+                socket.receive(resp);
+                String msg = new String(resp.getData(), 0, resp.getLength());
+                if (msg.contains("GLYPHIX_PC_DISCOVERY_RESPONSE") || msg.contains("GLYPHIX")) {
+                    String pcIp = resp.getAddress().getHostAddress();
+                    if (onFound != null && mMainHandler != null) {
+                        mMainHandler.post(() -> onFound.accept(pcIp));
+                    }
+                }
+            } catch (Exception ignored) {}
+        }, "PcDiscoveryThread").start();
     }
 
     private void turnOffGlyphs() {
