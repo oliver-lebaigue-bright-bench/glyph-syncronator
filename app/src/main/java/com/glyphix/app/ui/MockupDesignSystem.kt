@@ -44,6 +44,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -262,6 +264,35 @@ fun FloatingBottomBar(
     val navItems = remember(selectedTab) { getNavItemsForTab(selectedTab) }
     val itemCount = navItems.size
 
+    // Adaptive width measurement for the pill
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val labelStyle = MaterialTheme.typography.labelLarge.copy(
+        fontWeight = FontWeight.Bold,
+        fontSize = if (itemCount > 4) 14.sp else 15.sp
+    )
+    
+    val itemExtraWidthsPx = remember(navItems, labelStyle, density) {
+        navItems.map { item ->
+            val textWidth = textMeasurer.measure(
+                text = item.label,
+                style = labelStyle,
+                maxLines = 1,
+                softWrap = false
+            ).size.width.toFloat()
+            val spacing = with(density) { (if (itemCount > 4) 6.dp else 8.dp).toPx() }
+
+            val extraPaddingDp = when (item.tab) {
+                Tab.Leaderboard -> 14.dp
+                Tab.Settings -> 10.dp
+                else -> 6.dp
+            }
+            
+            val extraPadding = with(density) { (if (itemCount > 4) (extraPaddingDp * 0.6f) else extraPaddingDp).toPx() }
+            textWidth + spacing + extraPadding
+        }
+    }
+
     // Animation orchestration for the "Collapse -> Bounce -> Expand" sequence
     val animActiveIndex = remember { Animatable(navItems.indexOfFirst { it.tab == selectedTab }.coerceAtLeast(0).toFloat()) }
     val animExpansion = remember { Animatable(1f) }
@@ -333,24 +364,27 @@ fun FloatingBottomBar(
             ) {
                 val totalWidthPx = constraints.maxWidth.toFloat()
                 val count = itemCount.toFloat()
-                val extraWidthPx = with(LocalDensity.current) { (if (itemCount > 4) 68.dp else 84.dp).toPx() }
+                
+                // Use the adaptive width for the current target tab
+                val targetExtraWidthPx = itemExtraWidthsPx.getOrNull(targetIndex) ?: 0f
                 val expansion = animExpansion.value
                 
                 // Calculate current slot widths based on expansion
-                val currentBaseWidthPx = (totalWidthPx - (extraWidthPx * expansion)) / count
+                val currentBaseWidthPx = (totalWidthPx - (targetExtraWidthPx * expansion)) / count
 
                 fun getCenterForIndex(idx: Float, isExpanded: Float): Float {
-                    val base = (totalWidthPx - (extraWidthPx * isExpanded)) / count
+                    val activeExtraWidth = targetExtraWidthPx * isExpanded
+                    val base = (totalWidthPx - activeExtraWidth) / count
                     val slotIndex = idx.roundToInt().coerceIn(0, itemCount - 1)
 
                     // Start position
                     var x = 0f
                     for (j in 0 until slotIndex) {
-                        x += base + (if (j == targetIndex) extraWidthPx * isExpanded else 0f)
+                        x += base + (if (j == targetIndex) activeExtraWidth else 0f)
                     }
                     
                     // Current slot width
-                    val currentSlotW = base + (if (slotIndex == targetIndex) extraWidthPx * isExpanded else 0f)
+                    val currentSlotW = base + (if (slotIndex == targetIndex) activeExtraWidth else 0f)
                     
                     // Improved smooth transition calculation
                     val totalSlotsWidth = totalWidthPx / count
@@ -362,13 +396,9 @@ fun FloatingBottomBar(
                     return linearX + frac * (logicX - linearX)
                 }
 
-                val basePillWidth = if (itemCount > 4) 48.dp else 56.dp
-                val extraPillWidth = if (itemCount > 4) 68.dp else 84.dp
-                val pillWidth = with(LocalDensity.current) { 
-                    // Minimum width ensures the pill never fully disappears
-                    val minWidth = basePillWidth.toPx()
-                    val targetWidth = basePillWidth.toPx() + extraPillWidth.toPx() * expansion
-                    maxOf(minWidth, targetWidth).toDp()
+                val basePillWidthPx = with(density) { (if (itemCount > 4) 48.dp else 56.dp).toPx() }
+                val pillWidth = with(density) { 
+                    (basePillWidthPx + targetExtraWidthPx * expansion).toDp()
                 }
                 
                 // The Selection Indicator: Bouncy and Precisely Calculated
@@ -385,8 +415,8 @@ fun FloatingBottomBar(
                 Row(modifier = Modifier.fillMaxSize()) {
                     navItems.forEachIndexed { i, item ->
                         val isSelected = selectedTab == item.tab
-                        val currentSlotWidth = with(LocalDensity.current) { 
-                            (currentBaseWidthPx + (if (i == targetIndex) extraWidthPx * expansion else 0f)).toDp() 
+                        val currentSlotWidth = with(density) { 
+                            (currentBaseWidthPx + (if (i == targetIndex) targetExtraWidthPx * expansion else 0f)).toDp() 
                         }
                         
                         // Icon Pop Animation
