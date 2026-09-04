@@ -272,7 +272,7 @@ fun AudioScreen(
             }
         }
 
-        val showCompanionCard = !companionCardDismissed && (
+        val showCompanionCard = isRunning && !companionCardDismissed && (
             captureSource == AudioCaptureService.CaptureSource.NETWORK ||
             captureSource == AudioCaptureService.CaptureSource.BLUETOOTH ||
             isPcStreamingActive
