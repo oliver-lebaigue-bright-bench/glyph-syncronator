@@ -196,3 +196,12 @@ data class SpotifyPlayRequestBody(
     val offset: Map<String, Any>? = null,
     val position_ms: Long? = null
 )
+
+/**
+ * Transfer Playback Request Body
+ */
+data class SpotifyTransferRequestBody(
+    @SerializedName("device_ids") val device_ids: List<String>,
+    @SerializedName("play") val play: Boolean = true
+)
+

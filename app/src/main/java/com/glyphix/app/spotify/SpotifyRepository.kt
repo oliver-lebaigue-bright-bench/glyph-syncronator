@@ -1,9 +1,15 @@
 package com.glyphix.app.spotify
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.media.browse.MediaBrowser
+import android.media.session.MediaController
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.KeyEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -439,17 +445,10 @@ class SpotifyRepository private constructor(private val context: Context) {
         scope.launch {
             try {
                 val body = SpotifyPlayRequestBody(uris = listOf(trackUri))
-                val response = api.startPlayback(body)
-                if (!response.isSuccessful) {
-                    Log.w(TAG, "playTrack Web API response code: ${response.code()}, falling back to native Spotify app intent")
-                    launchSpotifyAppIntent(trackUri)
-                } else {
-                    delay(300)
-                    fetchPlaybackState()
-                }
+                executePlaybackRequest(body, trackUri)
             } catch (e: Exception) {
-                Log.w(TAG, "Error playing track via Web API, falling back to native app intent", e)
-                launchSpotifyAppIntent(trackUri)
+                Log.w(TAG, "Error playing track via Web API", e)
+                tryBackgroundPlaybackFallback(trackUri)
             }
         }
     }
@@ -459,36 +458,143 @@ class SpotifyRepository private constructor(private val context: Context) {
             try {
                 val offset = if (!trackUri.isNullOrEmpty()) mapOf("uri" to trackUri) else null
                 val body = SpotifyPlayRequestBody(context_uri = playlistUri, offset = offset)
-                val response = api.startPlayback(body)
-                if (!response.isSuccessful) {
-                    Log.w(TAG, "playPlaylist Web API response code: ${response.code()}, falling back to native Spotify app intent")
-                    launchSpotifyAppIntent(trackUri ?: playlistUri)
-                } else {
-                    delay(300)
-                    fetchPlaybackState()
-                }
+                executePlaybackRequest(body, trackUri ?: playlistUri)
             } catch (e: Exception) {
-                Log.w(TAG, "Error playing playlist via Web API, falling back to native app intent", e)
-                launchSpotifyAppIntent(trackUri ?: playlistUri)
+                Log.w(TAG, "Error playing playlist via Web API", e)
+                tryBackgroundPlaybackFallback(trackUri ?: playlistUri)
             }
         }
     }
 
-    private fun launchSpotifyAppIntent(spotifyUri: String) {
+    private suspend fun executePlaybackRequest(body: SpotifyPlayRequestBody, fallbackUri: String) {
+        // 1. Direct Web API attempt
+        val response = api.startPlayback(body = body)
+        if (response.isSuccessful) {
+            delay(300)
+            fetchPlaybackState()
+            return
+        }
+
+        Log.w(TAG, "Direct startPlayback failed (HTTP ${response.code()}), attempting device discovery...")
+
+        // 2. Discover available Spotify devices
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(spotifyUri)).apply {
-                setPackage("com.spotify.music")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to launch specific spotify package intent, falling back to general URI", e)
-            try {
-                val generalIntent = Intent(Intent.ACTION_VIEW, Uri.parse(spotifyUri)).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            val devicesResponse = api.getDevices()
+            val devices = devicesResponse.body()?.devices?.filterNotNull() ?: emptyList()
+            val targetDevice = devices.firstOrNull { it.is_active }
+                ?: devices.firstOrNull { it.type.equals("Smartphone", ignoreCase = true) && !it.is_restricted }
+                ?: devices.firstOrNull { !it.is_restricted }
+                ?: devices.firstOrNull()
+
+            if (targetDevice?.id != null) {
+                Log.d(TAG, "Targeting Spotify device: ${targetDevice.name} (${targetDevice.id})")
+                if (!targetDevice.is_active) {
+                    try {
+                        api.transferPlayback(SpotifyTransferRequestBody(device_ids = listOf(targetDevice.id), play = true))
+                        delay(250)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "transferPlayback failed", e)
+                    }
                 }
-                context.startActivity(generalIntent)
-            } catch (_: Exception) {}
+
+                val targetedResponse = api.startPlayback(deviceId = targetDevice.id, body = body)
+                if (targetedResponse.isSuccessful) {
+                    delay(300)
+                    fetchPlaybackState()
+                    return
+                }
+                Log.w(TAG, "Targeted startPlayback failed (HTTP ${targetedResponse.code()})")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Device discovery query failed", e)
+        }
+
+        // 3. Background media service playback (No UI redirect / No app switching)
+        Log.d(TAG, "Triggering background media service fallback for URI: $fallbackUri")
+        tryBackgroundPlaybackFallback(fallbackUri)
+    }
+
+    private fun tryBackgroundPlaybackFallback(spotifyUri: String) {
+        val started = if (spotifyUri.isNotBlank()) tryPlayViaMediaBrowser(spotifyUri) else false
+        if (!started) {
+            sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_PLAY)
+        }
+        scope.launch {
+            delay(800)
+            fetchPlaybackState()
+        }
+    }
+
+    private fun tryPlayViaMediaBrowser(spotifyUri: String): Boolean {
+        return try {
+            val intent = Intent("android.media.browse.MediaBrowserService").apply {
+                setPackage("com.spotify.music")
+            }
+            val services = context.packageManager.queryIntentServices(intent, 0)
+            val serviceInfo = services.firstOrNull()?.serviceInfo
+            val componentName = if (serviceInfo != null) {
+                ComponentName(serviceInfo.packageName, serviceInfo.name)
+            } else {
+                ComponentName("com.spotify.music", "com.spotify.music.playback.mediaservice.SpotifyMediaBrowserService")
+            }
+
+            val handler = Handler(Looper.getMainLooper())
+            handler.post {
+                var mediaBrowser: MediaBrowser? = null
+                val connectionCallback = object : MediaBrowser.ConnectionCallback() {
+                    override fun onConnected() {
+                        try {
+                            val token = mediaBrowser?.sessionToken
+                            if (token != null) {
+                                val mediaController = MediaController(context, token)
+                                if (spotifyUri.isNotBlank()) {
+                                    mediaController.transportControls.playFromMediaId(spotifyUri, null)
+                                } else {
+                                    mediaController.transportControls.play()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Error controlling playback via MediaController", e)
+                        } finally {
+                            try {
+                                mediaBrowser?.disconnect()
+                            } catch (_: Exception) {}
+                        }
+                    }
+
+                    override fun onConnectionFailed() {
+                        Log.w(TAG, "MediaBrowser connection to Spotify failed")
+                        try {
+                            mediaBrowser?.disconnect()
+                        } catch (_: Exception) {}
+                    }
+                }
+
+                mediaBrowser = MediaBrowser(context, componentName, connectionCallback, null)
+                mediaBrowser.connect()
+            }
+            true
+        } catch (e: Exception) {
+            Log.w(TAG, "Error in tryPlayViaMediaBrowser", e)
+            false
+        }
+    }
+
+    private fun sendMediaButtonToSpotify(keyCode: Int = KeyEvent.KEYCODE_MEDIA_PLAY) {
+        try {
+            val downIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+                setPackage("com.spotify.music")
+                putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+            }
+            context.sendOrderedBroadcast(downIntent, null)
+
+            val upIntent = Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+                setPackage("com.spotify.music")
+                putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_UP, keyCode))
+            }
+            context.sendOrderedBroadcast(upIntent, null)
+        } catch (e: Exception) {
+            Log.w(TAG, "Error sending media button to Spotify", e)
         }
     }
 
@@ -497,14 +603,21 @@ class SpotifyRepository private constructor(private val context: Context) {
         scope.launch {
             try {
                 if (current?.is_playing == true) {
-                    api.pausePlayback()
+                    val response = api.pausePlayback()
+                    if (!response.isSuccessful) {
+                        sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_PAUSE)
+                    }
                 } else {
-                    api.startPlayback()
+                    val response = api.startPlayback()
+                    if (!response.isSuccessful) {
+                        executePlaybackRequest(SpotifyPlayRequestBody(), "")
+                    }
                 }
                 delay(250)
                 fetchPlaybackState()
             } catch (e: Exception) {
                 Log.e(TAG, "Error toggling play/pause", e)
+                sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
             }
         }
     }
@@ -512,11 +625,15 @@ class SpotifyRepository private constructor(private val context: Context) {
     fun skipNext() {
         scope.launch {
             try {
-                api.skipToNext()
+                val response = api.skipToNext()
+                if (!response.isSuccessful) {
+                    sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_NEXT)
+                }
                 delay(300)
                 fetchPlaybackState()
             } catch (e: Exception) {
                 Log.e(TAG, "Error skipping next", e)
+                sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_NEXT)
             }
         }
     }
@@ -524,11 +641,15 @@ class SpotifyRepository private constructor(private val context: Context) {
     fun skipPrevious() {
         scope.launch {
             try {
-                api.skipToPrevious()
+                val response = api.skipToPrevious()
+                if (!response.isSuccessful) {
+                    sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                }
                 delay(300)
                 fetchPlaybackState()
             } catch (e: Exception) {
                 Log.e(TAG, "Error skipping previous", e)
+                sendMediaButtonToSpotify(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
             }
         }
     }

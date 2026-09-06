@@ -65,11 +65,19 @@ interface SpotifyWebApi {
 
     @PUT("v1/me/player/play")
     suspend fun startPlayback(
+        @Query("device_id") deviceId: String? = null,
         @Body body: SpotifyPlayRequestBody = SpotifyPlayRequestBody()
     ): Response<Unit>
 
     @PUT("v1/me/player/pause")
-    suspend fun pausePlayback(): Response<Unit>
+    suspend fun pausePlayback(
+        @Query("device_id") deviceId: String? = null
+    ): Response<Unit>
+
+    @PUT("v1/me/player")
+    suspend fun transferPlayback(
+        @Body body: SpotifyTransferRequestBody
+    ): Response<Unit>
 
     @POST("v1/me/player/next")
     suspend fun skipToNext(): Response<Unit>
