@@ -29,7 +29,6 @@ internal fun MainOverlays(
 ) {
     val isShowingEditor by viewModel.isShowingEditor.collectAsStateWithLifecycle()
     val isShowingLicense by viewModel.isShowingLicense.collectAsStateWithLifecycle()
-    val isShowingStats by viewModel.isShowingStats.collectAsStateWithLifecycle()
     val isShowingProfile by viewModel.isShowingProfile.collectAsStateWithLifecycle()
     val isShowingProfileSetup by viewModel.isShowingProfileSetup.collectAsStateWithLifecycle()
     val isShowingGlyphs by viewModel.isShowingGlyphs.collectAsStateWithLifecycle()
@@ -112,7 +111,6 @@ internal fun MainOverlays(
             )
         }
     }
-
     if (isShowingProfileSetup) {
         val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
         ProfileSetupDialog(
