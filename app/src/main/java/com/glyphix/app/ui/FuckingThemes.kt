@@ -432,7 +432,8 @@ fun GlyphixTheme(
         shapes = shapes,
         typography = typography
     ) {
-        val uiAmplitude by MainViewModel.instance!!.uiAmplitude.collectAsStateWithLifecycle()
+        val uiAmplitudeState = MainViewModel.instance?.uiAmplitude?.collectAsStateWithLifecycle()
+        val uiAmplitude = uiAmplitudeState?.value ?: 1.0f
         val isMonsterTheme = themeName.startsWith("Monster")
 
         val activeFontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily
