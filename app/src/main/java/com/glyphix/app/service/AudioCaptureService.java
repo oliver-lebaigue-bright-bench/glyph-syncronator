@@ -492,8 +492,13 @@ public class AudioCaptureService extends Service {
                 }
 
                 if (now - mLastNotifUpdateMs >= 1000) { refreshNotification(); mLastNotifUpdateMs = now; }
-                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH) {
-                    synchronized (mVisualizerPendingFrames) { dispatchDueFrames(mVisualizerPendingFrames); }
+                
+                // Unconditionally dispatch due frames for ALL capture sources
+                synchronized (mVisualizerPendingFrames) { 
+                    dispatchDueFrames(mVisualizerPendingFrames); 
+                }
+                
+                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH || mCaptureSource == CaptureSource.SPOTIFY) {
                     // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
                     // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
                     if (now - mLastSendMs >= 150 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
@@ -1083,6 +1088,13 @@ public class AudioCaptureService extends Service {
                 try {
                     mCurrentSampleRate = (source == CaptureSource.MIC) ? SAMPLE_RATE : 48000;
                     int captureSampleRate = mCurrentSampleRate;
+                    ensureVisualizerConfigLoaded();
+                    mAudioProcessor.updateFFTSize(captureSampleRate);
+                    mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
+                    mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+                    ensureGlyphManagerInitialized();
+                    ensureGlyphSession();
+
                     int bufSize = Math.max(AudioRecord.getMinBufferSize(captureSampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT), 4096);
                     Log.d(TAG, "Starting capture for source: " + source + " @ " + captureSampleRate + "Hz, bufSize: " + bufSize);
                     
@@ -1227,13 +1239,18 @@ public class AudioCaptureService extends Service {
         if (config == null || configVersion != mPresetConfigVersion.get()) return;
         try {
             long now = SystemClock.elapsedRealtime(); 
-            float gain = mGlyphRenderer.getSpectrumGain(); 
+            float gain = mGlyphRenderer != null ? mGlyphRenderer.getSpectrumGain() : 1.0f; 
             boolean hasActivity = false;
             
             if (uniqueMagnitudes != null && uniqueMagnitudes.length > 0) { 
-                for (float mag : uniqueMagnitudes) if (mag * gain > 0.0005f) { hasActivity = true; break; } 
+                for (float mag : uniqueMagnitudes) {
+                    if (mag * gain > 0.0001f) { 
+                        hasActivity = true; 
+                        break; 
+                    }
+                }
             }
-            if (!hasActivity && hapticPeak * gain > 0.0005f) hasActivity = true;
+            if (!hasActivity && hapticPeak * gain > 0.0001f) hasActivity = true;
             
             if (hasActivity || (mIdleBreathingEnabled && (mMaxBrightness > 0))) { 
                 mLastAudioActivityMs = now; 
@@ -1256,27 +1273,18 @@ public class AudioCaptureService extends Service {
                 mBoostedBuffer = new float[0];
             }
 
-            float originalGain = mGlyphRenderer.getSpectrumGain(); 
-            mGlyphRenderer.setSpectrumGain(1.0f); 
-            int[] frameColors;
-            try { 
-                frameColors = mGlyphRenderer.processFrame(mBoostedBuffer, config, now); 
-            } finally { 
-                mGlyphRenderer.setSpectrumGain(originalGain); 
-            }
+            int[] frameColors = mGlyphRenderer != null ? mGlyphRenderer.processFrame(mBoostedBuffer, config, now) : null;
             
+            if (mGlyphRenderer != null) {
+                float[] lightState = mGlyphRenderer.getCurrentLightState();
+                if (lightState != null && lightState.length > 0) {
+                    mCurrentLightState = lightState;
+                }
+            }
+
+            mLastSendMs = now;
+
             if (frameColors == null) return;
-
-            // Reuse light state buffer
-            if (mLightStateBuffer.length != frameColors.length) {
-                mLightStateBuffer = new float[frameColors.length];
-            }
-            for (int i = 0; i < frameColors.length; i++) {
-                mLightStateBuffer[i] = frameColors[i] / 4095f;
-            }
-            // Use clone to ensure thread-safety and trigger UI updates in StateFlow
-            mCurrentLightState = mLightStateBuffer.clone();
-
             if (!canPushGlyphFrames()) return;
             try { 
                 if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) { 
@@ -1284,7 +1292,6 @@ public class AudioCaptureService extends Service {
                 } else if (mGM != null) {
                     mGM.setFrameColors(frameColors); 
                 }
-                mLastSendMs = now; 
             } catch (Exception ignored) {}
         } catch (Exception e) { 
             Log.e(TAG, "processFrame error", e); 
@@ -1330,9 +1337,13 @@ public class AudioCaptureService extends Service {
     private void setupVisualizerCapture() {
         releaseVisualizer(); SystemClock.sleep(250);
         try {
-            mAudioProcessor.updateFFTSize();
+            mCurrentSampleRate = SAMPLE_RATE;
+            ensureVisualizerConfigLoaded();
+            mAudioProcessor.updateFFTSize(mCurrentSampleRate);
             mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
             mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+            ensureGlyphManagerInitialized();
+            ensureGlyphSession();
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                 mVisualizer = new Visualizer(0);
                 int captureSize = Math.min(Visualizer.getCaptureSizeRange()[1], 1024);
@@ -1442,9 +1453,12 @@ public class AudioCaptureService extends Service {
             mNetworkSocket.setSoTimeout(500); // 500ms timeout for responsiveness
             Log.i(TAG, "Network socket opened on port " + UDP_PORT);
             mCurrentSampleRate = 48000;
+            ensureVisualizerConfigLoaded();
             mAudioProcessor.updateFFTSize(mCurrentSampleRate);
             mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
             mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+            ensureGlyphManagerInitialized();
+            ensureGlyphSession();
             
             byte[] buffer = new byte[8192];
             short[] pcm = new short[4096];
@@ -1548,9 +1562,12 @@ public class AudioCaptureService extends Service {
                 
                 mBtServerSocket = btAdapter.listenUsingRfcommWithServiceRecord("Glyphix Companion", BT_UUID);
                 mCurrentSampleRate = 48000;
+                ensureVisualizerConfigLoaded();
                 mAudioProcessor.updateFFTSize(mCurrentSampleRate);
                 mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
                 mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
+                ensureGlyphManagerInitialized();
+                ensureGlyphSession();
 
                 showToast("Waiting for Bluetooth Companion...");
                 mBtSocket = mBtServerSocket.accept(); // Blocking call, now in background thread
@@ -1740,7 +1757,8 @@ public class AudioCaptureService extends Service {
 
     private void processVisualizerWaveform(byte[] waveform, int samplingRate) {
         if (!mCapturing || mVisualizerConfig == null) return;
-        mAudioProcessor.updateFFTSize(samplingRate / 1000);
+        int effectiveSampleRate = samplingRate > 100000 ? (samplingRate / 1000) : (samplingRate > 0 ? samplingRate : 44100);
+        mAudioProcessor.updateFFTSize(effectiveSampleRate);
         
         if (mWaveformHopBuffer.length != waveform.length) {
             mWaveformHopBuffer = new short[waveform.length];
@@ -1749,7 +1767,7 @@ public class AudioCaptureService extends Service {
             mWaveformHopBuffer[i] = (short) (((waveform[i] & 0xFF) - 128) << 8);
         }
         
-        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(mWaveformHopBuffer, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
+        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(mWaveformHopBuffer, waveform.length, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
         sendPcmToPc(mWaveformHopBuffer, waveform.length);
         if (result == null) return;
         PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
@@ -1774,10 +1792,13 @@ public class AudioCaptureService extends Service {
             if (read == 0) continue;
             
             sendPcmToPc(hop, read);
-            AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
+            AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(hop, read, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, true);
             if (result == null) continue;
             PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
-            synchronized(mVisualizerPendingFrames) { mVisualizerPendingFrames.addLast(frame); dispatchDueFrames(mVisualizerPendingFrames); }
+            synchronized(mVisualizerPendingFrames) { 
+                mVisualizerPendingFrames.addLast(frame); 
+                dispatchDueFrames(mVisualizerPendingFrames); 
+            }
         }
         Log.d(TAG, "Exited capture loop");
     }
@@ -1877,13 +1898,45 @@ public class AudioCaptureService extends Service {
         if (mGMM != null) { int size = DeviceProfile.getMatrixWidth(mSelectedDevice) * DeviceProfile.getMatrixHeight(mSelectedDevice); if (size > 0) try { mGMM.setAppMatrixFrame(new int[size]); } catch (Exception ignored) {} }
     }
 
-    private void ensureGlyphSession() { if (mGM == null || mSessionOpen) return; try { mGM.openSession(); mSessionOpen = true; } catch (Exception e) { Log.e(TAG, "Failed to open Glyph session", e); } }
+    private void ensureGlyphSession() { 
+        ensureGlyphManagerInitialized();
+        if (mGM == null || mSessionOpen) return; 
+        try { 
+            mGM.openSession(); 
+            mSessionOpen = true; 
+        } catch (Exception e) { 
+            Log.e(TAG, "Failed to open Glyph session", e); 
+        } 
+    }
 
     private void clearGlyphSession() {
         try { turnOffGlyphs(); if (mGM != null && mSessionOpen) { try { mGM.closeSession(); } catch (Exception ignored) {} if (mGMM != null) try { mGMM.closeAppMatrix(); } catch (Exception ignored) {} mSessionOpen = false; } } catch (Exception ignored) {}
     }
 
-    private boolean canPushGlyphFrames() { if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; return mGM != null && mSessionOpen; }
+    private boolean canPushGlyphFrames() { 
+        if (mSelectedDevice == DeviceProfile.DEVICE_UNKNOWN) return false; 
+        if (DeviceProfile.getMatrixWidth(mSelectedDevice) > 0) return mGMM != null; 
+        if (mGM != null && !mSessionOpen) ensureGlyphSession();
+        return mGM != null && mSessionOpen; 
+    }
+
+    private void ensureVisualizerConfigLoaded() {
+        if (mVisualizerConfig == null) {
+            try {
+                refreshPresetCatalog();
+                if (!mAvailablePresetKeys.isEmpty()) {
+                    if (mPresetKey == null || mPresetKey.isEmpty()) {
+                        mPresetKey = chooseDefaultPresetKey(phoneModelForDevice(mSelectedDevice), mAvailablePresetKeys);
+                    }
+                    mVisualizerConfig = loadVisualizerConfig(mPresetKey, mCurrentSampleRate);
+                    mPresetConfigVersion.incrementAndGet();
+                    resetVisualizerState();
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to load visualizer config synchronously", e);
+            }
+        }
+    }
 
     private int resolveGlyphCount() { return mVisualizerConfig != null ? mVisualizerConfig.zones.length : DeviceProfile.getLedCount(mSelectedDevice); }
 
