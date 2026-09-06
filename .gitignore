@@ -14,3 +14,7 @@ app/build/outputs/apk/
 __pycache__/
 *.pyc
 *.pyo
+keystore*
+*.jks
+*.keystore
+
