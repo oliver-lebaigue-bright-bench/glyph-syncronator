@@ -541,6 +541,35 @@ internal fun SettingsScreen(
                         onCheckedChange = { viewModel.setPenisModeEnabled(it) }
                     )
                 }
+
+                Spacer(Modifier.height(14.dp))
+
+                val aodEnabled by viewModel.aodEnabled.collectAsStateWithLifecycle()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.aod_title),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp
+                            ),
+                            color = mockupTextColor()
+                        )
+                        Text(
+                            text = stringResource(R.string.aod_desc),
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = mockupSubtextColor()
+                        )
+                    }
+                    MockupPillToggle(
+                        checked = aodEnabled,
+                        onCheckedChange = { viewModel.setAodEnabled(it) }
+                    )
+                }
             }
         }
 

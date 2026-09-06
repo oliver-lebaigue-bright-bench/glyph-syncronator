@@ -2,8 +2,11 @@ package com.glyphix.app.ui.PrimaryScreens
 
 import androidx.activity.compose.BackHandler
 import android.provider.Settings
-import androidx.compose.animation.AnimatedVisibility
+import android.content.Intent
+import com.glyphix.app.ui.AodActivity
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -79,6 +82,41 @@ fun VisualsScreen(
                     GlyphixBackButton(onClick = onDismiss)
                     Spacer(modifier = Modifier.width(16.dp))
                     ScreenTitle(text = "Overlays", modifier = Modifier.padding(bottom = 0.dp))
+                }
+            }
+        }
+
+        val aodEnabled by viewModel.aodEnabled.collectAsStateWithLifecycle()
+
+        AnimatedVisibility(visible = aodEnabled) {
+            ExpressiveCard(
+                modifier = Modifier.clickable {
+                    context.startActivity(Intent(context, AodActivity::class.java))
+                }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            FontAwesomeIcons.Solid.Play,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.aod_launch_button),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

@@ -88,6 +88,9 @@
     <string name="spoof_locale_description">Force the app to use a specific language for testing.</string>
     <string name="idle_breathing_title">Idle Breathing</string>
     <string name="idle_breathing_desc">Glyphs pulse subtly when the visualizer is active but no audio is playing.</string>
+    <string name="aod_title">Always On Display</string>
+    <string name="aod_desc">Keep the screen on with a minimal clock and visualizer.</string>
+    <string name="aod_launch_button">Launch AOD</string>
     <string name="disable_glyphs_when_silent_title">Disable Glyphs when silent</string>
     <string name="disable_glyphs_when_silent_desc">Completely turn off Glyphs and release the session when no audio is detected.</string>
     <string name="start_visualizer">Start</string>
