@@ -167,16 +167,29 @@ class MainActivity : ComponentActivity() {
     }
 
     private val googleSignInLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(Exception::class.java)
-                val credential = GoogleAuthProvider.getCredential(account?.idToken, null)
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+            val idToken = account?.idToken
+            if (idToken != null) {
+                val credential = GoogleAuthProvider.getCredential(idToken, null)
                 viewModel.linkWithCredential(credential)
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Google sign in failed", e)
-                Toast.makeText(this, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            } else {
+                Log.e("MainActivity", "Google sign in returned null idToken")
+                Toast.makeText(this, "Google sign in failed: no token returned", Toast.LENGTH_SHORT).show()
             }
+        } catch (e: com.google.android.gms.common.api.ApiException) {
+            Log.e("MainActivity", "Google sign in failed with status: ${e.statusCode}", e)
+            val msg = when (e.statusCode) {
+                10 -> "Configuration error (Status 10 - Check SHA-1 key in Firebase Console)"
+                12500 -> "Sign in failed (Status 12500)"
+                7 -> "Network error (Status 7)"
+                else -> "Google sign in failed (${e.statusCode}): ${e.message}"
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Google sign in failed", e)
+            Toast.makeText(this, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -192,7 +205,9 @@ class MainActivity : ComponentActivity() {
                 .requestEmail()
                 .build()
             val googleSignInClient = GoogleSignIn.getClient(this, gso)
-            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            googleSignInClient.signOut().addOnCompleteListener {
+                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+            }
         } catch (e: Exception) {
             Log.e("MainActivity", "Failed to launch Google Sign In", e)
             Toast.makeText(this, "Launcher error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -732,6 +747,10 @@ internal fun GlyphixApp(
                         val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
                         val isPcStreamingActive by viewModel.isPcStreamingActive.collectAsStateWithLifecycle()
 
+                        val presets by viewModel.presetInfos.collectAsStateWithLifecycle()
+                        val selectedPreset by viewModel.selectedPreset.collectAsStateWithLifecycle()
+                        val vizState = viewModel.visualizerState.collectAsStateWithLifecycle()
+
                         val fftDataState = viewModel.fftState.collectAsStateWithLifecycle()
                         AudioScreen(
                             isRunning = isRunning,
@@ -794,9 +813,30 @@ internal fun GlyphixApp(
                             onSpotifySeek = { viewModel.spotifyRepository.seekTo(it) },
                             onSpotifyToggleShuffle = { viewModel.spotifyRepository.toggleShuffle() },
                             onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
-                            onOpenSpotifyTab = { viewModel.selectTab(Tab.Spotify) },
+                            onOpenSpotifyTab = { viewModel.showSpotify() },
                             onToggleVisualizer = onToggleVisualizer,
+                            viewModel = viewModel,
+                            selectedDevice = selectedDevice,
+                            vizStateProvider = { vizState.value },
+                            presets = presets,
+                            selectedPreset = selectedPreset,
+                            onPresetSelected = { viewModel.setSelectedPreset(it) },
                             padding = pagePadding
+                        )
+                    }
+                    Tab.Spotify -> {
+                        SpotifyScreen(
+                            spotifyRepo = viewModel.spotifyRepository,
+                            authManager = viewModel.spotifyAuthManager,
+                            onStartVisualizer = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
+                                MainActivity.serviceStatic?.startCapture(0, null)
+                            },
+                            onActivateSpotifyInput = {
+                                viewModel.setCaptureSource(AudioCaptureService.CaptureSource.SPOTIFY)
+                            },
+                            onDismiss = null,
+                            modifier = Modifier.padding(paddingValues = pagePadding)
                         )
                     }
                     Tab.Leaderboard -> {

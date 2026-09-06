@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
@@ -13,6 +14,10 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.material3.Button
@@ -166,6 +171,12 @@ fun AudioScreen(
     onSpotifyToggleRepeat: () -> Unit = {},
     onOpenSpotifyTab: () -> Unit = {},
     onToggleVisualizer: () -> Unit = {},
+    viewModel: MainViewModel? = null,
+    selectedDevice: Int = 0,
+    vizStateProvider: () -> FloatArray = { floatArrayOf() },
+    presets: List<AudioCaptureService.PresetInfo> = emptyList(),
+    selectedPreset: String = "",
+    onPresetSelected: (String) -> Unit = {},
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
 ) {
     val context = LocalContext.current
@@ -261,7 +272,7 @@ fun AudioScreen(
             }
         }
 
-        val showCompanionCard = !companionCardDismissed && (
+        val showCompanionCard = isRunning && !companionCardDismissed && (
             captureSource == AudioCaptureService.CaptureSource.NETWORK ||
             captureSource == AudioCaptureService.CaptureSource.BLUETOOTH ||
             isPcStreamingActive
@@ -340,6 +351,30 @@ fun AudioScreen(
         }
 
         if (isRunning) {
+            val previewHeight = when (selectedDevice) {
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP2 -> 530.dp
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP1,
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP3,
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP4A,
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP4B,
+                com.glyphix.app.model.DeviceProfile.DEVICE_NP4APRO -> 560.dp
+                else -> 400.dp
+            }
+            AnimatedItem {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    GlyphPreview(
+                        vizStateProvider = vizStateProvider,
+                        device = selectedDevice,
+                        modifier = Modifier
+                            .width(380.dp)
+                            .height(previewHeight)
+                    )
+                }
+            }
+
             val seconds = (sessionDuration / 1000) % 60
             val minutes = (sessionDuration / (1000 * 60)) % 60
             val hours = (sessionDuration / (1000 * 60 * 60))
@@ -360,6 +395,143 @@ fun AudioScreen(
                         text = descriptionText,
                         size = 14.sp
                     )
+                }
+            }
+        }
+
+        val effectivePresets = if (presets.isNotEmpty()) presets else (viewModel?.presetInfos?.collectAsStateWithLifecycle()?.value ?: emptyList())
+        val effectiveSelectedPreset = if (selectedPreset.isNotEmpty()) selectedPreset else (viewModel?.selectedPreset?.collectAsStateWithLifecycle()?.value ?: "")
+        val configVersion = viewModel?.configVersion?.collectAsStateWithLifecycle()?.value ?: ""
+        val favorites = viewModel?.favoritePresets?.collectAsStateWithLifecycle()?.value ?: emptySet()
+
+        val selectedInfo = remember(effectiveSelectedPreset, effectivePresets) {
+            effectivePresets.firstOrNull { it.key == effectiveSelectedPreset } ?: effectivePresets.firstOrNull()
+        }
+
+        var showDeleteConfirm by remember { mutableStateOf<String?>(null) }
+
+        if (showDeleteConfirm != null) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = null },
+                title = { Text("Delete Preset?") },
+                text = { Text("Are you sure you want to delete the local preset '${showDeleteConfirm}'?") },
+                confirmButton = {
+                    TextButton(onClick = { 
+                        showDeleteConfirm?.let { viewModel?.deleteCustomPreset(it) }
+                        showDeleteConfirm = null
+                    }) {
+                        Text("Delete", color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        AnimatedItem {
+            ExpressiveCard(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CardHeader(
+                        title = stringResource(R.string.visualizer_presets)
+                    )
+                }
+
+                val sortedPresets = remember(effectivePresets, favorites) {
+                    effectivePresets.sortedByDescending { favorites.contains(it.key) }
+                }
+
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (sortedPresets.isNotEmpty()) {
+                        ExpressiveSplitButton(
+                            items = sortedPresets,
+                            selectedItem = sortedPresets.firstOrNull { it.key == effectiveSelectedPreset }
+                                ?: sortedPresets.first(),
+                            onItemSelection = { preset -> 
+                                onPresetSelected(preset.key)
+                                viewModel?.setSelectedPreset(preset.key)
+                            },
+                            labelProvider = { preset -> preset.key },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Crossfade(
+                                targetState = selectedInfo?.description,
+                                label = "desc_fade",
+                                animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                                modifier = Modifier.weight(1f)
+                            ) { description ->
+                                Text(
+                                    text = description ?: stringResource(R.string.glyph_no_config),
+                                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            if (selectedInfo?.description?.startsWith("Custom:") == true) {
+                                IconButton(
+                                    onClick = { showDeleteConfirm = selectedInfo.key },
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Icon(
+                                        FontAwesomeIcons.Solid.Trash,
+                                        contentDescription = "Delete Local Preset",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (configVersion.contains(".simple")) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Update Required",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                    Text(
+                                        "Download full config to see presets",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            } else {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
