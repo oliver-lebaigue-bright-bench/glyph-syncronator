@@ -200,8 +200,29 @@ fun GlyphPreviewContent(
                     })
                 }
                 DeviceProfile.DEVICE_NP4A -> {
-                    put("p4a_bar", parser.parsePathString("M40.5,300.5L142.5,300.5").toPath())
-                    put("p4a_dot", parser.parsePathString("M91,330.5A5,5 0 1,1 90.99,330.5Z").toPath())
+                    val p4aRadius = 22f
+                    put("p4a_top_plate", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 10f, top = 10f, right = 172f, bottom = 132f, cornerRadius = CornerRadius(p4aRadius)))
+                    })
+                    put("p4a_cam_island", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 32f, top = 26f, right = 150f, bottom = 114f, cornerRadius = CornerRadius(44f)))
+                    })
+                    put("p4a_cam_island_ring", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 42f, top = 36f, right = 140f, bottom = 104f, cornerRadius = CornerRadius(34f)))
+                    })
+                    put("p4a_cam_inner", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 52f, top = 46f, right = 130f, bottom = 94f, cornerRadius = CornerRadius(24f)))
+                    })
+                    put("p4a_lens1", Path().apply { addOval(Rect(60f, 62f, 76f, 78f)) })
+                    put("p4a_lens2", Path().apply { addOval(Rect(84f, 63f, 98f, 77f)) })
+                    put("p4a_lens3", Path().apply { addOval(Rect(106f, 62f, 122f, 78f)) })
+                    put("p4a_flash", Path().apply { addOval(Rect(86.5f, 21.5f, 95.5f, 30.5f)) })
+                    put("p4a_bottom_panel", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 10f, top = 138f, right = 172f, bottom = 372f, cornerRadius = CornerRadius(p4aRadius)))
+                    })
+                    put("p4a_bar", Path().apply {
+                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 154f, top = 51f, right = 164f, bottom = 113f, cornerRadius = CornerRadius(2f)))
+                    })
                 }
                 DeviceProfile.DEVICE_NP4B -> {
                     put("p4b_island", Path().apply {
@@ -372,11 +393,61 @@ fun GlyphPreviewContent(
                     }
 
                     DeviceProfile.DEVICE_NP4A -> {
-                        paths["p4a_bar"]?.let {
-                            drawPathAddressable(this, it, color, (0..5).toList(), vizState, baseOpacity, scale, glowPaint, vertical = false)
+                        // Top backplate & bottom panel
+                        paths["p4a_top_plate"]?.let {
+                            drawPath(it, Color.White.copy(alpha = 0.04f))
+                            drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 1f))
                         }
-                        paths["p4a_dot"]?.let {
-                            drawSmoothPath(it, getA(6))
+                        paths["p4a_bottom_panel"]?.let {
+                            drawPath(it, Color.White.copy(alpha = 0.02f))
+                            drawPath(it, Color.White.copy(alpha = 0.08f), style = Stroke(width = 1f))
+                        }
+
+                        // Outer concentric camera island
+                        paths["p4a_cam_island"]?.let {
+                            drawPath(it, Color.White.copy(alpha = 0.03f))
+                            drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 1f))
+                        }
+                        paths["p4a_cam_island_ring"]?.let {
+                            drawPath(it, Color.White.copy(alpha = 0.06f), style = Stroke(width = 1f))
+                        }
+
+                        // Inner camera pill & 3 lenses + top flash
+                        paths["p4a_cam_inner"]?.let {
+                            drawPath(it, Color(0xFF0A0A0A))
+                            drawPath(it, Color.White.copy(alpha = 0.20f), style = Stroke(width = 1.5f))
+                        }
+                        paths["p4a_lens1"]?.let {
+                            drawPath(it, Color(0xFF141414))
+                            drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+                        }
+                        paths["p4a_lens2"]?.let {
+                            drawPath(it, Color(0xFF141414))
+                            drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+                        }
+                        paths["p4a_lens3"]?.let {
+                            drawPath(it, Color(0xFF141414))
+                            drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+                        }
+                        paths["p4a_flash"]?.let {
+                            drawPath(it, Color.White.copy(alpha = 0.15f))
+                            drawPath(it, Color.White.copy(alpha = 0.35f), style = Stroke(width = 1f))
+                        }
+
+                        // 7-segment vertical glyph strip on the right (6 White LEDs + 1 Red recording LED at bottom)
+                        paths["p4a_bar"]?.let {
+                            drawPathAddressable(
+                                this,
+                                it,
+                                color,
+                                (0..6).toList(),
+                                vizState,
+                                baseOpacity,
+                                scale,
+                                glowPaint,
+                                vertical = true,
+                                specialColors = mapOf(6 to Color(0xFFFF2222))
+                            )
                         }
                     }
 

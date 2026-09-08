@@ -918,10 +918,9 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP4A -> when(hit.key) {
                                 "p4a_bar" -> {
                                     val b = hit.value.getBounds()
-                                    val col = ((adjX - b.left) / (b.width / 6)).toInt().coerceIn(0, 5)
-                                    col
+                                    val row = ((adjY - b.top) / (b.height / 7)).toInt().coerceIn(0, 6)
+                                    row
                                 }
-                                "p4a_dot" -> 6
                                 else -> -1
                             }
                             DeviceProfile.DEVICE_NP4B -> when(hit.key) {
@@ -1053,10 +1052,9 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP4A -> when(hit.key) {
                                 "p4a_bar" -> {
                                     val b = hit.value.getBounds()
-                                    val col = ((adjX - b.left) / (b.width / 6)).toInt().coerceIn(0, 5)
-                                    col
+                                    val row = ((adjY - b.top) / (b.height / 7)).toInt().coerceIn(0, 6)
+                                    row
                                 }
-                                "p4a_dot" -> 6
                                 else -> -1
                             }
                             DeviceProfile.DEVICE_NP4B -> when(hit.key) {
@@ -1184,8 +1182,61 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
             }
         }
         DeviceProfile.DEVICE_NP4A -> {
-            paths["p4a_bar"]?.let { drawPathSegmentedVertical(scope, it, (0..5).toList(), selectedIndices, intensities, selectedColor, normalColor, baseAlpha, vertical = false) }
-            paths["p4a_dot"]?.let { scope.drawPath(it, getColor(6), alpha = getAlpha(6)) }
+            // Top backplate & bottom panel
+            paths["p4a_top_plate"]?.let {
+                scope.drawPath(it, Color.White.copy(alpha = 0.04f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 1f))
+            }
+            paths["p4a_bottom_panel"]?.let {
+                scope.drawPath(it, Color.White.copy(alpha = 0.02f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.08f), style = Stroke(width = 1f))
+            }
+
+            // Outer concentric camera island
+            paths["p4a_cam_island"]?.let {
+                scope.drawPath(it, Color.White.copy(alpha = 0.03f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 1f))
+            }
+            paths["p4a_cam_island_ring"]?.let {
+                scope.drawPath(it, Color.White.copy(alpha = 0.06f), style = Stroke(width = 1f))
+            }
+
+            // Inner camera pill & 3 lenses + top flash
+            paths["p4a_cam_inner"]?.let {
+                scope.drawPath(it, Color(0xFF0A0A0A))
+                scope.drawPath(it, Color.White.copy(alpha = 0.20f), style = Stroke(width = 1.5f))
+            }
+            paths["p4a_lens1"]?.let {
+                scope.drawPath(it, Color(0xFF141414))
+                scope.drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+            }
+            paths["p4a_lens2"]?.let {
+                scope.drawPath(it, Color(0xFF141414))
+                scope.drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+            }
+            paths["p4a_lens3"]?.let {
+                scope.drawPath(it, Color(0xFF141414))
+                scope.drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1f))
+            }
+            paths["p4a_flash"]?.let {
+                scope.drawPath(it, Color.White.copy(alpha = 0.15f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.35f), style = Stroke(width = 1f))
+            }
+
+            paths["p4a_bar"]?.let {
+                drawPathSegmentedVertical(
+                    scope,
+                    it,
+                    (0..6).toList(),
+                    selectedIndices,
+                    intensities,
+                    selectedColor,
+                    normalColor,
+                    baseAlpha,
+                    vertical = true,
+                    specialBaseColors = mapOf(6 to Color(0xFFFF2222))
+                )
+            }
         }
         DeviceProfile.DEVICE_NP4B -> {
             paths["p4b_island"]?.let {
@@ -1393,8 +1444,78 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
         put("p3a_medium", parser.parsePathString("M23.37,58.781C23.34,58.831 23.32,58.882 23.31,58.932C23.3,58.952 23.29,58.973 23.29,58.993L23.29,59C23.28,59.027 23.27,59.055 23.26,59.082C22.71,60.606 21.02,61.416 19.49,60.9C17.93,60.375 17.07,58.671 17.6,57.102L17.6,57.061C17.94,56.041 18.31,55.035 18.69,54.034L18.7,54.035C19.06,53.083 19.44,52.139 19.84,51.203C20.17,50.415 20.52,49.634 20.87,48.859L20.87,48.858C21.31,47.931 21.74,47.015 22.22,46.107C22.77,45.031 23.34,43.967 23.94,42.919L23.94,42.92C24.45,42.033 24.98,41.155 25.52,40.289L25.52,40.29C25.97,39.563 26.45,38.845 26.93,38.135L26.93,38.134C27.49,37.284 28.08,36.446 28.68,35.619L28.68,35.618C29.31,34.755 29.96,33.908 30.61,33.072C31.33,32.17 32.07,31.285 32.82,30.416L32.82,30.418C33.38,29.778 33.94,29.146 34.52,28.521C34.54,28.497 34.57,28.472 34.59,28.448C34.68,28.349 34.77,28.249 34.86,28.149C35.45,27.525 36.06,26.909 36.66,26.303L36.66,26.302C37.38,25.581 38.11,24.874 38.87,24.179L38.87,24.177C39.73,23.375 40.62,22.593 41.52,21.83L41.53,21.831C42.31,21.172 43.1,20.529 43.91,19.901C44.6,19.373 45.27,18.856 45.97,18.349C46.8,17.744 47.65,17.154 48.49,16.581L48.49,16.578C49.42,15.965 50.34,15.368 51.29,14.792C51.83,14.468 52.41,14.328 52.99,14.355C53.95,14.4 54.88,14.908 55.41,15.793C56.28,17.209 55.84,19.056 54.42,19.922C54.36,19.963 54.28,20.007 54.21,20.047L54.21,20.045C53.54,20.456 52.89,20.878 52.23,21.312L52.23,21.314C51.43,21.839 50.65,22.38 49.87,22.933L49.87,22.934C48.98,23.578 48.1,24.242 47.23,24.926L47.23,24.925C46.49,25.514 45.75,26.117 45.03,26.732L45.03,26.73C44.44,27.235 43.87,27.748 43.29,28.271L43.29,28.273C42.59,28.911 41.9,29.562 41.23,30.227C40.55,30.892 39.89,31.568 39.25,32.258C38.5,33.059 37.77,33.878 37.04,34.712L37.04,34.709C36.53,35.307 36.03,35.913 35.55,36.528C34.95,37.266 34.36,38.015 33.8,38.778L33.81,38.78C33.25,39.54 32.7,40.311 32.16,41.093C31.55,42.002 30.95,42.926 30.36,43.862C29.88,44.666 29.39,45.479 28.93,46.302L28.93,46.3C28.53,47 28.15,47.708 27.78,48.423C27.34,49.26 26.93,50.105 26.52,50.959L26.52,50.96C26.11,51.816 25.73,52.681 25.36,53.553C24.92,54.562 24.51,55.582 24.13,56.613C23.87,57.33 23.61,58.053 23.36,58.78L23.37,58.781Z").toPath())
         put("p3a_small", parser.parsePathString("M41.5,134.113C42.51,135.434 42.25,137.313 40.92,138.312C39.59,139.311 37.72,139.049 36.72,137.719L35.13,135.628L35.13,135.627L34.61,134.911L31.49,130.778L27.29,125.218L24.19,121.091L22.14,118.364C21.13,117.043 21.39,115.163 22.73,114.164C23.3,113.727 23.99,113.532 24.66,113.562C25.53,113.599 26.36,114.009 26.93,114.757L28.92,117.404L32.08,121.606L32.38,121.991L32.62,122.324L35.74,126.452L35.8,126.531L36.28,127.169L39.86,131.912L41.5,134.113Z").toPath())
 
-        put("p4a_bar", parser.parsePathString("M40.5,300.5L142.5,300.5").toPath())
-        put("p4a_dot", parser.parsePathString("M91,330.5A5,5 0 1,1 90.99,330.5Z").toPath())
+        // --- Phone (4a) ---
+        val p4aRadius = 22f
+        put("p4a_top_plate", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 10f,
+                    top = 10f,
+                    right = 172f,
+                    bottom = 132f,
+                    cornerRadius = CornerRadius(p4aRadius)
+                )
+            )
+        })
+        put("p4a_cam_island", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 32f,
+                    top = 26f,
+                    right = 150f,
+                    bottom = 114f,
+                    cornerRadius = CornerRadius(44f)
+                )
+            )
+        })
+        put("p4a_cam_island_ring", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 42f,
+                    top = 36f,
+                    right = 140f,
+                    bottom = 104f,
+                    cornerRadius = CornerRadius(34f)
+                )
+            )
+        })
+        put("p4a_cam_inner", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 52f,
+                    top = 46f,
+                    right = 130f,
+                    bottom = 94f,
+                    cornerRadius = CornerRadius(24f)
+                )
+            )
+        })
+        put("p4a_lens1", Path().apply { addOval(androidx.compose.ui.geometry.Rect(60f, 62f, 76f, 78f)) })
+        put("p4a_lens2", Path().apply { addOval(androidx.compose.ui.geometry.Rect(84f, 63f, 98f, 77f)) })
+        put("p4a_lens3", Path().apply { addOval(androidx.compose.ui.geometry.Rect(106f, 62f, 122f, 78f)) })
+        put("p4a_flash", Path().apply { addOval(androidx.compose.ui.geometry.Rect(86.5f, 21.5f, 95.5f, 30.5f)) })
+        put("p4a_bottom_panel", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 10f,
+                    top = 138f,
+                    right = 172f,
+                    bottom = 372f,
+                    cornerRadius = CornerRadius(p4aRadius)
+                )
+            )
+        })
+        put("p4a_bar", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 154f,
+                    top = 51f,
+                    right = 164f,
+                    bottom = 113f,
+                    cornerRadius = CornerRadius(2f)
+                )
+            )
+        })
 
         // --- Phone (4b) ---
         put("p4b_island", Path().apply {
