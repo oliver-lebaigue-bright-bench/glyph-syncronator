@@ -336,7 +336,7 @@ fun GlyphPreviewContent(
 
                     DeviceProfile.DEVICE_NP2A -> {
                         withTransform({
-                            translate(-4.4f, 0f)
+                            translate(-4.4f, -25f)
                         }) {
                             paths["p2a_cam_plate"]?.let {
                                 drawPath(it, Color.White.copy(alpha = 0.05f))
@@ -353,7 +353,7 @@ fun GlyphPreviewContent(
 
                     DeviceProfile.DEVICE_NP3A -> {
                         withTransform({
-                            translate(-1.65f, 0f)
+                            translate(-1.65f, 25f)
                         }) {
                             // Camera plate (the "gray card")
                             val camAlpha = 0.1f

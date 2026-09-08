@@ -838,7 +838,11 @@ fun EditableGlyphPreview(
                         DeviceProfile.DEVICE_NP3A -> localX - (-1.65f)
                         else -> localX
                     }
-                    val adjY = localY
+                    val adjY = when (device) {
+                        DeviceProfile.DEVICE_NP2A -> localY - (-25f)
+                        DeviceProfile.DEVICE_NP3A -> localY - 25f
+                        else -> localY
+                    }
 
                     val hit = paths.entries.firstOrNull { entry ->
                         regions[entry.key]?.contains(adjX.toInt(), adjY.toInt()) == true
@@ -970,7 +974,11 @@ fun EditableGlyphPreview(
                         DeviceProfile.DEVICE_NP3A -> localX - (-1.65f)
                         else -> localX
                     }
-                    val adjY = localY
+                    val adjY = when (device) {
+                        DeviceProfile.DEVICE_NP2A -> localY - (-25f)
+                        DeviceProfile.DEVICE_NP3A -> localY - 25f
+                        else -> localY
+                    }
 
                     val hit = paths.entries.firstOrNull { entry ->
                         regions[entry.key]?.contains(adjX.toInt(), adjY.toInt()) == true
@@ -1148,7 +1156,7 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
         }
         DeviceProfile.DEVICE_NP2A -> {
             scope.withTransform({
-                translate(-4.4f, 0f)
+                translate(-4.4f, -25f)
             }) {
                 // Camera Plate
                 paths["p2a_cam_plate"]?.let {
@@ -1163,7 +1171,7 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
         }
         DeviceProfile.DEVICE_NP3A -> {
             scope.withTransform({
-                translate(-1.65f, 0f)
+                translate(-1.65f, 25f)
             }) {
                 // Camera Plate
                 paths["p3a_cam_plate"]?.let {
