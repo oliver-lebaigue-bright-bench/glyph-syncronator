@@ -795,11 +795,17 @@ fun EditableGlyphPreview(
         }
     }
     
+    val viewBoxW = 182f
+    val viewBoxH = if (device == DeviceProfile.DEVICE_NP2) 390f else 382f
+    val silhouettePath = remember(device, viewBoxW, viewBoxH) {
+        Path().apply {
+            addRoundRect(RoundRect(0f, 0f, viewBoxW, viewBoxH, CornerRadius(32f)))
+        }
+    }
+
     Canvas(modifier = modifier
         .pointerInput(device) {
             detectTapGestures { offset ->
-                val viewBoxW = 182f
-                val viewBoxH = if (device == DeviceProfile.DEVICE_NP1 || device == DeviceProfile.DEVICE_NP2 || device == DeviceProfile.DEVICE_NP4A || device == DeviceProfile.DEVICE_NP4B) 382f else 182f
                 val scale = min(size.width / viewBoxW, size.height / viewBoxH)
                 val dx = (size.width - viewBoxW * scale) / 2
                 val dy = (size.height - viewBoxH * scale) / 2
@@ -815,8 +821,10 @@ fun EditableGlyphPreview(
                     val pixelGap = if (isPro) 1.5f else 1f
                     val gridWidth = matrixW * pixelSize + (matrixW - 1) * pixelGap
                     val gridHeight = matrixH * pixelSize + (matrixH - 1) * pixelGap
-                    val startX = (182f - gridWidth) / 2
-                    val startY = (382f - gridHeight) / 2
+                    val matrixCenterX = if (isPro) 135f else 91f
+                    val matrixCenterY = if (isPro) 47f else 191f
+                    val startX = matrixCenterX - gridWidth / 2f
+                    val startY = matrixCenterY - gridHeight / 2f
                     
                     val col = ((localX - startX) / (pixelSize + pixelGap)).toInt()
                     val row = ((localY - startY) / (pixelSize + pixelGap)).toInt()
@@ -825,8 +833,15 @@ fun EditableGlyphPreview(
                         onIndexSelected(row * matrixW + col, false)
                     }
                 } else {
+                    val adjX = when (device) {
+                        DeviceProfile.DEVICE_NP2A -> localX - (-4.4f)
+                        DeviceProfile.DEVICE_NP3A -> localX - (-1.65f)
+                        else -> localX
+                    }
+                    val adjY = localY
+
                     val hit = paths.entries.firstOrNull { entry ->
-                        regions[entry.key]?.contains(localX.toInt(), localY.toInt()) == true
+                        regions[entry.key]?.contains(adjX.toInt(), adjY.toInt()) == true
                     }
 
                     if (hit != null) {
@@ -841,7 +856,7 @@ fun EditableGlyphPreview(
                                 "p1_dot" -> 6
                                 "p1_battery" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
+                                    val row = ((adjY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
                                     7 + row
                                 }
                                 else -> -1
@@ -852,7 +867,7 @@ fun EditableGlyphPreview(
                                 "p2_2" -> 2
                                 "p2_ring" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 16)).toInt().coerceIn(0, 15)
+                                    val row = ((adjY - b.top) / (b.height / 16)).toInt().coerceIn(0, 15)
                                     3 + row
                                 }
                                 "p2_19" -> 19
@@ -863,7 +878,7 @@ fun EditableGlyphPreview(
                                 "p2_24" -> 24
                                 "p2_battery" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
+                                    val row = ((adjY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
                                     25 + row
                                 }
                                 else -> -1
@@ -871,7 +886,7 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP2A -> when(hit.key) {
                                 "p2a_large" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 24)).toInt().coerceIn(0, 23)
+                                    val row = ((adjY - b.top) / (b.height / 24)).toInt().coerceIn(0, 23)
                                     row
                                 }
                                 "p2a_medium" -> 24
@@ -881,17 +896,17 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP3A -> when(hit.key) {
                                 "p3a_large" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 20)).toInt().coerceIn(0, 19)
+                                    val row = ((adjY - b.top) / (b.height / 20)).toInt().coerceIn(0, 19)
                                     row
                                 }
                                 "p3a_medium" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 11)).toInt().coerceIn(0, 10)
+                                    val row = ((adjY - b.top) / (b.height / 11)).toInt().coerceIn(0, 10)
                                     20 + row
                                 }
                                 "p3a_small" -> {
                                     val b = hit.value.getBounds()
-                                    val col = ((localX - b.left) / (b.width / 5)).toInt().coerceIn(0, 4)
+                                    val col = ((adjX - b.left) / (b.width / 5)).toInt().coerceIn(0, 4)
                                     31 + col
                                 }
                                 else -> -1
@@ -899,7 +914,7 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP4A -> when(hit.key) {
                                 "p4a_bar" -> {
                                     val b = hit.value.getBounds()
-                                    val col = ((localX - b.left) / (b.width / 6)).toInt().coerceIn(0, 5)
+                                    val col = ((adjX - b.left) / (b.width / 6)).toInt().coerceIn(0, 5)
                                     col
                                 }
                                 "p4a_dot" -> 6
@@ -908,15 +923,7 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP4B -> when(hit.key) {
                                 "p4b_bar" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 5)).toInt().coerceIn(0, 4)
-                                    row
-                                }
-                                else -> -1
-                            }
-                            DeviceProfile.DEVICE_NP4B -> when(hit.key) {
-                                "p4b_bar" -> {
-                                    val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 5)).toInt().coerceIn(0, 4)
+                                    val row = ((adjY - b.top) / (b.height / 5)).toInt().coerceIn(0, 4)
                                     row
                                 }
                                 else -> -1
@@ -931,8 +938,6 @@ fun EditableGlyphPreview(
         .pointerInput(device) {
             detectDragGestures { change, _ ->
                 change.consume()
-                val viewBoxW = 182f
-                val viewBoxH = if (device == DeviceProfile.DEVICE_NP1 || device == DeviceProfile.DEVICE_NP2 || device == DeviceProfile.DEVICE_NP4A || device == DeviceProfile.DEVICE_NP4B) 382f else 182f
                 val scale = min(size.width / viewBoxW, size.height / viewBoxH)
                 val dx = (size.width - viewBoxW * scale) / 2
                 val dy = (size.height - viewBoxH * scale) / 2
@@ -948,8 +953,10 @@ fun EditableGlyphPreview(
                     val pixelGap = if (isPro) 1.5f else 1f
                     val gridWidth = matrixW * pixelSize + (matrixW - 1) * pixelGap
                     val gridHeight = matrixH * pixelSize + (matrixH - 1) * pixelGap
-                    val startX = (182f - gridWidth) / 2
-                    val startY = (382f - gridHeight) / 2
+                    val matrixCenterX = if (isPro) 135f else 91f
+                    val matrixCenterY = if (isPro) 47f else 191f
+                    val startX = matrixCenterX - gridWidth / 2f
+                    val startY = matrixCenterY - gridHeight / 2f
                     
                     val col = ((localX - startX) / (pixelSize + pixelGap)).toInt()
                     val row = ((localY - startY) / (pixelSize + pixelGap)).toInt()
@@ -958,8 +965,15 @@ fun EditableGlyphPreview(
                         onIndexSelected(row * matrixW + col, true)
                     }
                 } else {
+                    val adjX = when (device) {
+                        DeviceProfile.DEVICE_NP2A -> localX - (-4.4f)
+                        DeviceProfile.DEVICE_NP3A -> localX - (-1.65f)
+                        else -> localX
+                    }
+                    val adjY = localY
+
                     val hit = paths.entries.firstOrNull { entry ->
-                        regions[entry.key]?.contains(localX.toInt(), localY.toInt()) == true
+                        regions[entry.key]?.contains(adjX.toInt(), adjY.toInt()) == true
                     }
                     if (hit != null) {
                         val idx = when(device) {
@@ -973,7 +987,7 @@ fun EditableGlyphPreview(
                                 "p1_dot" -> 6
                                 "p1_battery" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
+                                    val row = ((adjY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
                                     7 + row
                                 }
                                 else -> -1
@@ -984,7 +998,7 @@ fun EditableGlyphPreview(
                                 "p2_2" -> 2
                                 "p2_ring" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 16)).toInt().coerceIn(0, 15)
+                                    val row = ((adjY - b.top) / (b.height / 16)).toInt().coerceIn(0, 15)
                                     3 + row
                                 }
                                 "p2_19" -> 19
@@ -995,7 +1009,7 @@ fun EditableGlyphPreview(
                                 "p2_24" -> 24
                                 "p2_battery" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
+                                    val row = ((adjY - b.top) / (b.height / 8)).toInt().coerceIn(0, 7)
                                     25 + row
                                 }
                                 else -> -1
@@ -1003,7 +1017,7 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP2A -> when(hit.key) {
                                 "p2a_large" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 24)).toInt().coerceIn(0, 23)
+                                    val row = ((adjY - b.top) / (b.height / 24)).toInt().coerceIn(0, 23)
                                     row
                                 }
                                 "p2a_medium" -> 24
@@ -1013,18 +1027,35 @@ fun EditableGlyphPreview(
                             DeviceProfile.DEVICE_NP3A -> when(hit.key) {
                                 "p3a_large" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 20)).toInt().coerceIn(0, 19)
+                                    val row = ((adjY - b.top) / (b.height / 20)).toInt().coerceIn(0, 19)
                                     row
                                 }
                                 "p3a_medium" -> {
                                     val b = hit.value.getBounds()
-                                    val row = ((localY - b.top) / (b.height / 11)).toInt().coerceIn(0, 10)
+                                    val row = ((adjY - b.top) / (b.height / 11)).toInt().coerceIn(0, 10)
                                     20 + row
                                 }
                                 "p3a_small" -> {
                                     val b = hit.value.getBounds()
-                                    val col = ((localX - b.left) / (b.width / 5)).toInt().coerceIn(0, 4)
+                                    val col = ((adjX - b.left) / (b.width / 5)).toInt().coerceIn(0, 4)
                                     31 + col
+                                }
+                                else -> -1
+                            }
+                            DeviceProfile.DEVICE_NP4A -> when(hit.key) {
+                                "p4a_bar" -> {
+                                    val b = hit.value.getBounds()
+                                    val col = ((adjX - b.left) / (b.width / 6)).toInt().coerceIn(0, 5)
+                                    col
+                                }
+                                "p4a_dot" -> 6
+                                else -> -1
+                            }
+                            DeviceProfile.DEVICE_NP4B -> when(hit.key) {
+                                "p4b_bar" -> {
+                                    val b = hit.value.getBounds()
+                                    val row = ((adjY - b.top) / (b.height / 5)).toInt().coerceIn(0, 4)
+                                    row
                                 }
                                 else -> -1
                             }
@@ -1036,8 +1067,6 @@ fun EditableGlyphPreview(
             }
         }
     ) {
-        val viewBoxW = 182f
-        val viewBoxH = if (device == DeviceProfile.DEVICE_NP1 || device == DeviceProfile.DEVICE_NP2 || device == DeviceProfile.DEVICE_NP4A || device == DeviceProfile.DEVICE_NP4B) 382f else 182f
         val scale = min(size.width / viewBoxW, size.height / viewBoxH)
         val dx = (size.width - viewBoxW * scale) / 2
         val dy = (size.height - viewBoxH * scale) / 2
@@ -1046,6 +1075,7 @@ fun EditableGlyphPreview(
             translate(dx, dy)
             scale(scale, scale, pivot = Offset.Zero)
         }) {
+            drawPath(silhouettePath, Color(0xFF222222), style = Stroke(width = 3f))
             drawEditorGlyphs(this, device, selectedIndices, intensities, paths)
         }
     }
@@ -1118,9 +1148,14 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
         }
         DeviceProfile.DEVICE_NP2A -> {
             scope.withTransform({
-                translate(-13.02971f, -40f)
-                scale(1.128745f, 1.128745f, pivot = Offset.Zero)
+                translate(-4.4f, 0f)
             }) {
+                // Camera Plate
+                paths["p2a_cam_plate"]?.let {
+                    drawPath(it, Color.White.copy(alpha = 0.05f))
+                    drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 1f))
+                }
+
                 paths["p2a_large"]?.let { drawPathSegmentedVertical(this, it, (0..23).toList(), selectedIndices, intensities, selectedColor, normalColor, baseAlpha) }
                 paths["p2a_medium"]?.let { drawPath(it, getColor(24), alpha = getAlpha(24)) }
                 paths["p2a_small"]?.let { drawPath(it, getColor(25), alpha = getAlpha(25)) }
@@ -1128,8 +1163,7 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
         }
         DeviceProfile.DEVICE_NP3A -> {
             scope.withTransform({
-                translate(-2f, 7f)
-                scale(1.03f, 1.03f, pivot = Offset.Zero)
+                translate(-1.65f, 0f)
             }) {
                 // Camera Plate
                 paths["p3a_cam_plate"]?.let {
@@ -1332,6 +1366,19 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
         put("p2a_large", parser.parsePathString("M63.057,55.311c0.524,1.363 -0.156,2.894 -1.52,3.419c-4.942,1.901 -12.013,7.268 -18.387,14.372c-6.355,7.083 -11.63,15.468 -13.376,23.102c-0.326,1.424 -1.744,2.315 -3.169,1.989c-1.424,-0.325 -2.314,-1.744 -1.989,-3.169c2.028,-8.869 7.948,-18.045 14.596,-25.455c6.628,-7.39 14.367,-13.448 20.426,-15.778c1.363,-0.525 2.894,0.156 3.419,1.52Z").toPath())
         put("p2a_medium", parser.parsePathString("M159.648,87.219c1.482,-0 2.68,1.198 2.68,2.68l0,47.64c0,1.483 -1.198,2.681 -2.68,2.681c-1.478,-0 -2.676,-1.198 -2.676,-2.681l0,-47.64c0,-1.482 1.198,-2.68 2.676,-2.68Z").toPath())
         put("p2a_small", parser.parsePathString("M30.754,144.063c1.363,-0.573 2.932,0.066 3.506,1.428c2.167,5.144 7.304,12.329 11.354,15.749c1.129,0.953 1.272,2.642 0.318,3.772c-0.954,1.13 -2.643,1.272 -3.773,0.318c-4.752,-4.013 -10.37,-11.912 -12.833,-17.76c-0.574,-1.363 0.065,-2.933 1.428,-3.507Z").toPath())
+
+        val p2aCamRadius = 18f
+        put("p2a_cam_plate", Path().apply {
+            addRoundRect(
+                RoundRect(
+                    left = 66.4f,
+                    top = 92f,
+                    right = 124.4f,
+                    bottom = 128f,
+                    cornerRadius = CornerRadius(p2aCamRadius)
+                )
+            )
+        })
 
         // --- Phone (3a) ---
         put("p3a_large", parser.parsePathString("M162.87,60.41C164.27,60.36 165.56,61.288 165.91,62.693C166.18,63.799 166.42,64.91 166.64,66.024L166.64,66.025C167.04,68.036 167.37,70.056 167.6,72.08L167.6,72.081C167.83,74.113 168.02,76.149 168.08,78.185C168.17,79.963 168.17,81.743 168.13,83.518C168.07,85.554 167.94,87.585 167.72,89.608L167.74,89.609C167.5,91.909 167.15,94.196 166.7,96.466L166.7,96.465C166.31,98.468 165.85,100.458 165.29,102.428L165.29,102.427C164.82,104.134 164.3,105.826 163.71,107.501C163.03,109.425 162.27,111.325 161.45,113.198L161.45,113.202C160.63,115.062 159.73,116.895 158.76,118.697L158.76,118.698C158.21,119.704 157.66,120.702 157.08,121.687C156.22,123.11 154.38,123.574 152.96,122.726C151.54,121.881 151.07,120.033 151.92,118.61C152.32,117.914 152.74,117.21 153.12,116.501C154.03,114.839 154.88,113.15 155.67,111.434L155.67,111.433C156.46,109.712 157.17,107.966 157.81,106.198L157.79,106.197C158.52,104.189 159.16,102.152 159.71,100.096C160.2,98.276 160.62,96.438 160.95,94.588L160.95,94.589C161.25,92.978 161.49,91.357 161.68,89.728L161.68,89.727C161.89,87.86 162.04,85.983 162.12,84.102L162.11,84.102C162.18,81.972 162.18,79.837 162.08,77.702C161.97,75.82 161.8,73.939 161.56,72.062C161.35,70.437 161.09,68.815 160.77,67.198L160.75,67.198C160.72,67.058 160.69,66.919 160.66,66.78C160.66,66.674 160.63,66.568 160.61,66.462C160.44,65.679 160.27,64.896 160.07,64.115C159.67,62.51 160.66,60.882 162.28,60.493C162.47,60.444 162.67,60.418 162.87,60.41Z").toPath())

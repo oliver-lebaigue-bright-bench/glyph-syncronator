@@ -317,12 +317,7 @@ internal fun GlyphsScreen(
                 if (isRunning) {
                     val previewHeight = when (selectedDevice) {
                         com.glyphix.app.model.DeviceProfile.DEVICE_NP2 -> 530.dp
-                        com.glyphix.app.model.DeviceProfile.DEVICE_NP1,
-                        com.glyphix.app.model.DeviceProfile.DEVICE_NP3,
-                        com.glyphix.app.model.DeviceProfile.DEVICE_NP4A,
-                        com.glyphix.app.model.DeviceProfile.DEVICE_NP4B,
-                        com.glyphix.app.model.DeviceProfile.DEVICE_NP4APRO -> 560.dp
-                        else -> 400.dp
+                        else -> 560.dp
                     }
                     AnimatedItem {
                         GlyphPreview(
