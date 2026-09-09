@@ -210,14 +210,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         data class Success(val content: String) : LicenseStatus()
         data class Error(val message: String) : LicenseStatus()
     }
-    private val _licenseStatus = MutableStateFlow<LicenseStatus>(LicenseStatus.Loading)
+    private fun loadBundledLicense(): String {
+        return try {
+            ctx.assets.open("LICENSE").bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    private val _licenseStatus = MutableStateFlow<LicenseStatus>(
+        loadBundledLicense().takeIf { it.isNotBlank() }?.let { LicenseStatus.Success(it) } ?: LicenseStatus.Loading
+    )
     val licenseStatus = _licenseStatus.asStateFlow()
 
     private val _isShowingLicense = MutableStateFlow(false)
     val isShowingLicense = _isShowingLicense.asStateFlow()
     fun showLicense() { 
         _isShowingLicense.value = true 
-        if (_licenseStatus.value is LicenseStatus.Loading || _licenseStatus.value is LicenseStatus.Error) {
+        if (_licenseStatus.value !is LicenseStatus.Success) {
             fetchLicense()
         }
     }
@@ -225,22 +235,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun fetchLicense() {
         viewModelScope.launch(Dispatchers.IO) {
-            _licenseStatus.value = LicenseStatus.Loading
+            if (_licenseStatus.value !is LicenseStatus.Success) {
+                _licenseStatus.value = LicenseStatus.Loading
+            }
             var connection: HttpURLConnection? = null
             try {
-                val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/LICENSE")
+                val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/LICENSE?t=${System.currentTimeMillis()}")
                 connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
+                connection.useCaches = false
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
 
                 if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                     val content = connection.inputStream.bufferedReader().use { it.readText() }
-                    _licenseStatus.value = LicenseStatus.Success(content)
-                } else {
-                    _licenseStatus.value = LicenseStatus.Error("Failed to load license: ${connection.responseCode}")
+                    if (content.isNotBlank()) {
+                        _licenseStatus.value = LicenseStatus.Success(content)
+                    }
+                } else if (_licenseStatus.value !is LicenseStatus.Success) {
+                    val bundled = loadBundledLicense()
+                    if (bundled.isNotBlank()) {
+                        _licenseStatus.value = LicenseStatus.Success(bundled)
+                    } else {
+                        _licenseStatus.value = LicenseStatus.Error("Failed to load license: ${connection.responseCode}")
+                    }
                 }
             } catch (e: Exception) {
-                _licenseStatus.value = LicenseStatus.Error(e.message ?: "Unknown error")
+                if (_licenseStatus.value !is LicenseStatus.Success) {
+                    val bundled = loadBundledLicense()
+                    if (bundled.isNotBlank()) {
+                        _licenseStatus.value = LicenseStatus.Success(bundled)
+                    } else {
+                        _licenseStatus.value = LicenseStatus.Error(e.message ?: "Unknown error")
+                    }
+                }
             } finally {
                 connection?.disconnect()
             }
