@@ -1187,67 +1187,75 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
         DeviceProfile.DEVICE_NP4A -> {
             // Top backplate & bottom panel
             paths["p4a_top_plate"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.04f))
+                scope.drawPath(it, Color(0xFF16181C).copy(alpha = 0.6f))
                 scope.drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 1f))
             }
             paths["p4a_bottom_panel"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.02f))
+                scope.drawPath(it, Color(0xFF101214).copy(alpha = 0.5f))
                 scope.drawPath(it, Color.White.copy(alpha = 0.08f), style = Stroke(width = 1f))
             }
 
+            // Top horizontal dividing line / seam
+            scope.drawLine(
+                color = Color.Black.copy(alpha = 0.6f),
+                start = Offset(8f, 132f),
+                end = Offset(174f, 132f),
+                strokeWidth = 2f
+            )
+
             // Concentric grooved island
             paths["p4a_cam_island_1"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.03f))
-                scope.drawPath(it, Color.White.copy(alpha = 0.14f), style = Stroke(width = 1f))
+                scope.drawPath(it, Color(0xFF1C1E24).copy(alpha = 0.8f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.20f), style = Stroke(width = 1f))
             }
             paths["p4a_cam_island_2"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.06f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.10f), style = Stroke(width = 0.75f))
             }
             paths["p4a_cam_island_3"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.08f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.12f), style = Stroke(width = 0.75f))
             }
             paths["p4a_cam_island_4"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.10f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.14f), style = Stroke(width = 0.75f))
             }
 
             // Inner camera housing & lenses
             paths["p4a_cam_inner"]?.let {
                 scope.drawPath(it, Color(0xFF070708))
-                scope.drawPath(it, Color.White.copy(alpha = 0.25f), style = Stroke(width = 1.5f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.35f), style = Stroke(width = 1.5f))
             }
             paths["p4a_lens1"]?.let {
-                scope.drawPath(it, Color(0xFF141414))
-                scope.drawPath(it, Color.White.copy(alpha = 0.30f), style = Stroke(width = 1f))
+                scope.drawPath(it, Color(0xFF141418))
+                scope.drawPath(it, Color.White.copy(alpha = 0.40f), style = Stroke(width = 1f))
             }
             paths["p4a_lens1_inner"]?.let {
-                scope.drawPath(it, Color(0xFF050505))
-                scope.drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color(0xFF030304))
+                scope.drawCircle(Color.White.copy(alpha = 0.6f), radius = 1.2f, center = Offset(63f, 71f))
             }
             paths["p4a_lens2"]?.let {
-                scope.drawPath(it, Color(0xFF141414))
-                scope.drawPath(it, Color.White.copy(alpha = 0.30f), style = Stroke(width = 1f))
+                scope.drawPath(it, Color(0xFF141418))
+                scope.drawPath(it, Color.White.copy(alpha = 0.40f), style = Stroke(width = 1f))
             }
             paths["p4a_lens2_inner"]?.let {
-                scope.drawPath(it, Color(0xFF050505))
-                scope.drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color(0xFF030304))
+                scope.drawCircle(Color.White.copy(alpha = 0.6f), radius = 1.0f, center = Offset(87f, 71f))
             }
             paths["p4a_lens3"]?.let {
-                scope.drawPath(it, Color(0xFF141414))
-                scope.drawPath(it, Color.White.copy(alpha = 0.30f), style = Stroke(width = 1f))
+                scope.drawPath(it, Color(0xFF141418))
+                scope.drawPath(it, Color.White.copy(alpha = 0.40f), style = Stroke(width = 1f))
             }
             paths["p4a_lens3_inner"]?.let {
-                scope.drawPath(it, Color(0xFF050505))
-                scope.drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color(0xFF030304))
+                scope.drawCircle(Color.White.copy(alpha = 0.6f), radius = 1.2f, center = Offset(109f, 71f))
             }
 
             // Top center flash/sensor
             paths["p4a_flash"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.12f))
-                scope.drawPath(it, Color.White.copy(alpha = 0.35f), style = Stroke(width = 1f))
+                scope.drawPath(it, Color(0xFF1A1C20))
+                scope.drawPath(it, Color.White.copy(alpha = 0.45f), style = Stroke(width = 1f))
             }
             paths["p4a_flash_inner"]?.let {
-                scope.drawPath(it, Color(0xFF080808))
-                scope.drawPath(it, Color.White.copy(alpha = 0.20f), style = Stroke(width = 0.75f))
+                scope.drawPath(it, Color(0xFF050505))
+                scope.drawCircle(Color.White.copy(alpha = 0.7f), radius = 1.0f, center = Offset(95f, 21f))
             }
 
             // Slots below camera
@@ -1255,19 +1263,36 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
             paths["p4a_slot2"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.08f)) }
             paths["p4a_slot3"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.08f)) }
 
-            // Lower accents
-            paths["p4a_lower_horiz_pill"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.04f), style = Stroke(width = 1f)) }
-            paths["p4a_lower_vert_pill"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.04f), style = Stroke(width = 1f)) }
-            paths["p4a_lower_module"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.05f), style = Stroke(width = 1f)) }
+            // Lower accents & battery module
+            paths["p4a_lower_nfc_pill"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.05f), style = Stroke(width = 1f)) }
+            paths["p4a_lower_horiz_pill"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.05f), style = Stroke(width = 1f)) }
+            paths["p4a_lower_vert_pill"]?.let {
+                scope.drawPath(it, Color(0xFF121316).copy(alpha = 0.4f))
+                scope.drawPath(it, Color.White.copy(alpha = 0.06f), style = Stroke(width = 1f))
+            }
+            paths["p4a_lower_module"]?.let { scope.drawPath(it, Color.White.copy(alpha = 0.06f), style = Stroke(width = 1f)) }
+
+            // Speaker dots
+            listOf(64f, 69f, 74f, 79f).forEach { dotX ->
+                scope.drawCircle(Color.White.copy(alpha = 0.12f), radius = 1.2f, center = Offset(dotX, 322f))
+            }
 
             // Screws
             listOf(
-                Offset(18f, 22f), Offset(164f, 22f),
-                Offset(18f, 62f), Offset(18f, 122f), Offset(164f, 122f),
-                Offset(18f, 360f), Offset(164f, 360f)
+                Offset(22f, 18f), Offset(162f, 18f),
+                Offset(18f, 62f), Offset(18f, 122f), Offset(162f, 122f),
+                Offset(69f, 123f), Offset(107f, 123f),
+                Offset(20f, 362f), Offset(162f, 362f), Offset(92f, 348f), Offset(124f, 352f)
             ).forEach { screwCenter ->
-                scope.drawCircle(Color.White.copy(alpha = 0.15f), radius = 2f, center = screwCenter)
-                scope.drawCircle(Color.White.copy(alpha = 0.30f), radius = 2f, center = screwCenter, style = Stroke(width = 0.5f))
+                scope.drawCircle(Color(0xFF181818), radius = 2.5f, center = screwCenter)
+                scope.drawCircle(Color.White.copy(alpha = 0.25f), radius = 2.5f, center = screwCenter, style = Stroke(width = 0.6f))
+                scope.drawCircle(Color.White.copy(alpha = 0.40f), radius = 0.8f, center = screwCenter)
+            }
+
+            // Glyph Bar Bezel / Channel Frame
+            paths["p4a_bar"]?.let { barFrame ->
+                scope.drawPath(barFrame, Color(0xFF0B0C0E))
+                scope.drawPath(barFrame, Color(0xFF2E3038), style = Stroke(width = 1f))
             }
 
             // 7 individual LED segments (0..5 White/custom, 6 Red default)
@@ -1275,7 +1300,9 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
                 paths["p4a_seg_$s"]?.let { segPath ->
                     val isSelected = selectedIndices.contains(s)
                     val intensity = if (s < intensities.size) intensities[s] else 0f
-                    val baseCol = if (s == 6) Color(0xFFFF2222) else normalColor
+                    val isRed = s == 6
+                    val baseCol = if (isRed) Color(0xFFFF2020) else normalColor
+                    val b = segPath.getBounds()
 
                     val segColor = if (intensity > 0.01f) {
                         if (isSelected) lerp(selectedColor, Color.White, intensity)
@@ -1286,11 +1313,36 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
                     val alpha = if (intensity > 0.01f) {
                         (baseAlpha + (1f - baseAlpha) * intensity).coerceIn(0f, 1f)
                     } else {
-                        if (isSelected) 1.0f else (if (s == 6) 0.35f else baseAlpha)
+                        if (isSelected) 1.0f else (if (isRed) 0.65f else 0.22f)
                     }
 
-                    scope.drawPath(segPath, segColor, alpha = alpha)
-                    scope.drawPath(segPath, segColor.copy(alpha = if (s == 6) 0.5f else 0.2f), style = Stroke(width = 0.5f))
+                    if (isRed) {
+                        scope.drawPath(segPath, if (isSelected) selectedColor else Color(0xFF9E1818).copy(alpha = alpha))
+                        if (intensity > 0.01f || isSelected) {
+                            scope.drawCircle(Color(0xFFFF7A7A).copy(alpha = if (isSelected) 1f else alpha * 0.9f), radius = 2.2f, center = Offset(b.left + b.width / 2, b.top + b.height / 2))
+                        } else {
+                            scope.drawCircle(Color(0xFF5A0808).copy(alpha = 0.5f), radius = 1.8f, center = Offset(b.left + b.width / 2, b.top + b.height / 2))
+                        }
+                        scope.drawPath(segPath, if (isSelected) selectedColor else Color(0xFFFF3B30).copy(alpha = if (isSelected) 1f else 0.4f), style = Stroke(width = if (isSelected) 1f else 0.6f))
+                    } else {
+                        scope.drawPath(segPath, segColor, alpha = alpha)
+                        scope.drawPath(segPath, if (isSelected) selectedColor else Color.White.copy(alpha = if (intensity > 0.01f) 0.8f else 0.25f), style = Stroke(width = if (isSelected) 1f else 0.5f))
+
+                        // 3x3 mini-LED array
+                        val dotAlpha = if (isSelected) 1.0f else (if (intensity > 0.01f) (alpha * 0.9f).coerceAtMost(1f) else 0.15f)
+                        val dotCol = if (isSelected) selectedColor else (if (intensity > 0.01f) Color.White else Color(0xFFB0B6C0))
+                        val w3 = b.width / 4f
+                        val h3 = b.height / 4f
+                        for (r in 1..3) {
+                            for (c in 1..3) {
+                                scope.drawCircle(
+                                    color = dotCol.copy(alpha = dotAlpha),
+                                    radius = 0.7f,
+                                    center = Offset(b.left + c * w3, b.top + r * h3)
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1508,7 +1560,7 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
                     left = 8f,
                     top = 8f,
                     right = 174f,
-                    bottom = 132f,
+                    bottom = 130f,
                     cornerRadius = CornerRadius(p4aRadius)
                 )
             )
@@ -1517,7 +1569,7 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
             addRoundRect(
                 RoundRect(
                     left = 8f,
-                    top = 136f,
+                    top = 134f,
                     right = 174f,
                     bottom = 374f,
                     cornerRadius = CornerRadius(p4aRadius)
@@ -1525,65 +1577,68 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
             )
         })
 
-        // Concentric camera island ridges
+        // Concentric camera island ridges (centered at X=88)
         put("p4a_cam_island_1", Path().apply {
-            addRoundRect(RoundRect(left = 28f, top = 28f, right = 154f, bottom = 118f, cornerRadius = CornerRadius(45f)))
+            addRoundRect(RoundRect(left = 26f, top = 28f, right = 150f, bottom = 118f, cornerRadius = CornerRadius(45f)))
         })
         put("p4a_cam_island_2", Path().apply {
-            addRoundRect(RoundRect(left = 34f, top = 34f, right = 148f, bottom = 112f, cornerRadius = CornerRadius(39f)))
+            addRoundRect(RoundRect(left = 32f, top = 34f, right = 144f, bottom = 112f, cornerRadius = CornerRadius(39f)))
         })
         put("p4a_cam_island_3", Path().apply {
-            addRoundRect(RoundRect(left = 40f, top = 40f, right = 142f, bottom = 106f, cornerRadius = CornerRadius(33f)))
+            addRoundRect(RoundRect(left = 38f, top = 40f, right = 138f, bottom = 106f, cornerRadius = CornerRadius(33f)))
         })
         put("p4a_cam_island_4", Path().apply {
-            addRoundRect(RoundRect(left = 46f, top = 46f, right = 136f, bottom = 100f, cornerRadius = CornerRadius(27f)))
+            addRoundRect(RoundRect(left = 44f, top = 46f, right = 132f, bottom = 100f, cornerRadius = CornerRadius(27f)))
         })
 
         // Inner camera pill & 3 lenses
         put("p4a_cam_inner", Path().apply {
-            addRoundRect(RoundRect(left = 52f, top = 50f, right = 130f, bottom = 98f, cornerRadius = CornerRadius(24f)))
+            addRoundRect(RoundRect(left = 50f, top = 48f, right = 126f, bottom = 98f, cornerRadius = CornerRadius(24f)))
         })
-        put("p4a_lens1", Path().apply { addOval(Rect(59.5f, 65.5f, 76.5f, 82.5f)) })
-        put("p4a_lens1_inner", Path().apply { addOval(Rect(63.5f, 69.5f, 72.5f, 78.5f)) })
-        put("p4a_lens2", Path().apply { addOval(Rect(84.5f, 67.5f, 97.5f, 80.5f)) })
-        put("p4a_lens2_inner", Path().apply { addOval(Rect(87.5f, 70.5f, 94.5f, 77.5f)) })
-        put("p4a_lens3", Path().apply { addOval(Rect(105.5f, 65.5f, 122.5f, 82.5f)) })
-        put("p4a_lens3_inner", Path().apply { addOval(Rect(109.5f, 69.5f, 118.5f, 78.5f)) })
+        put("p4a_lens1", Path().apply { addOval(Rect(56.5f, 64.5f, 73.5f, 81.5f)) })
+        put("p4a_lens1_inner", Path().apply { addOval(Rect(61.0f, 69.0f, 69.0f, 77.0f)) })
+        put("p4a_lens2", Path().apply { addOval(Rect(81.5f, 66.5f, 94.5f, 79.5f)) })
+        put("p4a_lens2_inner", Path().apply { addOval(Rect(85.0f, 70.0f, 91.0f, 76.0f)) })
+        put("p4a_lens3", Path().apply { addOval(Rect(102.5f, 64.5f, 119.5f, 81.5f)) })
+        put("p4a_lens3_inner", Path().apply { addOval(Rect(107.0f, 69.0f, 115.0f, 77.0f)) })
 
         // Top center sensor
-        put("p4a_flash", Path().apply { addOval(Rect(84.5f, 21.5f, 97.5f, 34.5f)) })
-        put("p4a_flash_inner", Path().apply { addOval(Rect(87.5f, 24.5f, 94.5f, 31.5f)) })
+        put("p4a_flash", Path().apply { addOval(Rect(90f, 16f, 102f, 28f)) })
+        put("p4a_flash_inner", Path().apply { addOval(Rect(93.5f, 19.5f, 98.5f, 24.5f)) })
 
         // Accent slots below camera island
         put("p4a_slot1", Path().apply {
-            addRoundRect(RoundRect(left = 40f, top = 120f, right = 64f, bottom = 127f, cornerRadius = CornerRadius(3f)))
+            addRoundRect(RoundRect(left = 36f, top = 120f, right = 62f, bottom = 126f, cornerRadius = CornerRadius(3f)))
         })
         put("p4a_slot2", Path().apply {
-            addRoundRect(RoundRect(left = 84f, top = 120f, right = 108f, bottom = 127f, cornerRadius = CornerRadius(3f)))
+            addRoundRect(RoundRect(left = 76f, top = 120f, right = 100f, bottom = 126f, cornerRadius = CornerRadius(3f)))
         })
         put("p4a_slot3", Path().apply {
-            addRoundRect(RoundRect(left = 118f, top = 120f, right = 142f, bottom = 127f, cornerRadius = CornerRadius(3f)))
+            addRoundRect(RoundRect(left = 114f, top = 120f, right = 140f, bottom = 126f, cornerRadius = CornerRadius(3f)))
         })
 
         // Lower panel internal accents
+        put("p4a_lower_nfc_pill", Path().apply {
+            addRoundRect(RoundRect(left = 24f, top = 152f, right = 38f, bottom = 172f, cornerRadius = CornerRadius(6f)))
+        })
         put("p4a_lower_horiz_pill", Path().apply {
-            addRoundRect(RoundRect(left = 74f, top = 168f, right = 126f, bottom = 186f, cornerRadius = CornerRadius(9f)))
+            addRoundRect(RoundRect(left = 86f, top = 170f, right = 144f, bottom = 186f, cornerRadius = CornerRadius(8f)))
         })
         put("p4a_lower_vert_pill", Path().apply {
-            addRoundRect(RoundRect(left = 98f, top = 226f, right = 146f, bottom = 336f, cornerRadius = CornerRadius(14f)))
+            addRoundRect(RoundRect(left = 92f, top = 220f, right = 148f, bottom = 336f, cornerRadius = CornerRadius(12f)))
         })
         put("p4a_lower_module", Path().apply {
-            addRoundRect(RoundRect(left = 18f, top = 330f, right = 50f, bottom = 352f, cornerRadius = CornerRadius(6f)))
+            addRoundRect(RoundRect(left = 20f, top = 334f, right = 56f, bottom = 356f, cornerRadius = CornerRadius(6f)))
         })
 
-        // 7-segment vertical glyph strip
+        // 7-segment vertical glyph strip (Glyph Bar spanning Y=28 to 118)
         put("p4a_bar", Path().apply {
-            addRoundRect(RoundRect(left = 155f, top = 48f, right = 166f, bottom = 118f, cornerRadius = CornerRadius(2f)))
+            addRoundRect(RoundRect(left = 153f, top = 28f, right = 167f, bottom = 118f, cornerRadius = CornerRadius(3f)))
         })
         for (s in 0..6) {
-            val sTop = 48f + s * 10.25f
+            val sTop = 30f + s * 12.5f
             put("p4a_seg_$s", Path().apply {
-                addRoundRect(RoundRect(left = 155f, top = sTop, right = 166f, bottom = sTop + 8.5f, cornerRadius = CornerRadius(1.5f)))
+                addRoundRect(RoundRect(left = 155f, top = sTop, right = 165f, bottom = sTop + 10.5f, cornerRadius = CornerRadius(1.5f)))
             })
         }
 
