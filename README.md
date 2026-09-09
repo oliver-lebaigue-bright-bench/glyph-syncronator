@@ -274,6 +274,13 @@ We welcome contributions! Ideas:
         <br/><small>Core Dev</small>
       </a>
     </td>
+    <td align="center">
+      <a href="https://github.com/hrenpoymikto">
+        <img src="https://github.com/hrenpoymikto.png?size=80&mask=circle" width="80" alt="hrenpoymikto" />
+        <br/><b>hrenpoymikto</b>
+        <br/><small>Core Dev</small>
+      </a>
+    </td>
   </tr>
 </table>
 
