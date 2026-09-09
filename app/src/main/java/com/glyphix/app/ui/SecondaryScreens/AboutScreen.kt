@@ -136,8 +136,9 @@ internal fun AboutScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Surface(
-                    shape = MaterialTheme.shapes.medium,
-                    color = Color.White,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Black,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
                     modifier = Modifier
                         .size(48.dp)
                         .clickable {
@@ -152,7 +153,7 @@ internal fun AboutScreen(
                         Icon(
                             painter = painterResource(R.drawable.ic_launcher_foreground),
                             contentDescription = null,
-                            modifier = Modifier.size(40.dp),
+                            modifier = Modifier.size(42.dp),
                             tint = Color.Unspecified
                         )
                     }

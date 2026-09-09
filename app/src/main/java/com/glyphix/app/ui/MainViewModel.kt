@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.File
@@ -197,7 +198,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     sealed class AppUpdateStatus {
         object Idle : AppUpdateStatus()
         object Checking : AppUpdateStatus()
-        data class Available(val version: String, val url: String, val apkUrl: String? = null) : AppUpdateStatus()
+        data class Available(
+            val version: String,
+            val url: String,
+            val apkUrl: String? = null,
+            val title: String? = null,
+            val changelog: String? = null
+        ) : AppUpdateStatus()
         data class Downloading(val progress: Float) : AppUpdateStatus()
         object UpToDate : AppUpdateStatus()
         data class Error(val message: String) : AppUpdateStatus()
@@ -664,32 +671,196 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun checkAppUpdate() {
-        _appUpdateStatus.value = AppUpdateStatus.UpToDate
+    suspend fun fetchGitHubReleases(): List<Announcement> = withContext(Dispatchers.IO) {
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL("https://api.github.com/repos/oliver-lebaigue-bright-bench/glyph-syncronator/releases?per_page=10")
+            connection = url.openConnection() as HttpURLConnection
+            connection.setRequestProperty("Accept", "application/vnd.github+json")
+            connection.setRequestProperty("User-Agent", "Glyphix-App")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 15000
+
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val jsonArray = JSONArray(responseText)
+                val releases = mutableListOf<Announcement>()
+                for (i in 0 until jsonArray.length()) {
+                    val relObj = jsonArray.getJSONObject(i)
+                    val tagName = relObj.optString("tag_name", "")
+                    val name = relObj.optString("name", "").ifBlank { tagName }
+                    val body = relObj.optString("body", "")
+                    val htmlUrl = relObj.optString("html_url", "")
+                    val publishedAt = relObj.optString("published_at", "")
+                    val id = "gh_rel_${relObj.optLong("id", System.currentTimeMillis())}"
+
+                    var timestamp = System.currentTimeMillis()
+                    if (publishedAt.isNotBlank()) {
+                        timestamp = try {
+                            val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+                            sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                            sdf.parse(publishedAt)?.time ?: System.currentTimeMillis()
+                        } catch (_: Exception) {
+                            System.currentTimeMillis()
+                        }
+                    }
+
+                    var apkUrl: String? = null
+                    val assets = relObj.optJSONArray("assets")
+                    if (assets != null) {
+                        for (j in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(j)
+                            val assetName = asset.optString("name", "")
+                            if (assetName.endsWith(".apk", ignoreCase = true)) {
+                                apkUrl = asset.optString("browser_download_url")
+                                break
+                            }
+                        }
+                    }
+
+                    releases.add(
+                        Announcement(
+                            id = id,
+                            title = name,
+                            message = body.ifBlank { "New release $tagName is available on GitHub." },
+                            timestamp = timestamp,
+                            style = "UPDATE",
+                            link = htmlUrl.takeIf { it.isNotBlank() },
+                            linkText = "View on GitHub",
+                            apkUrl = apkUrl,
+                            version = tagName
+                        )
+                    )
+                }
+                releases
+            } else {
+                Log.w("MainViewModel", "Failed to fetch GitHub releases: HTTP $responseCode")
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error fetching GitHub releases", e)
+            emptyList()
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    fun isNewerVersion(remoteVersion: String, currentVersion: String): Boolean {
+        return try {
+            val cleanRemote = remoteVersion.trim().removePrefix("v").removePrefix("V")
+            val cleanCurrent = currentVersion.trim().removePrefix("v").removePrefix("V")
+
+            val remoteParts = cleanRemote.split(".", "-", "_")
+            val currentParts = cleanCurrent.split(".", "-", "_")
+
+            val maxLen = maxOf(remoteParts.size, currentParts.size)
+            for (i in 0 until maxLen) {
+                val rPart = remoteParts.getOrNull(i)?.takeWhile { it.isDigit() }?.toIntOrNull() ?: 0
+                val cPart = currentParts.getOrNull(i)?.takeWhile { it.isDigit() }?.toIntOrNull() ?: 0
+                if (rPart > cPart) return true
+                if (rPart < cPart) return false
+            }
+            false
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Error comparing versions: remote=$remoteVersion, current=$currentVersion", e)
+            false
+        }
+    }
+
+    fun checkAppUpdate(userInitiated: Boolean = true) {
+        viewModelScope.launch {
+            _appUpdateStatus.value = AppUpdateStatus.Checking
+            try {
+                val releases = fetchGitHubReleases()
+                if (releases.isNotEmpty()) {
+                    _gitHubReleases.value = releases
+                    val latestRelease = releases.firstOrNull()
+                    if (latestRelease != null && latestRelease.version != null && isNewerVersion(latestRelease.version, BuildConfig.VERSION_NAME)) {
+                        _appUpdateStatus.value = AppUpdateStatus.Available(
+                            version = latestRelease.version,
+                            url = latestRelease.link ?: "https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/releases",
+                            apkUrl = latestRelease.apkUrl,
+                            title = latestRelease.title,
+                            changelog = latestRelease.message
+                        )
+
+                        val sharedPrefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                        val lastSeenId = sharedPrefs.getString("last_seen_announcement_id", "")
+                        if (latestRelease.id != lastSeenId) {
+                            _latestAnnouncement.value = latestRelease
+                            _showAnnouncementModal.value = true
+                        }
+                    } else {
+                        _appUpdateStatus.value = AppUpdateStatus.UpToDate
+                    }
+                } else {
+                    if (userInitiated) {
+                        _appUpdateStatus.value = AppUpdateStatus.Error("Failed to fetch releases")
+                    } else {
+                        _appUpdateStatus.value = AppUpdateStatus.UpToDate
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Update check failed", e)
+                if (userInitiated) {
+                    _appUpdateStatus.value = AppUpdateStatus.Error(e.message ?: "Failed to check for updates")
+                } else {
+                    _appUpdateStatus.value = AppUpdateStatus.UpToDate
+                }
+            }
+        }
     }
 
     fun downloadAndInstallUpdate(apkUrl: String, versionName: String) {
         viewModelScope.launch(Dispatchers.IO) {
+            _appUpdateStatus.value = AppUpdateStatus.Downloading(0f)
             var connection: HttpURLConnection? = null
             try {
                 Log.d("MainViewModel", "Starting update download from $apkUrl")
-                val url = URL(apkUrl)
-                connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 15000
-                connection.readTimeout = 60000
+                var currentUrl = apkUrl
+                var redirectCount = 0
+                var finalConnection: HttpURLConnection? = null
 
-                val responseCode = connection.responseCode
+                while (redirectCount < 5) {
+                    val url = URL(currentUrl)
+                    connection = url.openConnection() as HttpURLConnection
+                    connection.instanceFollowRedirects = true
+                    connection.setRequestProperty("User-Agent", "Glyphix-App")
+                    connection.connectTimeout = 15000
+                    connection.readTimeout = 60000
+
+                    val responseCode = connection.responseCode
+                    if (responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                        responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                        responseCode == 307 || responseCode == 308
+                    ) {
+                        val location = connection.getHeaderField("Location")
+                        connection.disconnect()
+                        if (location != null) {
+                            currentUrl = location
+                            redirectCount++
+                            continue
+                        }
+                    }
+                    finalConnection = connection
+                    break
+                }
+
+                val conn = finalConnection ?: throw Exception("Failed to establish connection")
+                val responseCode = conn.responseCode
                 if (responseCode == HttpURLConnection.HTTP_OK) {
-                    val fileLength = connection.contentLength
-                    val destinationFile = File(ctx.externalCacheDir, "update_$versionName.apk")
+                    val fileLength = conn.contentLengthLong.takeIf { it > 0 } ?: conn.contentLength.toLong()
+                    val cacheDir = ctx.externalCacheDir ?: ctx.cacheDir
+                    val destinationFile = File(cacheDir, "update_${versionName.replace('/', '_')}.apk")
                     
                     if (destinationFile.exists()) {
                         destinationFile.delete()
                     }
 
-                    connection.inputStream.use { input ->
+                    conn.inputStream.use { input ->
                         FileOutputStream(destinationFile).use { output ->
-                            val buffer = ByteArray(16384)
+                            val buffer = ByteArray(32768)
                             var bytesRead: Int
                             var totalBytesRead = 0L
 
@@ -697,7 +868,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 output.write(buffer, 0, bytesRead)
                                 totalBytesRead += bytesRead
                                 if (fileLength > 0) {
-                                    val progress = totalBytesRead.toFloat() / fileLength.toFloat()
+                                    val progress = (totalBytesRead.toFloat() / fileLength.toFloat()).coerceIn(0f, 1f)
                                     _appUpdateStatus.value = AppUpdateStatus.Downloading(progress)
                                 }
                             }
@@ -705,12 +876,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
 
                     if (destinationFile.exists() && destinationFile.length() > 0) {
-                        Log.d("MainViewModel", "Update downloaded successfully to ${destinationFile.absolutePath}")
+                        Log.d("MainViewModel", "Update downloaded successfully (${destinationFile.length()} bytes)")
+                        _appUpdateStatus.value = AppUpdateStatus.Idle
                         withContext(Dispatchers.Main) {
                             installApk(destinationFile)
                         }
                     } else {
-                        throw Exception("Downloaded file is missing or empty")
+                        throw Exception("Downloaded file is empty or missing")
                     }
                 } else {
                     Log.e("MainViewModel", "Download failed with HTTP $responseCode")
@@ -850,18 +1022,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     fun importZonesConfig(uri: Uri) {
         _configUpdateStatus.value = ConfigUpdateStatus.Updating
-        viewModelScope.launch {
-            announcementRepository.getLatestAnnouncement().collect { announcement ->
-                _latestAnnouncement.value = announcement
-                if (announcement != null) {
-                    val sharedPrefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
-                    val lastSeenId = sharedPrefs.getString("last_seen_announcement_id", "")
-                    if (announcement.id.toString() != lastSeenId) {
-                        _showAnnouncementModal.value = true
-                    }
-                }
-            }
-        }
 
         viewModelScope.launch {
             try {
@@ -900,19 +1060,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateZonesConfig() {
         // 1. Set loading state immediately on Main Thread
         _configUpdateStatus.value = ConfigUpdateStatus.Updating
-
-        viewModelScope.launch {
-            announcementRepository.getLatestAnnouncement().collect { announcement ->
-                _latestAnnouncement.value = announcement
-                if (announcement != null) {
-                    val sharedPrefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
-                    val lastSeenId = sharedPrefs.getString("last_seen_announcement_id", "")
-                    if (announcement.id.toString() != lastSeenId) {
-                        _showAnnouncementModal.value = true
-                    }
-                }
-            }
-        }
 
         viewModelScope.launch {
             try {
@@ -1316,6 +1463,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun showAnnouncementHistory() { 
         _showAnnouncementHistory.value = true
         analytics.logScreenView("announcement_history")
+        if (_gitHubReleases.value.isEmpty()) {
+            checkAppUpdate(userInitiated = false)
+        }
     }
     fun hideAnnouncementHistory() { _showAnnouncementHistory.value = false }
 
@@ -1354,8 +1504,72 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    val announcementHistory = announcementRepository.getAnnouncementHistory()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val _gitHubReleases = MutableStateFlow<List<Announcement>>(emptyList())
+    val gitHubReleases = _gitHubReleases.asStateFlow()
+
+    private val _clearedAnnouncementTimestamp = MutableStateFlow(
+        ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE).getLong("cleared_announcements_timestamp", 0L)
+    )
+    val clearedAnnouncementTimestamp = _clearedAnnouncementTimestamp.asStateFlow()
+
+    private val _clearedAnnouncementIds = MutableStateFlow<Set<String>>(
+        ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE).getStringSet("cleared_announcement_ids", emptySet()) ?: emptySet()
+    )
+    val clearedAnnouncementIds = _clearedAnnouncementIds.asStateFlow()
+
+    val hasClearedNews: StateFlow<Boolean> = combine(_clearedAnnouncementTimestamp, _clearedAnnouncementIds) { ts, ids ->
+        ts > 0L || ids.isNotEmpty()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val announcementHistory: StateFlow<List<Announcement>> = combine(
+        announcementRepository.getAnnouncementHistory(),
+        _gitHubReleases,
+        _clearedAnnouncementTimestamp,
+        _clearedAnnouncementIds
+    ) { firebaseList, githubList, clearedTime, clearedIds ->
+        (firebaseList + githubList)
+            .distinctBy { it.id }
+            .filter { announcement ->
+                announcement.id !in clearedIds && announcement.timestamp > clearedTime
+            }
+            .sortedByDescending { it.timestamp }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun clearAllAnnouncements() {
+        val now = System.currentTimeMillis()
+        _clearedAnnouncementTimestamp.value = now
+        _clearedAnnouncementIds.value = emptySet()
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit {
+                    putLong("cleared_announcements_timestamp", now)
+                    putStringSet("cleared_announcement_ids", emptySet())
+                }
+        }
+    }
+
+    fun clearSingleAnnouncement(id: String) {
+        val updated = _clearedAnnouncementIds.value + id
+        _clearedAnnouncementIds.value = updated
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit {
+                    putStringSet("cleared_announcement_ids", updated)
+                }
+        }
+    }
+
+    fun restoreClearedNews() {
+        _clearedAnnouncementTimestamp.value = 0L
+        _clearedAnnouncementIds.value = emptySet()
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit {
+                    remove("cleared_announcements_timestamp")
+                    remove("cleared_announcement_ids")
+                }
+        }
+    }
 
     val leaderboardEntries = leaderboardRepository.getTopUsers()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -1539,6 +1753,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 delay(100)
             }
         }
+
+        viewModelScope.launch {
+            announcementRepository.getLatestAnnouncement().collect { announcement ->
+                if (announcement != null) {
+                    _latestAnnouncement.value = announcement
+                    val prefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                    val lastSeenId = prefs.getString("last_seen_announcement_id", "")
+                    if (announcement.id != lastSeenId) {
+                        _showAnnouncementModal.value = true
+                    }
+                }
+            }
+        }
+
+        checkAppUpdate(userInitiated = false)
     }
 
     // ── Tab ───────────────────────────────────────────────────────────────────

@@ -32,6 +32,8 @@ import java.util.*
 fun AnnouncementModal(
     announcement: Announcement,
     onDismiss: () -> Unit,
+    onDownloadUpdate: ((apkUrl: String, version: String) -> Unit)? = null,
+    appUpdateStatus: MainViewModel.AppUpdateStatus = MainViewModel.AppUpdateStatus.Idle
 ) {
     val styleConfig = getStyleConfig(announcement.style)
     val uriHandler = LocalUriHandler.current
@@ -93,18 +95,61 @@ fun AnnouncementModal(
                 
                 Text(
                     text = announcement.message,
-                    textAlign = TextAlign.Center,
+                    textAlign = TextAlign.Start,
                     style = MaterialTheme.typography.bodyMedium,
-                    lineHeight = 22.sp
+                    lineHeight = 22.sp,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                if (!announcement.link.isNullOrBlank()) {
+                if (!announcement.apkUrl.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(16.dp))
+                    if (appUpdateStatus is MainViewModel.AppUpdateStatus.Downloading) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { appUpdateStatus.progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp),
+                                color = styleConfig.color,
+                                trackColor = styleConfig.color.copy(alpha = 0.2f)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Downloading update: ${(appUpdateStatus.progress * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = styleConfig.color,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                onDownloadUpdate?.invoke(announcement.apkUrl, announcement.version ?: "update")
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = styleConfig.color,
+                                contentColor = Color.Black
+                            )
+                        ) {
+                            Icon(FontAwesomeIcons.Solid.Download, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("DOWNLOAD & INSTALL", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                if (!announcement.link.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
                     TextButton(
                         onClick = { handleOpenLink(announcement.link) },
                         colors = ButtonDefaults.textButtonColors(contentColor = styleConfig.color)
                     ) {
-                        Icon(FontAwesomeIcons.Solid.ExternalLinkAlt, null, modifier = Modifier.size(18.dp))
+                        Icon(FontAwesomeIcons.Solid.ExternalLinkAlt, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(announcement.linkText ?: "Open Link", fontWeight = FontWeight.Bold)
                     }
@@ -112,13 +157,12 @@ fun AnnouncementModal(
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = styleConfig.color)
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
             ) {
-                Text("GOT IT", fontWeight = FontWeight.Bold)
+                Text(if (announcement.apkUrl != null) "LATER" else "GOT IT", fontWeight = FontWeight.Bold)
             }
         },
         shape = RoundedCornerShape(32.dp),
@@ -296,7 +340,14 @@ fun AnnouncementEditorScreen(
 fun AnnouncementHistoryScreen(
     announcements: List<Announcement>,
     onDismiss: () -> Unit,
+    onDownloadUpdate: ((apkUrl: String, version: String) -> Unit)? = null,
+    onClearAll: (() -> Unit)? = null,
+    onClearSingle: ((id: String) -> Unit)? = null,
+    onRestoreNews: (() -> Unit)? = null,
+    hasClearedNews: Boolean = false,
+    appUpdateStatus: MainViewModel.AppUpdateStatus = MainViewModel.AppUpdateStatus.Idle
 ) {
+    var showClearConfirmDialog by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
 
@@ -310,6 +361,37 @@ fun AnnouncementHistoryScreen(
             android.widget.Toast.makeText(context, "Could not open link", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
+
+    if (showClearConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirmDialog = false },
+            title = {
+                Text(
+                    text = "Clear App News?",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text("This will remove all current announcements and releases from your feed. You can restore them anytime.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearConfirmDialog = false
+                        onClearAll?.invoke()
+                    }
+                ) {
+                    Text("CLEAR ALL", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirmDialog = false }) {
+                    Text("CANCEL")
+                }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
     
     Scaffold(
         topBar = {
@@ -318,17 +400,50 @@ fun AnnouncementHistoryScreen(
                 navigationIcon = {
                     GlyphixBackButton(onClick = onDismiss)
                 },
+                actions = {
+                    if (announcements.isNotEmpty()) {
+                        IconButton(onClick = { showClearConfirmDialog = true }) {
+                            Icon(
+                                FontAwesomeIcons.Solid.Trash,
+                                contentDescription = "Clear App News",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                            )
+                        }
+                    } else if (hasClearedNews) {
+                        IconButton(onClick = { onRestoreNews?.invoke() }) {
+                            Icon(
+                                FontAwesomeIcons.Solid.History,
+                                contentDescription = "Restore News",
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (announcements.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(FontAwesomeIcons.Solid.Inbox, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text("No announcements yet", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                    if (hasClearedNews) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = { onRestoreNews?.invoke() },
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                        ) {
+                            Icon(FontAwesomeIcons.Solid.History, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Restore Cleared News", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 }
             }
         } else {
@@ -350,7 +465,7 @@ fun AnnouncementHistoryScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, config.color.copy(alpha = 0.1f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, config.color.copy(alpha = 0.15f))
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -367,6 +482,33 @@ fun AnnouncementHistoryScreen(
                                     Text(announcement.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                     Text(dateStr, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
                                 }
+                                if (announcement.version != null) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = config.color.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = announcement.version,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = config.color
+                                        )
+                                    }
+                                }
+                                if (onClearSingle != null) {
+                                    IconButton(
+                                        onClick = { onClearSingle(announcement.id) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            FontAwesomeIcons.Solid.Times,
+                                            contentDescription = "Dismiss",
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                        )
+                                    }
+                                }
                             }
                             
                             Spacer(modifier = Modifier.height(12.dp))
@@ -376,14 +518,54 @@ fun AnnouncementHistoryScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
+
+                            if (!announcement.apkUrl.isNullOrBlank()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                if (appUpdateStatus is MainViewModel.AppUpdateStatus.Downloading) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        LinearProgressIndicator(
+                                            progress = { appUpdateStatus.progress },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(6.dp),
+                                            color = config.color,
+                                            trackColor = config.color.copy(alpha = 0.2f)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Downloading update: ${(appUpdateStatus.progress * 100).toInt()}%",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = config.color,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            onDownloadUpdate?.invoke(announcement.apkUrl, announcement.version ?: "update")
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = config.color,
+                                            contentColor = Color.Black
+                                        )
+                                    ) {
+                                        Icon(FontAwesomeIcons.Solid.Download, null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Download & Install Update", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
                             
                             if (!announcement.link.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Button(
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
                                     onClick = { handleOpenLink(announcement.link) },
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = config.color.copy(alpha = 0.1f), contentColor = config.color)
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = config.color),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, config.color.copy(alpha = 0.3f))
                                 ) {
                                     Icon(FontAwesomeIcons.Solid.ExternalLinkAlt, null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -405,9 +587,10 @@ private data class AnnouncementStyleConfig(
 
 @Composable
 private fun getStyleConfig(style: String): AnnouncementStyleConfig {
-    return when (style) {
+    return when (style.uppercase(Locale.ROOT)) {
         "URGENT" -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.ExclamationTriangle, Color(0xFFE91E63))
         "FEATURE" -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.Magic, Color(0xFF4CAF50))
+        "UPDATE", "RELEASE" -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.Rocket, Color(0xFF00E676))
         else -> AnnouncementStyleConfig(FontAwesomeIcons.Solid.InfoCircle, MaterialTheme.colorScheme.primary)
     }
 }

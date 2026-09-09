@@ -614,8 +614,8 @@ private fun getNavItemsForTab(tab: Tab): List<TabItem> {
     return listOf(
         getTabItem(Tab.Audio),
         getTabItem(Tab.Leaderboard),
-        getTabItem(Tab.Info),
-        getTabItem(Tab.Settings)
+        getTabItem(Tab.Settings),
+        getTabItem(Tab.Info)
     )
 }
 

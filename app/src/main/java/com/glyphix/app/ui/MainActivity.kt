@@ -589,8 +589,8 @@ internal fun GlyphixApp(
         listOf(
             Tab.Audio,
             Tab.Leaderboard,
-            Tab.Info,
-            Tab.Settings
+            Tab.Settings,
+            Tab.Info
         )
     }
 

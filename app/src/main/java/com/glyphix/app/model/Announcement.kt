@@ -8,7 +8,9 @@ data class Announcement(
     val title: String = "",
     val message: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val style: String = "INFO", // INFO, URGENT, FEATURE
+    val style: String = "INFO", // INFO, URGENT, FEATURE, UPDATE, RELEASE
     val link: String? = null,
-    val linkText: String? = null
+    val linkText: String? = null,
+    val apkUrl: String? = null,
+    val version: String? = null
 )

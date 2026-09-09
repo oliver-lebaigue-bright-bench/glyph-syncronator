@@ -49,13 +49,22 @@ internal fun CommunityOverlays(
         }
     }
 
+    val appUpdateStatus by viewModel.appUpdateStatus.collectAsStateWithLifecycle()
+    val hasClearedNews by viewModel.hasClearedNews.collectAsStateWithLifecycle()
+
     if (isShowingAnnouncementHistory) {
         val announcements by viewModel.announcementHistory.collectAsStateWithLifecycle()
         Box(modifier = Modifier.fillMaxSize()) {
             GlyphixBackground()
             AnnouncementHistoryScreen(
                 announcements = announcements,
-                onDismiss = { viewModel.hideAnnouncementHistory() }
+                onDismiss = { viewModel.hideAnnouncementHistory() },
+                onDownloadUpdate = { apkUrl, version -> viewModel.downloadAndInstallUpdate(apkUrl, version) },
+                onClearAll = { viewModel.clearAllAnnouncements() },
+                onClearSingle = { id -> viewModel.clearSingleAnnouncement(id) },
+                onRestoreNews = { viewModel.restoreClearedNews() },
+                hasClearedNews = hasClearedNews,
+                appUpdateStatus = appUpdateStatus
             )
         }
     }
@@ -74,7 +83,9 @@ internal fun CommunityOverlays(
     if (showAnnouncementModal && latestAnnouncement != null) {
         AnnouncementModal(
             announcement = latestAnnouncement!!,
-            onDismiss = { viewModel.dismissAnnouncement() }
+            onDismiss = { viewModel.dismissAnnouncement() },
+            onDownloadUpdate = { apkUrl, version -> viewModel.downloadAndInstallUpdate(apkUrl, version) },
+            appUpdateStatus = appUpdateStatus
         )
     }
 
