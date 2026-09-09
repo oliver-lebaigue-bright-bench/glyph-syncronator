@@ -141,7 +141,8 @@
     <string name="credit_muvex_role">Web Dev</string>
     <string name="credit_gabibrawl_role">Core Dev</string>
     <string name="credit_p1749_role">Core Dev</string>
-    <string name="credit_hrenpoymikto_role">Core Dev</string>
+    <string name="credit_hrenpoymikto_role">Core Dev &amp; Social Media Team</string>
+    <string name="credit_social_media_role">Social Media Team</string>
     <string name="all_contributors">All Contributors</string>
     <string name="credit_owner_role">Founder, coordinator, main idea, owner</string>
     <string name="credit_nicouschulas_role">Readme &amp; Wiki enhancements</string>

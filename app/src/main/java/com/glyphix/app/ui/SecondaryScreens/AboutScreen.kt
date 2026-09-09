@@ -91,6 +91,7 @@ internal fun AboutScreen(
         CreditEntry("GabiBrawl", stringResource(R.string.credit_gabibrawl_role), "gabibrawl"),
         CreditEntry("P.1749", stringResource(R.string.credit_p1749_role), "p-1749"),
         CreditEntry("hrenpoymikto", stringResource(R.string.credit_hrenpoymikto_role), "hrenpoymikto"),
+        CreditEntry("Logan Hills", stringResource(R.string.credit_social_media_role), null),
     )
 
     BackHandler { onDismiss?.invoke() }

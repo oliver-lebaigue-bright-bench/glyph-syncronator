@@ -278,8 +278,13 @@ We welcome contributions! Ideas:
       <a href="https://github.com/hrenpoymikto">
         <img src="https://github.com/hrenpoymikto.png?size=80&mask=circle" width="80" alt="hrenpoymikto" />
         <br/><b>hrenpoymikto</b>
-        <br/><small>Core Dev</small>
+        <br/><small>Core Dev &amp; Social Media</small>
       </a>
+    </td>
+    <td align="center">
+      <img src="https://github.com/ghost.png?size=80&mask=circle" width="80" alt="Logan Hills" />
+      <br/><b>Logan Hills</b>
+      <br/><small>Social Media Team</small>
     </td>
   </tr>
 </table>
