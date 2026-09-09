@@ -217,7 +217,7 @@
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. PREÂMBULO</string>
     <string name="license_preamble_1">Este Contrato de Licença (\"Contrato\") é um acordo legal entre você (\"Licenciado\") e Oliver Lebaigue (\"Licenciador\") para o uso, revisão e modificação do aplicativo de visualização de música conhecido como \"Glyphix\" (o \"Software\"), um projeto fundado por Oliver Lebaigue sob a organização Luminus Labs.</string>
-    <string name="license_preamble_2">O código fonte do Software está hospedado publicamente em https://github.com/oliver-lebaigue-bright-bench/glyphix. Ao acessar, baixar, copiar ou utilizar o Software ou seu Código Fonte de qualquer outra forma, o Licenciado concorda em cumprir os termos deste Contrato.</string>
+    <string name="license_preamble_2">O código fonte do Software está hospedado publicamente em https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. Ao acessar, baixar, copiar ou utilizar o Software ou seu Código Fonte de qualquer outra forma, o Licenciado concorda em cumprir os termos deste Contrato.</string>
     <string name="license_section_2">2. DEFINIÇÕES</string>
     <string name="license_def_1">2.1 \"Software\" significa o aplicativo Glyphix, incluindo, mas não se limitando ao código fonte, módulos de processamento de áudio, motores de renderização, ativos visuais, bibliotecas gráficas, scripts de configuração, documentação, arquivos de objeto, executáveis binários e quaisquer mídias ou ativos associados.</string>
     <string name="license_def_2">2.2 \"Código Fonte\" significa os arquivos do Software divulgados publicamente, incluindo todos os arquivos de script, código de shader, ativos e configurações de build.</string>

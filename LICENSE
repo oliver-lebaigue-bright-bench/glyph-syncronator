@@ -1,24 +1,24 @@
-# BETTER-NOTHING-MUSIC-VISUALIZER  LICENSE AGREEMENT
+# GLYPHIX LICENSE AGREEMENT
 
 Version: 1.2
 
-Date: May 16, 2026
+Date: September 9, 2026
 
 Licensors: Oliver Lebaigue
 
-Project Founder and Owner: Aleks Levet
+Project Founder: Oliver Lebaigue
 
-Organization: Luminus Labs
+Organization: Glyphix (https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator)
 
 # 1. PREAMBLE
 
-This License Agreement ("Agreement") is a legal agreement between you ("Licensee") and Oliver Lebaigue ("Licensor") for the use, review, and modification of the music visualizer software application known as "better-nothing-music-visualizer" (the "Software"), a project founded by Aleks Levet under the organization Luminus Labs.
+This License Agreement ("Agreement") is a legal agreement between you ("Licensee") and Oliver Lebaigue ("Licensor") for the use, review, and modification of the music visualizer software application known as "Glyphix" (the "Software"), maintained under the repository oliver-lebaigue-bright-bench/glyph-syncronator, with core development by rKyzen and the Glyphix community.
 
-The Software's source code is hosted publicly at https://github.com/aleks-levet/better-nothing-music-visualizer. By accessing, downloading, copying, or otherwise using the Software or its Source Code, Licensee agrees to be bound by the terms of this Agreement.
+The Software's source code is hosted publicly at https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator. By accessing, downloading, copying, or otherwise using the Software or its Source Code, Licensee agrees to be bound by the terms of this Agreement.
 
 # 2. DEFINITIONS
 
-### 2.1 "Software" shall mean the better-nothing-music-visualizer software application, including but not limited to the source code, audio processing modules, rendering engines, visual assets, graphics libraries, configuration scripts, documentation, object files, binary executables, and any associated media or assets.
+### 2.1 "Software" shall mean the Glyphix (glyph-syncronator) software application, including but not limited to the source code, audio processing modules, rendering engines, visual assets, graphics libraries, configuration scripts, documentation, object files, binary executables, and any associated media or assets.
 
 ### 2.2 "Source Code" shall mean the publicly disclosed files of the Software, including all script files, shader code, assets, and build configurations.
 
@@ -36,7 +36,7 @@ Licensee may NOT:
 
 * (b) Use the Software or any derivative works for commercial purposes, public performances, commercial streaming, or any revenue-generating activities without separate written authorization.
 
-* (c) Remove, alter, or obscure any copyright, trademark, patent, or proprietary rights notices placed on or within the Software, including references to Aleks Levet, Luminus Labs, or Licensor.
+* (c) Remove, alter, or obscure any copyright, trademark, patent, or proprietary rights notices placed on or within the Software, including references to Oliver Lebaigue, rKyzen, or Licensor.
 
 * (d) Use the Software to develop any competing commercial music visualization software or platform.
 
@@ -44,7 +44,7 @@ Licensee may NOT:
 
 ## 4.1 Ownership.
 
-Licensor, Aleks Levet, and Luminus Labs retain all respective right, title, and interest in and to the Software, including all intellectual property rights therein. Public disclosure of the Source Code does not constitute a waiver of copyright or ownership.
+Licensor, Oliver Lebaigue, rKyzen, and the Glyphix contributors retain all respective right, title, and interest in and to the Software, including all intellectual property rights therein. Public disclosure of the Source Code does not constitute a waiver of copyright or ownership.
 
 # 5. NO WARRANTY
 
@@ -54,13 +54,13 @@ THE SOFTWARE IS PROVIDED "AS IS" AND "WITH ALL FAULTS." TO THE MAXIMUM EXTENT PE
 
 ## 5.2 No Technical Support.
 
-Licensor, Aleks Levet, and Luminus Labs are under no obligation to provide technical support, updates, upgrades, or modifications to the Software.
+Licensor, Oliver Lebaigue, and the Glyphix contributors are under no obligation to provide technical support, updates, upgrades, or modifications to the Software.
 
 # 6. LIMITATION OF LIABILITY
 
 ## 6.1 Cap on Liability.
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR, ALEKS LEVET, OR LUMINUS LABS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES WHATSOEVER (INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL LICENSOR, OLIVER LEBAIGUE, RKYZEN, OR CONTRIBUTORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES WHATSOEVER (INCLUDING, BUT NOT LIMITED TO, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
 # 7. TERMINATION
 

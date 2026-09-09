@@ -191,7 +191,7 @@ internal fun AboutScreen(
                 icon = FontAwesomeIcons.Brands.Github,
                 title = "GitHub Repository",
                 subtitle = "View source and contributions",
-                onClick = { uriHandler.openUri("https://github.com/oliver-lebaigue-bright-bench/better-nothing-music-visualizer-PLUS") }
+                onClick = { uriHandler.openUri("https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator") }
             )
 
             // License Action

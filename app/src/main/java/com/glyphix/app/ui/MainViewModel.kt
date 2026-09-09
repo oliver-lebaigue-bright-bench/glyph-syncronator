@@ -228,7 +228,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _licenseStatus.value = LicenseStatus.Loading
             var connection: HttpURLConnection? = null
             try {
-                val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/better-nothing-music-visualizer-PLUS/main/LICENSE")
+                val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/LICENSE")
                 connection = url.openConnection() as HttpURLConnection
                 connection.connectTimeout = 10000
                 connection.readTimeout = 10000
@@ -794,7 +794,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 Log.d("MainViewModel", "Checking remote config version...")
                 val url =
-                    URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/better-nothing-music-visualizer-PLUS/main/zones.config?t=${System.currentTimeMillis()}")
+                    URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/zones.config?t=${System.currentTimeMillis()}")
                 connection = url.openConnection() as HttpURLConnection
                 connection.useCaches = false
                 connection.connectTimeout = 5000
@@ -911,7 +911,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         var connection: HttpURLConnection? = null
         return try {
             Log.d("MainViewModel", "Performing zones.config update...")
-            val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/better-nothing-music-visualizer-PLUS/main/zones.config?t=${System.currentTimeMillis()}")
+            val url = URL("https://raw.githubusercontent.com/oliver-lebaigue-bright-bench/glyph-syncronator/main/zones.config?t=${System.currentTimeMillis()}")
             connection = withContext(Dispatchers.IO) {
                 url.openConnection()
             } as HttpURLConnection

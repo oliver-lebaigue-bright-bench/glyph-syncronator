@@ -217,7 +217,7 @@
     <string name="license_organization_name">Luminus Labs</string>
     <string name="license_section_1">1. 前言</string>
     <string name="license_preamble_1">本许可协议（“协议”）是您（“被许可人”）与 Oliver Lebaigue（“许可人”）之间就名为“Glyphix”（“软件”）的音乐可视化软件应用的使用的法律协议。该项目由 Oliver Lebaigue 在 Luminus Labs 组织下创立。</string>
-    <string name="license_preamble_2">软件的源代码公开托管在 https://github.com/oliver-lebaigue-bright-bench/glyphix。通过访问、下载、复制或以其他方式使用软件或其源代码，被许可人即同意受本协议条款的约束。</string>
+    <string name="license_preamble_2">软件的源代码公开托管在 https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator。通过访问、下载、复制或以其他方式使用软件或其源代码，被许可人即同意受本协议条款的约束。</string>
     <string name="license_section_2">2. 定义</string>
     <string name="license_def_1">2.1 “软件”是指 Glyphix 软件应用，包括但不限于源代码、音频处理模块、渲染引擎、视觉资产、图形库、配置脚本、文档、目标文件、二进制可执行文件以及任何相关的媒体或资产。</string>
     <string name="license_def_2">2.2 “源代码”是指软件公开披露的文件，包括所有脚本文件、着色器代码、资产和构建配置。</string>
