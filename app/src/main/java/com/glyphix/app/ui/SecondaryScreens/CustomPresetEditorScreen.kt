@@ -1183,10 +1183,6 @@ private fun drawEditorGlyphs(scope: DrawScope, device: Int, selectedIndices: Lis
             }
         }
         DeviceProfile.DEVICE_NP4A -> {
-            paths["p4a_cam_plate"]?.let {
-                scope.drawPath(it, Color.White.copy(alpha = 0.05f))
-                scope.drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 1f))
-            }
             paths["p4a_bar"]?.let {
                 drawPathSegmentedVertical(
                     scope,
@@ -1409,17 +1405,6 @@ private fun getGlyphPaths(parser: PathParser): Map<String, Path> {
         put("p3a_small", parser.parsePathString("M41.5,134.113C42.51,135.434 42.25,137.313 40.92,138.312C39.59,139.311 37.72,139.049 36.72,137.719L35.13,135.628L35.13,135.627L34.61,134.911L31.49,130.778L27.29,125.218L24.19,121.091L22.14,118.364C21.13,117.043 21.39,115.163 22.73,114.164C23.3,113.727 23.99,113.532 24.66,113.562C25.53,113.599 26.36,114.009 26.93,114.757L28.92,117.404L32.08,121.606L32.38,121.991L32.62,122.324L35.74,126.452L35.8,126.531L36.28,127.169L39.86,131.912L41.5,134.113Z").toPath())
 
         // --- Phone (4a) ---
-        put("p4a_cam_plate", Path().apply {
-            addRoundRect(
-                RoundRect(
-                    left = 28f,
-                    top = 28f,
-                    right = 150f,
-                    bottom = 118f,
-                    cornerRadius = CornerRadius(45f)
-                )
-            )
-        })
         put("p4a_bar", Path().apply {
             addRoundRect(
                 RoundRect(

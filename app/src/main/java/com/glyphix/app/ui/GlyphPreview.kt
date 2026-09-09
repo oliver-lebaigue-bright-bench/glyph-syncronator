@@ -200,9 +200,6 @@ fun GlyphPreviewContent(
                     })
                 }
                 DeviceProfile.DEVICE_NP4A -> {
-                    put("p4a_cam_plate", Path().apply {
-                        addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 28f, top = 28f, right = 150f, bottom = 118f, cornerRadius = CornerRadius(45f)))
-                    })
                     put("p4a_bar", Path().apply {
                         addRoundRect(androidx.compose.ui.geometry.RoundRect(left = 154f, top = 30f, right = 165f, bottom = 116f, cornerRadius = CornerRadius(2.5f)))
                     })
@@ -376,10 +373,6 @@ fun GlyphPreviewContent(
                     }
 
                     DeviceProfile.DEVICE_NP4A -> {
-                        paths["p4a_cam_plate"]?.let {
-                            drawPath(it, Color.White.copy(alpha = 0.05f))
-                            drawPath(it, Color.White.copy(alpha = 0.15f), style = Stroke(width = 1f))
-                        }
                         paths["p4a_bar"]?.let {
                             drawPathAddressable(this, it, color, (0..6).toList(), vizState, baseOpacity, scale, glowPaint, vertical = true, specialColors = mapOf(6 to Color.Red))
                         }
