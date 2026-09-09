@@ -24,6 +24,11 @@ public class GlyphRenderer {
     private int mDeviceType;
     private String mIdlePattern = "pulse";
 
+    private static final long PRESET_TRANSITION_MS = 450L;
+    private float[] mPrevPresetLightState = new float[0];
+    private long mPresetTransitionStartMs = 0L;
+    private String mLastPresetKey = "";
+
     private float[] mCurrentLightState = new float[0];
     private float[] mZonePeaks = new float[0];
     private float[] mDecayedFrequencyState = new float[0];
@@ -82,7 +87,15 @@ public class GlyphRenderer {
             mCurrentLightState = new float[0];
             mZonePeaks = new float[0];
             mDecayedFrequencyState = new float[0];
+            mPrevPresetLightState = new float[0];
+            mPresetTransitionStartMs = 0L;
+            mLastPresetKey = "";
         } else {
+            if (mCurrentLightState.length > 0 && mLastPresetKey != null && !mLastPresetKey.isEmpty() && !mLastPresetKey.equals(config.presetKey)) {
+                mPrevPresetLightState = Arrays.copyOf(mCurrentLightState, mCurrentLightState.length);
+                mPresetTransitionStartMs = android.os.SystemClock.elapsedRealtime();
+            }
+            mLastPresetKey = config.presetKey;
             mCurrentLightState = new float[config.zones.length];
             mZonePeaks = new float[config.zones.length];
             Arrays.fill(mZonePeaks, EPSILON);
@@ -121,6 +134,9 @@ public class GlyphRenderer {
             }
 
             computeNextLightState(uniqueMagnitudes, config, zoneCount, mNextStateBuffer);
+
+            // Apply preset gradient transition exclusively to Battery Percentage Shower and Top Big Addressable Bar
+            applyPresetGradientTransition(mNextStateBuffer, nowMs);
 
             // Apply gamma to music state FIRST, before idle breathing, so breathing bypasses gamma
             for (int i = 0; i < mNextStateBuffer.length; i++) {
@@ -355,5 +371,75 @@ public class GlyphRenderer {
             return 1f;
         }
         return (percent - low) / (high - low);
+    }
+
+    private void applyPresetGradientTransition(float[] stateBuffer, long nowMs) {
+        if (mPresetTransitionStartMs <= 0L || mPrevPresetLightState.length == 0) return;
+        long elapsed = nowMs - mPresetTransitionStartMs;
+        if (elapsed < 0L || elapsed >= PRESET_TRANSITION_MS) {
+            mPresetTransitionStartMs = 0L;
+            mPrevPresetLightState = new float[0];
+            return;
+        }
+
+        float progress = (float) elapsed / (float) PRESET_TRANSITION_MS;
+        applyDeviceGradientTransition(stateBuffer, progress);
+    }
+
+    private void applyDeviceGradientTransition(float[] stateBuffer, float progress) {
+        switch (mDeviceType) {
+            case DeviceProfile.DEVICE_NP2:
+                // 1. Top Big Addressable Bar (Ring segments 3..18)
+                applySegmentGradient(stateBuffer, 3, 18, progress);
+                // 2. Battery Percentage Shower (vertical segments 25..32)
+                applySegmentGradient(stateBuffer, 25, 32, progress);
+                break;
+            case DeviceProfile.DEVICE_NP1:
+                // Top Ring segments (2..5)
+                applySegmentGradient(stateBuffer, 2, 5, progress);
+                // Battery Percentage Shower (7..14)
+                applySegmentGradient(stateBuffer, 7, 14, progress);
+                break;
+            case DeviceProfile.DEVICE_NP2A:
+                // Large Addressable Arc (0..23)
+                applySegmentGradient(stateBuffer, 0, 23, progress);
+                break;
+            case DeviceProfile.DEVICE_NP3A:
+                // Top Large Addressable Bar (0..19)
+                applySegmentGradient(stateBuffer, 0, 19, progress);
+                // Medium Addressable Strip (20..30)
+                applySegmentGradient(stateBuffer, 20, 30, progress);
+                // Small Addressable Bar / Battery (31..35)
+                applySegmentGradient(stateBuffer, 31, 35, progress);
+                break;
+            case DeviceProfile.DEVICE_NP4A:
+                applySegmentGradient(stateBuffer, 0, 6, progress);
+                break;
+            case DeviceProfile.DEVICE_NP4B:
+                applySegmentGradient(stateBuffer, 0, 4, progress);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void applySegmentGradient(float[] stateBuffer, int startZone, int endZone, float progress) {
+        int count = endZone - startZone + 1;
+        if (count <= 0) return;
+        for (int i = startZone; i <= endZone; i++) {
+            if (i >= stateBuffer.length) break;
+            float prevVal = (i < mPrevPresetLightState.length) ? mPrevPresetLightState[i] : 0f;
+            float newVal = stateBuffer[i];
+
+            // Calculate gradient position along the addressable bar (0.0 at start to 1.0 at end)
+            float segmentFraction = (float) (i - startZone) / (float) Math.max(1, count - 1);
+
+            // Wave progress sweeping across the bar with smoothstep easing
+            float waveParam = (progress * 1.5f - segmentFraction * 0.5f);
+            float clamped = Math.max(0f, Math.min(1f, waveParam));
+            float smoothT = clamped * clamped * (3f - 2f * clamped); // smoothstep
+
+            stateBuffer[i] = prevVal * (1f - smoothT) + newVal * smoothT;
+        }
     }
 }

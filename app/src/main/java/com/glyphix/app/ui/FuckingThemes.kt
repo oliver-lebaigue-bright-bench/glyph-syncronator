@@ -487,6 +487,11 @@ internal class MusicThemeHandler(
         override fun onMetadataChanged(metadata: MediaMetadata?) {
             val artwork = getArtworkBitmap(metadata)
             viewModel.setMusicArtwork(artwork)
+            val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
+            val artist = metadata?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+            val album = metadata?.getString(MediaMetadata.METADATA_KEY_ALBUM)
+            val genre = metadata?.getString(MediaMetadata.METADATA_KEY_GENRE)
+            com.glyphix.app.logic.AutoPresetEngine.getInstance().updateMediaMetadata(title, artist, album, genre)
         }
 
         override fun onPlaybackStateChanged(state: PlaybackState?) {}
@@ -508,8 +513,14 @@ internal class MusicThemeHandler(
                 activeMediaController = newController
                 activeMediaController?.registerCallback(mediaCallback)
 
-                val artwork = getArtworkBitmap(activeMediaController?.metadata)
+                val meta = activeMediaController?.metadata
+                val artwork = getArtworkBitmap(meta)
                 viewModel.setMusicArtwork(artwork)
+                val title = meta?.getString(MediaMetadata.METADATA_KEY_TITLE)
+                val artist = meta?.getString(MediaMetadata.METADATA_KEY_ARTIST)
+                val album = meta?.getString(MediaMetadata.METADATA_KEY_ALBUM)
+                val genre = meta?.getString(MediaMetadata.METADATA_KEY_GENRE)
+                com.glyphix.app.logic.AutoPresetEngine.getInstance().updateMediaMetadata(title, artist, album, genre)
             }
         } catch (_: SecurityException) {
             Log.w("MusicThemeHandler", "No notification access to get media sessions")

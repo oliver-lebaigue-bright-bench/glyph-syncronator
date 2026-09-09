@@ -2036,6 +2036,46 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _selectedPreset = MutableStateFlow("Default")
     val selectedPreset = _selectedPreset.asStateFlow()
 
+    // ── Auto Preset ───────────────────────────────────────────────────────────
+    val _isAutoPresetEnabled = MutableStateFlow(false)
+    val isAutoPresetEnabled = _isAutoPresetEnabled.asStateFlow()
+    val autoPresetState = AutoPresetEngine.getInstance().state
+    val _autoPresetSensitivity = MutableStateFlow(AutoPresetEngine.SwitchSensitivity.BALANCED)
+    val autoPresetSensitivity = _autoPresetSensitivity.asStateFlow()
+
+    fun setAutoPresetEnabled(enabled: Boolean) {
+        _isAutoPresetEnabled.value = enabled
+        AutoPresetEngine.getInstance().setEnabled(enabled)
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit { putBoolean("auto_preset_enabled", enabled) }
+        }
+        if (enabled) {
+            val autoPreset = AutoPresetEngine.getInstance().state.value.activePresetKey
+            if (autoPreset.isNotEmpty()) {
+                setSelectedPreset(autoPreset)
+            }
+        } else {
+            val manualPreset = _selectedPreset.value
+            if (manualPreset.isNotEmpty()) {
+                setSelectedPreset(manualPreset)
+            }
+        }
+    }
+
+    fun setAutoPresetSensitivity(sensitivity: AutoPresetEngine.SwitchSensitivity) {
+        _autoPresetSensitivity.value = sensitivity
+        AutoPresetEngine.getInstance().setSensitivity(sensitivity)
+        viewModelScope.launch(Dispatchers.IO) {
+            ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
+                .edit { putString("auto_preset_sensitivity", sensitivity.name) }
+        }
+    }
+
+    fun forceAutoPresetAnalyze() {
+        AutoPresetEngine.getInstance().forceAnalyzeNow()
+    }
+
     fun currentPreset() = _selectedPreset.value
 
     fun setSelectedPreset(preset: String) {
@@ -2419,6 +2459,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _fftReadMethod.value = AudioProcessor.ReadMethod.valueOf(prefs.getString("fft_read_method", AudioProcessor.ReadMethod.MAX.name)!!)
         _glyphsEnabled.value = prefs.getBoolean("glyphs_enabled", true)
         _selectedPreset.value = prefs.getString("selected_preset", "Default") ?: "Default"
+        val autoPreset = prefs.getBoolean("auto_preset_enabled", false)
+        _isAutoPresetEnabled.value = autoPreset
+        AutoPresetEngine.getInstance().setEnabled(autoPreset)
+        val sensName = prefs.getString("auto_preset_sensitivity", AutoPresetEngine.SwitchSensitivity.BALANCED.name)
+        val sensitivity = try {
+            AutoPresetEngine.SwitchSensitivity.valueOf(sensName ?: AutoPresetEngine.SwitchSensitivity.BALANCED.name)
+        } catch (_: Exception) {
+            AutoPresetEngine.SwitchSensitivity.BALANCED
+        }
+        _autoPresetSensitivity.value = sensitivity
+        AutoPresetEngine.getInstance().setSensitivity(sensitivity)
+        AutoPresetEngine.getInstance().addOnPresetAutoSelectedListener { presetKey ->
+            _selectedPreset.value = presetKey
+            MainActivity.serviceStatic?.setSelectedPreset(presetKey)
+            viewModelScope.launch(Dispatchers.IO) {
+                prefs.edit().putString("selected_preset", presetKey).apply()
+            }
+        }
+        viewModelScope.launch {
+            AutoPresetEngine.getInstance().state.collect { state ->
+                if (state.isEnabled && state.activePresetKey.isNotEmpty() && state.activePresetKey != _selectedPreset.value) {
+                    _selectedPreset.value = state.activePresetKey
+                    MainActivity.serviceStatic?.setSelectedPreset(state.activePresetKey)
+                }
+            }
+        }
         _selectedTheme.value = prefs.getString("selected_theme", "Default") ?: "Default"
         _selectedFont.value = prefs.getString("selected_font", "Default") ?: "Default"
         _flashlightMultiIntensityForced.value = prefs.getBoolean("flashlight_multi_intensity_forced", false)
@@ -2549,6 +2615,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         val list = AudioCaptureService.loadPresetInfos(ctx, selectedDevice.value)
                         Log.d("MainViewModel", "Loaded ${list.size} presets from zones.config (v$version)")
                         _presetInfos.value = list
+                        AutoPresetEngine.getInstance().setAvailablePresets(list)
                     }
                 } catch (e: JSONException) {
                     Log.e("MainViewModel", "Invalid JSON in zones.config", e)

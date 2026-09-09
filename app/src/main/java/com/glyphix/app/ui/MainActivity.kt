@@ -819,7 +819,13 @@ internal fun GlyphixApp(
                             onSpotifyToggleRepeat = { viewModel.spotifyRepository.toggleRepeat() },
                             onOpenSpotifyTab = { viewModel.showSpotify() },
                             onToggleVisualizer = onToggleVisualizer,
-                            padding = pagePadding
+                            padding = pagePadding,
+                            presets = presets,
+                            selectedPreset = selectedPreset,
+                            onPresetSelected = { viewModel.setSelectedPreset(it) },
+                            selectedDevice = selectedDevice,
+                            vizStateProvider = { vizState.value },
+                            viewModel = viewModel
                         )
                     }
                     Tab.Spotify -> {

@@ -12,6 +12,7 @@ import com.glyphix.app.logic.BeatDetectionHapticEngine;
 import com.glyphix.app.logic.GlobalStatsRepository;
 import com.glyphix.app.logic.FlashlightEngine;
 import com.glyphix.app.logic.BeatDetector;
+import com.glyphix.app.logic.AutoPresetEngine;
 import com.glyphix.app.ui.MainActivity;
 
 import android.Manifest;
@@ -596,6 +597,13 @@ public class AudioCaptureService extends Service {
         setPcStreamTargetIp(appPrefs.getString("pc_stream_target_ip", ""));
         refreshLatencyForCurrentAudioRoute();
 
+        boolean autoPresetEnabled = appPrefs.getBoolean("auto_preset_enabled", false);
+        AutoPresetEngine.getInstance().setEnabled(autoPresetEnabled);
+        AutoPresetEngine.getInstance().addOnPresetAutoSelectedListener(key -> {
+            Log.d(TAG, "AutoPreset selected by engine: " + key + ", applying to service");
+            mMainHandler.post(() -> setSelectedPreset(key));
+        });
+
         // Offload heavy file I/O and JSON parsing to background thread to prevent ANR on startup
         mWorkerHandler.post(() -> {
             try {
@@ -898,7 +906,9 @@ public class AudioCaptureService extends Service {
             String phoneModel = phoneModelForDevice(device);
             List<String> keys = getPresetKeysForPhoneModel(root, phoneModel);
             if (keys.isEmpty()) keys = getAllPresetKeys(root);
-            return buildPresetInfos(root, keys);
+            List<PresetInfo> infos = buildPresetInfos(root, keys);
+            AutoPresetEngine.getInstance().setAvailablePresets(infos);
+            return infos;
         } catch (Exception e) { return Collections.emptyList(); }
     }
 
@@ -1315,6 +1325,8 @@ public class AudioCaptureService extends Service {
                 mLatestHapticPeak = latestDueFrame.hapticPeak;
                 mLatestUiPeak = latestDueFrame.uiPeak;
                 mLatestFlashlightPeak = latestDueFrame.flashlightPeak;
+
+                AutoPresetEngine.getInstance().processFrame(latestDueFrame.rawFFT, latestDueFrame.uiPeak);
 
                 if (mOverlayView != null) mOverlayView.updateMagnitudes(mLatestMagnitudes, mCurrentSampleRate);
                 if (mEdgeVisualizerView != null) mEdgeVisualizerView.updateMagnitudes(mLatestMagnitudes, mCurrentSampleRate);
@@ -2015,7 +2027,13 @@ public class AudioCaptureService extends Service {
 
     public static Intent createStopIntent(Context context) { Intent intent = new Intent(context, AudioCaptureService.class); intent.setAction(ACTION_STOP); return intent; }
 
-    private void refreshPresetCatalog() throws IOException, JSONException { JSONObject root = loadZonesConfigRoot(this); mAvailablePresetKeys = getPresetKeysForPhoneModel(root, phoneModelForDevice(mSelectedDevice)); if (mAvailablePresetKeys.isEmpty()) mAvailablePresetKeys = getAllPresetKeys(root); }
+    private void refreshPresetCatalog() throws IOException, JSONException {
+        JSONObject root = loadZonesConfigRoot(this);
+        mAvailablePresetKeys = getPresetKeysForPhoneModel(root, phoneModelForDevice(mSelectedDevice));
+        if (mAvailablePresetKeys.isEmpty()) mAvailablePresetKeys = getAllPresetKeys(root);
+        List<PresetInfo> infos = buildPresetInfos(root, mAvailablePresetKeys);
+        AutoPresetEngine.getInstance().setAvailablePresets(infos);
+    }
 
     private AudioProcessor.VisualizerConfig loadVisualizerConfig(String presetKey, int sampleRate) throws IOException, JSONException {
         JSONObject root = loadZonesConfigRoot(this); JSONObject preset = root.optJSONObject(presetKey); if (preset == null) throw new JSONException("Preset not found"); JSONArray zonesArray = preset.optJSONArray("zones"); if (zonesArray == null || zonesArray.length() == 0) throw new JSONException("No zones"); double decayAlpha = preset.has("decay-alpha") ? preset.optDouble("decay-alpha", 0.8) : root.optDouble("decay-alpha", 0.8); AudioProcessor.ZoneSpec[] zones = parseZoneSpecs(zonesArray); return buildVisualizerConfig(presetKey, preset.optString("description", presetKey), decayAlpha, zones);

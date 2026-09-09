@@ -6,6 +6,14 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material3.CircularProgressIndicator
+import com.glyphix.app.model.DeviceProfile
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.Spring
@@ -167,6 +175,12 @@ fun AudioScreen(
     onOpenSpotifyTab: () -> Unit = {},
     onToggleVisualizer: () -> Unit = {},
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(),
+    presets: List<AudioCaptureService.PresetInfo> = emptyList(),
+    selectedPreset: String = "",
+    onPresetSelected: (String) -> Unit = {},
+    selectedDevice: Int = DeviceProfile.DEVICE_NP2,
+    vizStateProvider: () -> FloatArray = { floatArrayOf() },
+    viewModel: MainViewModel? = null,
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -330,35 +344,306 @@ fun AudioScreen(
             }
         }
 
-        val compositionKey = remember(bananaMode, penisMode) { "$bananaMode-$penisMode" }
-        key(compositionKey) {
-            AnimatedVisibility(visible = isRunning) {
+
+
+        if (viewModel != null) {
+            val isAutoPresetEnabled by viewModel.isAutoPresetEnabled.collectAsStateWithLifecycle()
+            val autoPresetState by viewModel.autoPresetState.collectAsStateWithLifecycle()
+            val fftState by viewModel.fftState.collectAsStateWithLifecycle()
+
+            // ── Card 1: Auto Preset Selector ──────────────────────────────
+            AnimatedItem {
+                ExpressiveCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Auto Preset Toggle Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = FontAwesomeIcons.Solid.Magic,
+                                contentDescription = null,
+                                tint = if (isAutoPresetEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Auto Preset Selector",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Matches presets by tempo & vibe",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = isAutoPresetEnabled,
+                            onCheckedChange = { viewModel.setAutoPresetEnabled(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+
+                    // Auto Preset Active Dashboard (BPM Box + Preset Selected Box + Live Stream Graph)
+                    AnimatedVisibility(
+                        visible = isAutoPresetEnabled,
+                        enter = expandVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(),
+                        exit = shrinkVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) + fadeOut()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Small Box with BPM on top and BPM number just below it
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                    modifier = Modifier.width(76.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            text = "BPM",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            text = if (autoPresetState.bpm > 0) "${autoPresetState.bpm}" else "--",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (autoPresetState.bpm > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Preset Selected Box
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(58.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = FontAwesomeIcons.Solid.Music,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Column(verticalArrangement = Arrangement.Center) {
+                                            Text(
+                                                text = "Preset Selected",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            Text(
+                                                text = autoPresetState.activePresetKey.ifEmpty { selectedPreset },
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Live Stream Graph in Auto Preset Mode
+                            LiveStreamGraphCard(
+                                fftData = { fftState },
+                                isRunning = isRunning,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Card 2: Visualizer Presets (Shows Live Stream Graph in Manual Preset Mode) ──
+            AnimatedVisibility(
+                visible = !isAutoPresetEnabled,
+                enter = expandVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioLowBouncy,
+                        stiffness = Spring.StiffnessMediumLow
+                    )
+                ) + fadeIn(),
+                exit = shrinkVertically(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioNoBouncy,
+                        stiffness = Spring.StiffnessMedium
+                    )
+                ) + fadeOut()
+            ) {
                 AnimatedItem {
-                    FFTSpectrumCard(fftData = fftData, bananaMode = bananaMode, penisMode = penisMode)
+                    ExpressiveCard(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        CardHeader(
+                            title = stringResource(
+                                R.string.visualizer_presets
+                            )
+                        )
+
+                        val favorites by viewModel.favoritePresets.collectAsStateWithLifecycle()
+                        val sortedPresets = remember(presets, favorites) {
+                            presets.sortedByDescending { favorites.contains(it.key) }
+                        }
+
+                        // Live Stream Graph in Manual Preset Mode
+                        LiveStreamGraphCard(
+                            fftData = { fftState },
+                            isRunning = isRunning,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                        )
+
+                        FlowRow(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (sortedPresets.isNotEmpty()) {
+                                ExpressiveSplitButton(
+                                    items = sortedPresets,
+                                    selectedItem = sortedPresets.firstOrNull { it.key == selectedPreset }
+                                        ?: sortedPresets.first(),
+                                    onItemSelection = { preset -> onPresetSelected(preset.key) },
+                                    labelProvider = { preset -> preset.key },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+
+                                val selectedInfo = presets.find { it.key == selectedPreset }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Crossfade(
+                                        targetState = selectedInfo?.description,
+                                        label = "desc_fade",
+                                        animationSpec = spring(stiffness = Spring.StiffnessMedium),
+                                        modifier = Modifier.weight(1f)
+                                    ) { description ->
+                                        Text(
+                                            text = description ?: stringResource(R.string.glyph_no_config),
+                                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                    }
+
+                                    if (selectedInfo?.description?.startsWith("Custom:") == true) {
+                                        IconButton(
+                                            onClick = { viewModel.deleteCustomPreset(selectedInfo.key) },
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        ) {
+                                            Icon(
+                                                FontAwesomeIcons.Solid.Trash,
+                                                contentDescription = "Delete Local Preset",
+                                                modifier = Modifier.size(18.dp),
+                                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(20.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            ExpressiveSplitButton(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 16.dp),
+                                primaryText = "Explore Community",
+                                primaryIcon = FontAwesomeIcons.Solid.Globe,
+                                onPrimaryClick = { viewModel.showCommunity() },
+                                secondaryText = "Create",
+                                secondaryIcon = FontAwesomeIcons.Solid.Plus,
+                                onSecondaryClick = { viewModel.showEditor() }
+                            )
+                        }
+                    }
                 }
             }
         }
 
+        // ── Glyph Preview ──
         if (isRunning) {
-            val seconds = (sessionDuration / 1000) % 60
-            val minutes = (sessionDuration / (1000 * 60)) % 60
-            val hours = (sessionDuration / (1000 * 60 * 60))
-            val timeStr = if (hours > 0) {
-                String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
-            } else {
-                String.format(Locale.US, "%02d:%02d", minutes, seconds)
+            val previewHeight = when (selectedDevice) {
+                DeviceProfile.DEVICE_NP2 -> 530.dp
+                else -> 560.dp
             }
-            val descriptionText = stringResource(R.string.audio_description_running) + "\n\nActive Time: $timeStr"
-
             AnimatedItem {
-                ExpressiveCard(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(
-                        alpha = 0.5f
-                    )
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    BodyText(
-                        text = descriptionText,
-                        size = 14.sp
+                    GlyphPreview(
+                        vizStateProvider = vizStateProvider,
+                        device = selectedDevice,
+                        modifier = Modifier
+                            .width(380.dp)
+                            .height(previewHeight)
                     )
                 }
             }
