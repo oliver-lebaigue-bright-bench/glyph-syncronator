@@ -136,9 +136,13 @@
     <string name="shizuku_not_running">Shizuku is not running or not installed</string>
     <string name="update_available">Update available: %s</string>
     <string name="update_now">Update Now</string>
+    <string name="credit_oliver_role">Founder &amp; Lead Dev</string>
+    <string name="credit_rkyzen_role">Core Dev &amp; Base App Maker</string>
+    <string name="credit_muvex_role">Web Dev</string>
+    <string name="credit_gabibrawl_role">Core Dev</string>
+    <string name="credit_p1749_role">Core Dev</string>
+    <string name="all_contributors">All Contributors</string>
     <string name="credit_owner_role">Founder, coordinator, main idea, owner</string>
-    <string name="credit_rkyzen_role">Android app developer (real-time music stream)</string>
-    <string name="credit_oliver_role">Co-developer of this amazing app</string>
     <string name="credit_nicouschulas_role">Readme &amp; Wiki enhancements</string>
     <string name="credit_sebiai_role">Glyph modding and support</string>
     <string name="credit_earnedel_role">Readme enhancements</string>

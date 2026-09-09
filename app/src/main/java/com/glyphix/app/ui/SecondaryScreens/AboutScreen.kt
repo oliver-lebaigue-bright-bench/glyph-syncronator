@@ -85,13 +85,11 @@ internal fun AboutScreen(
     }
 
     val credits = listOf(
-        CreditEntry("Oliver Lebaigue", stringResource(R.string.credit_oliver_role), githubUsername = "oliver-lebaigue-bright-bench"),
-        CreditEntry("rKyzen (aka Shivank Dan)", stringResource(R.string.credit_rkyzen_role), "rKyzen"),
-        CreditEntry("Nicouschulas", stringResource(R.string.credit_nicouschulas_role), "Nicouschulas"),
-        CreditEntry("SebiAi", stringResource(R.string.credit_sebiai_role), "SebiAi"),
-        CreditEntry("Earendel-lab", stringResource(R.string.credit_earnedel_role), "Earendel-lab"),
-        CreditEntry("あけ なるかみ", stringResource(R.string.credit_ake_role), null),
-        CreditEntry("Interlastic", stringResource(R.string.credit_interlastic_role), "Interlastic"),
+        CreditEntry("Oliver Lebaigue", stringResource(R.string.credit_oliver_role), "oliver-lebaigue-bright-bench"),
+        CreditEntry("rKyzen", stringResource(R.string.credit_rkyzen_role), "rKyzen"),
+        CreditEntry("m_uvex", stringResource(R.string.credit_muvex_role), "m-uvex"),
+        CreditEntry("GabiBrawl", stringResource(R.string.credit_gabibrawl_role), "gabibrawl"),
+        CreditEntry("P.1749", stringResource(R.string.credit_p1749_role), "p-1749"),
     )
 
     BackHandler { onDismiss?.invoke() }
@@ -335,6 +333,46 @@ internal fun AboutScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                ExpressiveCard(
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            uriHandler.openUri("https://github.com/oliver-lebaigue-bright-bench/glyph-syncronator/graphs/contributors")
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = FontAwesomeIcons.Brands.Github,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.all_contributors),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = FontAwesomeIcons.Solid.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                        )
                     }
                 }
             }
