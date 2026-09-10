@@ -26,6 +26,8 @@ import com.glyphix.app.service.AudioCaptureService
 import com.glyphix.app.util.AnalyticsHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
@@ -2707,18 +2709,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun linkWithCredential(credential: AuthCredential) {
         val auth = FirebaseAuth.getInstance()
-        // If there isn't an active user (e.g. logged out just now), fall back
-        // to a plain credential sign in. Otherwise the credential is dropped
-        // on the floor and the user can't log in again.
-        if (auth.currentUser == null) {
+        val currentUser = auth.currentUser
+        
+        // If there isn't an active user or the user is already signed into a permanent account,
+        // sign in directly with the credential.
+        if (currentUser == null || !currentUser.isAnonymous) {
             signInWithCredential(credential)
             return
         }
-        val user = auth.currentUser!!
+
         viewModelScope.launch {
             try {
-                Log.d("MainViewModel", "Linking user with credential...")
-                val result = user.linkWithCredential(credential).await()
+                Log.d("MainViewModel", "Linking anonymous user with credential...")
+                val result = currentUser.linkWithCredential(credential).await()
                 val firebaseUser = result.user
                 
                 // Update profile from firebase user info
@@ -2744,12 +2747,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Linking failed", e)
                 
-                // If linking fails because provider is already linked, try signing in instead
+                // If linking fails because credential is in use on another device / already registered:
+                val isCollision = e is FirebaseAuthUserCollisionException ||
+                        (e is FirebaseAuthException && (
+                            e.errorCode == "ERROR_CREDENTIAL_ALREADY_IN_USE" ||
+                            e.errorCode == "ERROR_EMAIL_ALREADY_IN_USE" ||
+                            e.errorCode == "ERROR_ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL"
+                        ))
                 val msg = e.message ?: ""
-                if (msg.contains("provider already linked", ignoreCase = true) || 
+                val msgMatches = msg.contains("provider already linked", ignoreCase = true) || 
                     msg.contains("already in use", ignoreCase = true) ||
-                    msg.contains("credential_already_associated", ignoreCase = true)) {
-                    Log.d("MainViewModel", "Credential already linked, signing in instead...")
+                    msg.contains("credential_already_associated", ignoreCase = true) ||
+                    msg.contains("account exists", ignoreCase = true) ||
+                    msg.contains("already associated", ignoreCase = true)
+                
+                if (isCollision || msgMatches) {
+                    Log.d("MainViewModel", "Credential already linked/registered, signing in instead...")
                     signInWithCredential(credential)
                 } else {
                     withContext(Dispatchers.Main) {

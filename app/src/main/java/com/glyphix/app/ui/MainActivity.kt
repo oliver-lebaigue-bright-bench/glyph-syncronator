@@ -180,10 +180,14 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: com.google.android.gms.common.api.ApiException) {
             Log.e("MainActivity", "Google sign in failed with status: ${e.statusCode}", e)
+            if (e.statusCode == 12501) {
+                // User cancelled the sign-in dialog
+                return@registerForActivityResult
+            }
             val msg = when (e.statusCode) {
-                10 -> "Configuration error (Status 10 - Check SHA-1 key in Firebase Console)"
-                12500 -> "Sign in failed (Status 12500)"
-                7 -> "Network error (Status 7)"
+                10 -> "Configuration error (Status 10 - Check SHA-1 & OAuth Consent Screen in Google Cloud / Firebase)"
+                12500 -> "Sign in failed (Status 12500 - Check Google Play Services)"
+                7 -> "Network error (Status 7 - Check internet connection)"
                 else -> "Google sign in failed (${e.statusCode}): ${e.message}"
             }
             Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
@@ -195,7 +199,13 @@ class MainActivity : ComponentActivity() {
 
     private fun launchGoogleSignIn() {
         try {
-            val webClientId = getString(R.string.default_web_client_id)
+            val webClientId = try {
+                getString(R.string.default_web_client_id)
+            } catch (_: Exception) {
+                ""
+            }.ifEmpty {
+                "252304807982-ubtpig2ddtukmjfa7cp21lj1mjgnr968.apps.googleusercontent.com"
+            }
             if (webClientId.isEmpty()) {
                 Toast.makeText(this, "Web Client ID is missing!", Toast.LENGTH_LONG).show()
                 return
