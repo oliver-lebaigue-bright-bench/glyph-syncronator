@@ -1,4 +1,0 @@
-# Netlify / Cloudflare Pages: wouter uses history routing, so every path must
-# serve index.html and let the client router resolve it. Without this, a hard
-# refresh or a direct link to /support, /download or /studio returns 404.
-/*  /index.html  200
