@@ -4,6 +4,9 @@ import numpy as np
 import time
 import argparse
 import sys
+import os
+import shutil
+import subprocess
 import threading
 import queue
 import asyncio
@@ -39,21 +42,97 @@ except ImportError:
 UDP_PORT = 12347
 DISCOVERY_PORT = 12348
 OPENRGB_PORT = 6742
-BLE_SERVICE_UUID = "7d9c63c0-37b1-4122-861f-36655c687e46"
 CHUNK = 1024
 FORMAT = pyaudio.paInt16
 TARGET_RATE = 48000
 
-COLOR_BG = "#080808"
-COLOR_CARD = "#121212"
-COLOR_CARD_HOVER = "#1A1A1A"
-COLOR_BORDER = "#222222"
-COLOR_ACCENT = "#E01B22"
-COLOR_WHITE = "#FFFFFF"
-COLOR_MUTED = "#666666"
-COLOR_TEXT = "#EAEAEA"
+# ==============================================================================
+# OPENRGB AUTO-START & ELEVATED ADMIN LAUNCH ENGINE
+# ==============================================================================
+def find_openrgb_executable():
+    candidates = [
+        r"C:\Program Files\OpenRGB\OpenRGB.exe",
+        r"C:\Program Files (x86)\OpenRGB\OpenRGB.exe",
+        r"C:\OpenRGB\OpenRGB.exe",
+        os.path.expandvars(r"%PROGRAMFILES%\OpenRGB\OpenRGB.exe"),
+        os.path.expandvars(r"%PROGRAMFILES(X86)%\OpenRGB\OpenRGB.exe"),
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\OpenRGB\OpenRGB.exe"),
+        os.path.expandvars(r"%LOCALAPPDATA%\OpenRGB\OpenRGB.exe"),
+        shutil.which("OpenRGB.exe") or "",
+        shutil.which("OpenRGB") or "",
+        shutil.which("openrgb") or "",
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return os.path.abspath(path)
+    return None
 
-FONT_MAIN = "Segoe UI" if sys.platform == "win32" else "Inter"
+def is_port_open(host="127.0.0.1", port=OPENRGB_PORT, timeout=0.3):
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        return False
+
+def launch_openrgb_elevated(logger=None):
+    exe = find_openrgb_executable()
+    if not exe:
+        if logger:
+            logger("OpenRGB Error: Executable 'OpenRGB.exe' not found in standard directories.")
+        return False
+
+    if sys.platform == "win32" and HAS_CTYPES:
+        try:
+            if logger:
+                logger(f"OpenRGB: Launching '{exe}' with Administrator privileges (--server --startminimized)...")
+            ret = ctypes.windll.shell32.ShellExecuteW(
+                None,
+                "runas",
+                exe,
+                "--server --startminimized",
+                os.path.dirname(exe),
+                6  # SW_MINIMIZE
+            )
+            if ret > 32:
+                if logger:
+                    logger("OpenRGB: Admin elevation prompt sent. Waiting for SDK server on port 6742...")
+                return True
+            else:
+                if logger:
+                    logger(f"OpenRGB: ShellExecute returned status code {ret}")
+        except Exception as ex:
+            if logger:
+                logger(f"OpenRGB: Elevation failed ({ex}). Falling back to subprocess...")
+
+    try:
+        subprocess.Popen([exe, "--server", "--startminimized"], shell=False)
+        if logger:
+            logger("OpenRGB: Started process. Waiting for SDK server on port 6742...")
+        return True
+    except Exception as ex:
+        if logger:
+            logger(f"OpenRGB: Failed to start process: {ex}")
+        return False
+
+# ==============================================================================
+# PURE MONOCHROME / NOTHING OS DESIGN TOKENS (ZERO RED, ZERO GREEN)
+# ==============================================================================
+COLOR_BG = "#0B0C0E"              # Deep Obsidian Background
+COLOR_SURFACE = "#14161A"         # Elevated Surface Card
+COLOR_SURFACE_INNER = "#1B1D23"   # Inner Card Surface / Input
+COLOR_SURFACE_HOVER = "#242730"   # Surface Hover State
+COLOR_BORDER = "#272A33"          # Subtle Structural Border
+COLOR_BORDER_LIGHT = "#3E4352"    # Highlight Border
+COLOR_ACCENT = "#FFFFFF"          # Crisp Glyph White Accent
+COLOR_ACCENT_HOVER = "#E2E8F0"    # Light Silver Hover
+COLOR_ACCENT_MUTED = "#1E222A"    # Subtle Container Tint
+COLOR_TEXT_PRIMARY = "#FFFFFF"    # Crisp White (High Emphasis)
+COLOR_TEXT_SECONDARY = "#94A3B8"  # Soft Slate (Medium Emphasis)
+COLOR_TEXT_MUTED = "#64748B"      # Disabled / Helper Text
+COLOR_WHITE = "#FFFFFF"
+
+FONT_FAMILY = "Segoe UI Variable Display" if sys.platform == "win32" else "Inter"
+FONT_MONO = "Consolas" if sys.platform == "win32" else "Menlo"
 FONT_LOGO = "Courier New"
 
 user32 = None
@@ -164,42 +243,29 @@ class CaseFanVisualizer:
         self.band_holds = [0.0, 0.0, 0.0]
 
     def render_fan_ring(self, num_leds, raw_level=0.0, energy=0.0, pulse=0.0, mode="vu_meter",
-                        theme="classic", clockwise=True, speed_mult=1.0, fan_idx=0, total_fans=1,
+                        theme="white", clockwise=True, speed_mult=1.0, fan_idx=0, total_fans=1,
                         spectrum=None, decay_rate=0.85, custom_color=None):
         now = time.perf_counter()
         dt = min(now - self.last_time, 0.08)
         self.last_time = now
         num_leds = max(4, num_leds)
 
-        # Base RGB Color resolution
-        if theme == "classic":
-            base_rgb = None
+        if theme in ("white", "glyph_white"):
+            base_rgb = (255, 255, 255)
         elif theme in ("custom", "Custom Spectrum Color..."):
-            base_rgb = custom_color or (0, 230, 255)
-        elif theme == "red":
-            base_rgb = (224, 27, 34)       # Nothing Red
-        elif theme == "white":
-            base_rgb = (255, 255, 255)     # Glyph White
+            base_rgb = custom_color or (255, 255, 255)
         elif theme == "cyan":
-            base_rgb = (0, 230, 255)       # Cyber Cyan
-        elif theme == "magenta":
-            base_rgb = (255, 0, 140)       # Neon Magenta
+            base_rgb = (0, 210, 255)
         elif theme == "purple":
-            base_rgb = (157, 0, 255)       # Electric Purple
-        elif theme == "lime":
-            base_rgb = (0, 255, 102)       # Acid Lime
+            base_rgb = (168, 85, 247)
         elif theme == "orange":
-            base_rgb = (255, 102, 0)       # Solar Orange
-        elif theme == "gold":
-            base_rgb = (255, 215, 0)       # Gold Rush
+            base_rgb = (249, 115, 22)
+        elif theme == "magenta":
+            base_rgb = (236, 72, 153)
         elif theme == "ice_blue":
-            base_rgb = (0, 119, 255)       # Ice Blue
-        elif theme == "coral":
-            base_rgb = (255, 112, 112)     # Sunset Coral
-        elif theme == "mint":
-            base_rgb = (0, 255, 179)       # Mint Green
+            base_rgb = (56, 189, 248)
         elif theme == "violet":
-            base_rgb = (120, 0, 255)       # Deep Violet
+            base_rgb = (139, 92, 246)
         elif theme == "rainbow":
             hue = (now * 0.35 + fan_idx * (1.0 / max(1, total_fans)) + pulse * 0.15) % 1.0
             r, g, b = colorsys.hsv_to_rgb(hue, 0.95, 1.0)
@@ -207,16 +273,12 @@ class CaseFanVisualizer:
         elif isinstance(theme, (tuple, list)) and len(theme) == 3:
             base_rgb = tuple(int(c) for c in theme)
         else:
-            base_rgb = custom_color or (224, 27, 34)
+            base_rgb = custom_color or (255, 255, 255)
 
         def get_meter_color(frac):
-            if theme == "classic" or base_rgb is None:
-                if frac < 0.60:
-                    return (0, 240, 45)   # Lime Green
-                elif frac < 0.85:
-                    return (255, 210, 0)  # Amber Yellow
-                else:
-                    return (255, 25, 25)  # Burning Red
+            if base_rgb == (255, 255, 255) or base_rgb is None:
+                val = int(100 + frac * 155)
+                return (val, val, val)
             else:
                 if frac < 0.65:
                     return (int(base_rgb[0] * 0.7), int(base_rgb[1] * 0.7), int(base_rgb[2] * 0.7))
@@ -231,14 +293,13 @@ class CaseFanVisualizer:
         colors = []
 
         if mode == "spinner":
-            # Circular rotating comet beam (Nothing Glyph Ring)
             speed = (2.5 + energy * 9.0 + pulse * 7.0) * speed_mult
             dir_mult = 1.0 if clockwise else -1.0
             self.angle = (self.angle + dir_mult * speed * dt) % (2.0 * math.pi)
             fan_angle = (self.angle + fan_idx * (0.5 * math.pi)) % (2.0 * math.pi)
 
             tail_len = math.pi * 1.2
-            s_rgb = base_rgb or (224, 27, 34)
+            s_rgb = base_rgb or (255, 255, 255)
             for i in range(num_leds):
                 phi = (2.0 * math.pi * i) / num_leds
                 diff = (fan_angle - phi) % (2.0 * math.pi) if clockwise else (phi - fan_angle) % (2.0 * math.pi)
@@ -249,20 +310,19 @@ class CaseFanVisualizer:
                                int(s_rgb[2] * brightness)))
 
         elif mode == "vu_meter":
-            # Radial VU Meter (Full 360-degree ring with ballistic physics & gravity peak)
             target = float(np.clip(raw_level, 0.0, 1.0))
             if target > self.vu_level:
-                self.vu_level = self.vu_level * 0.25 + target * 0.75  # Instant attack
+                self.vu_level = self.vu_level * 0.25 + target * 0.75
             else:
                 d = float(np.clip(decay_rate, 0.75, 0.98))
-                self.vu_level = max(0.0, self.vu_level * d)          # Smooth ballistic decay
+                self.vu_level = max(0.0, self.vu_level * d)
 
             active_count = int(round(self.vu_level * num_leds))
             if active_count >= self.peak_led:
                 self.peak_led = float(active_count)
-                self.peak_hold_until = now + 0.25  # Hold peak for 250ms
+                self.peak_hold_until = now + 0.25
             elif now > self.peak_hold_until:
-                self.peak_led = max(0.0, self.peak_led - 14.0 * dt)  # Gravity fall
+                self.peak_led = max(0.0, self.peak_led - 14.0 * dt)
 
             peak_idx = int(self.peak_led)
 
@@ -272,12 +332,11 @@ class CaseFanVisualizer:
                     frac = fill_idx / max(1, num_leds - 1)
                     colors.append(get_meter_color(frac))
                 elif fill_idx == peak_idx and peak_idx > 0:
-                    colors.append((255, 255, 255))  # Pure white peak hold dot
+                    colors.append((255, 255, 255))
                 else:
                     colors.append((0, 0, 0))
 
         elif mode == "vu_meter_dual":
-            # Radial VU (Dual Symmetrical): rises symmetrically from bottom to top on both sides
             target = float(np.clip(raw_level, 0.0, 1.0))
             if target > self.vu_level:
                 self.vu_level = self.vu_level * 0.25 + target * 0.75
@@ -305,7 +364,6 @@ class CaseFanVisualizer:
                     colors.append((0, 0, 0))
 
         elif mode == "spectrum":
-            # Multi-Fan Frequency Equalizer
             if spectrum is not None and len(spectrum) >= 32:
                 b_raw = float(np.mean(spectrum[:6])) * 3.5
                 m_raw = float(np.mean(spectrum[8:28])) * 4.0
@@ -322,9 +380,9 @@ class CaseFanVisualizer:
             ]
 
             band_colors = [
-                (255, 30, 30),   # Bass: Crimson Red
-                (255, 170, 0),   # Mids: Golden Amber
-                (0, 230, 255)    # Treble: Electric Cyan
+                (255, 255, 255),  # Bass: Glyph White
+                (0, 210, 255),    # Mids: Cyber Cyan
+                (168, 85, 247)    # Treble: Electric Purple
             ]
 
             if total_fans > 1:
@@ -343,21 +401,17 @@ class CaseFanVisualizer:
                     self.band_peaks[b_idx] = max(0.0, self.band_peaks[b_idx] - 12.0 * dt)
                 b_peak = int(self.band_peaks[b_idx])
 
-                b_col = band_colors[b_idx] if (theme == "classic" or base_rgb is None) else base_rgb
+                b_col = band_colors[b_idx] if base_rgb == (255, 255, 255) else base_rgb
                 for i in range(num_leds):
                     fill_idx = i if clockwise else ((num_leds - i) % num_leds)
                     if fill_idx < b_active:
                         frac = fill_idx / max(1, num_leds - 1)
-                        if theme == "classic" or base_rgb is None:
-                            colors.append(b_col)
-                        else:
-                            colors.append(get_meter_color(frac))
+                        colors.append(get_meter_color(frac))
                     elif fill_idx == b_peak and b_peak > 0:
                         colors.append((255, 255, 255))
                     else:
                         colors.append((0, 0, 0))
             else:
-                # Single fan divided into 3 equal equalizer sectors
                 sector_size = num_leds // 3
                 for i in range(num_leds):
                     s_idx = min(2, i // max(1, sector_size))
@@ -365,7 +419,7 @@ class CaseFanVisualizer:
                     sec_len = sector_size if s_idx < 2 else (num_leds - 2 * sector_size)
                     b_active = int(round(band_targets[s_idx] * sec_len))
                     if offset_in_sector < b_active:
-                        b_col = band_colors[s_idx] if (theme == "classic" or base_rgb is None) else base_rgb
+                        b_col = band_colors[s_idx] if base_rgb == (255, 255, 255) else base_rgb
                         colors.append(b_col)
                     else:
                         colors.append((0, 0, 0))
@@ -374,15 +428,15 @@ class CaseFanVisualizer:
             self.ripple_phase = (self.ripple_phase + (3.0 + pulse * 6.0) * dt) % (total_fans + 1)
             dist = abs(self.ripple_phase - fan_idx)
             wave_int = max(float(np.clip(1.0 - dist, 0.0, 1.0)) ** 2.0, pulse * 0.3)
-            r_rgb = base_rgb or (224, 27, 34)
+            r_rgb = base_rgb or (255, 255, 255)
             for i in range(num_leds):
                 colors.append((int(r_rgb[0] * wave_int),
                                int(r_rgb[1] * wave_int),
                                int(r_rgb[2] * wave_int)))
 
-        else:  # "pulse" (Bass Strobe)
+        else:  # "pulse"
             p = float(np.clip(pulse * 1.2, 0.0, 1.0))
-            p_rgb = base_rgb or (224, 27, 34)
+            p_rgb = base_rgb or (255, 255, 255)
             for i in range(num_leds):
                 colors.append((int(p_rgb[0] * p),
                                int(p_rgb[1] * p),
@@ -391,36 +445,24 @@ class CaseFanVisualizer:
         return colors
 
 THEME_PRESET_COLORS = {
-    "Classic VU (Green-Yellow-Red)": (0, 240, 45),
-    "Nothing Red": (224, 27, 34),
     "Glyph White": (255, 255, 255),
-    "Cyber Cyan": (0, 230, 255),
-    "Neon Magenta": (255, 0, 140),
-    "Electric Purple": (157, 0, 255),
-    "Acid Lime": (0, 255, 102),
-    "Solar Orange": (255, 102, 0),
-    "Gold Rush": (255, 215, 0),
-    "Ice Blue": (0, 119, 255),
-    "Sunset Coral": (255, 112, 112),
-    "Mint Green": (0, 255, 179),
-    "Deep Violet": (120, 0, 255),
+    "Cyber Cyan": (0, 210, 255),
+    "Electric Purple": (168, 85, 247),
+    "Solar Orange": (249, 115, 22),
+    "Neon Magenta": (236, 72, 153),
+    "Ice Blue": (56, 189, 248),
+    "Deep Violet": (139, 92, 246),
     "Reactive Rainbow": (255, 0, 0),
-    "Custom Spectrum Color...": (0, 230, 255)
+    "Custom Spectrum Color...": (255, 255, 255)
 }
 
 FAN_THEME_DISPLAY = {
-    "Classic VU (Green-Yellow-Red)": "classic",
-    "Nothing Red": "red",
     "Glyph White": "white",
     "Cyber Cyan": "cyan",
-    "Neon Magenta": "magenta",
     "Electric Purple": "purple",
-    "Acid Lime": "lime",
     "Solar Orange": "orange",
-    "Gold Rush": "gold",
+    "Neon Magenta": "magenta",
     "Ice Blue": "ice_blue",
-    "Sunset Coral": "coral",
-    "Mint Green": "mint",
     "Deep Violet": "violet",
     "Reactive Rainbow": "rainbow",
     "Custom Spectrum Color...": "custom"
@@ -460,7 +502,7 @@ class OpenRGBManager:
         self.devices = []
         self.last_sync_time = 0.0
         self.fan_visualizers = {}
-        self.selected_rgb = (224, 27, 34)
+        self.selected_rgb = (255, 255, 255)
         self.header_configs = {}
         self.on_connected_callback = None
 
@@ -492,20 +534,16 @@ class OpenRGBManager:
         zname = (getattr(zone, "name", "") or "").lower()
         dev_type = getattr(dev, "type", None) if dev else None
 
-        # 1. Strictly exclude non-addressable 12V analog RGB headers and motherboard SMD accent LEDs
         non_fan_keywords = ("jrgb", "12v", "onboard", "audio", "pcie", "io_cover", "chipset", "pch", "logo")
         if any(ex in zname for ex in non_fan_keywords):
             return False
 
-        # If zone is 1-LED single zone (ZoneType.SINGLE = 0), it cannot display individual fan ring effects
         if getattr(zone, "type", None) == 0 and len(getattr(zone, "leds", [])) <= 1:
             return False
 
-        # 2. If parent device is a dedicated cooler/fan controller or LED strip (Corsair, Razer, Lian Li, NZXT, etc.)
         if dev_type in (DeviceType.COOLER, DeviceType.CASE, DeviceType.LEDSTRIP, DeviceType.ACCESSORY, DeviceType.DRAM):
             return True
 
-        # 3. Motherboard Addressable RGB fan/strip headers (MSI JRAINBOW, ASUS ADD_HEADER, Gigabyte D_LED, ASRock)
         fan_keywords = (
             "rainbow", "jrainbow", "d_led", "add_header", "add_gen2", "addr_led",
             "addressable", "argb", "polychrome addressable", "fan", "cooler", "pump",
@@ -537,7 +575,6 @@ class OpenRGBManager:
             d_short = d_name.split()[0]
             zones = getattr(dev, "zones", [])
 
-            # 1. Motherboards: only include real addressable ARGB headers (e.g. JRAINBOW, ADD_HEADER, D_LED)
             if d_type == DeviceType.MOTHERBOARD:
                 mfg = "MSI" if "msi" in d_name.lower() else (
                     "ASUS" if "asus" in d_name.lower() else (
@@ -550,23 +587,19 @@ class OpenRGBManager:
                     if self.is_fan_zone(z, dev):
                         connected_rgb.append(f"{z.name} ({mfg} ARGB)")
 
-            # 2. Dedicated Fan Controllers / Hubs (Corsair, Razer, Lian Li, NZXT, etc.)
             elif d_type in (DeviceType.COOLER, DeviceType.CASE, DeviceType.LEDSTRIP, DeviceType.ACCESSORY):
                 for z in zones:
                     if self.is_fan_zone(z, dev):
                         connected_rgb.append(f"{d_short}: {z.name} (ARGB)")
 
-            # 3. RAM Modules
             elif d_type == DeviceType.DRAM:
                 connected_rgb.append(f"RAM: {d_name} (DRAM)")
 
-            # 4. GPUs with addressable RGB
             elif d_type == DeviceType.GPU:
                 for z in zones:
                     if self.is_fan_zone(z, dev):
                         connected_rgb.append(f"GPU: {d_short} {z.name} (ARGB)")
 
-            # 5. Any other device with detected fan zones
             else:
                 for z in zones:
                     if self.is_fan_zone(z, dev):
@@ -623,15 +656,40 @@ class OpenRGBManager:
                             if self.logger:
                                 self.logger(f"OpenRGB: Could not resize '{z.name}': {ex}")
 
-    def connect(self):
-        if not OPENRGB_AVAILABLE: return False
+    def connect(self, auto_launch=True):
+        if not OPENRGB_AVAILABLE:
+            if self.logger: self.logger("OpenRGB: 'openrgb-python' SDK library is not installed.")
+            return False
+
+        if not is_port_open("127.0.0.1", OPENRGB_PORT, timeout=0.3):
+            if auto_launch:
+                if self.logger: self.logger("OpenRGB: Server not detected on port 6742. Auto-launching OpenRGB as Administrator...")
+                started = launch_openrgb_elevated(logger=self.logger)
+                if started:
+                    start_t = time.time()
+                    connected_to_port = False
+                    while time.time() - start_t < 8.0:
+                        if is_port_open("127.0.0.1", OPENRGB_PORT, timeout=0.4):
+                            connected_to_port = True
+                            if self.logger: self.logger("OpenRGB: SDK server detected online on port 6742!")
+                            time.sleep(0.4)
+                            break
+                        time.sleep(0.5)
+                    if not connected_to_port:
+                        if self.logger: self.logger("OpenRGB: Timed out waiting for OpenRGB server to start on port 6742.")
+            else:
+                if self.logger: self.logger("OpenRGB: SDK server is not listening on port 6742.")
+
         try:
             self.client = OpenRGBClient("localhost", OPENRGB_PORT)
             self.devices = self.client.devices
             for dev in self.devices:
-                for mode in dev.modes:
+                for mode in getattr(dev, "modes", []):
                     if mode.name.lower() in ("direct", "custom", "static"):
-                        dev.set_mode(mode)
+                        try:
+                            dev.set_mode(mode)
+                        except Exception:
+                            pass
                         break
             self.connected = True
             self.update_header_configs(self.header_configs)
@@ -643,17 +701,17 @@ class OpenRGBManager:
                     if self.logger: self.logger(f"Header callback error: {ex}")
             fan_count = sum(1 for d in self.devices if self.is_fan_device(d))
             if self.logger:
-                self.logger(f"OpenRGB: Connected to {len(self.devices)} devices ({fan_count} fan/cooler controllers).")
+                self.logger(f"OpenRGB: Successfully connected to {len(self.devices)} device(s) ({fan_count} ARGB controller(s)).")
             return True
         except Exception as e:
             self.connected = False
-            if self.logger: self.logger(f"OpenRGB Error: {e}")
+            if self.logger: self.logger(f"OpenRGB Connection Error: {e}")
             return False
 
     def sync(self, r, g, b, raw_audio_level=0.0, energy=0.0, pulse=0.0, spectrum=None,
-             fan_viz_enabled=True, fan_mode="vu_meter", fan_theme="classic",
+             fan_viz_enabled=True, fan_mode="vu_meter", fan_theme="white",
              fan_clockwise=True, fan_speed=1.0, fan_leds=16, fan_count=1, decay_rate=0.85,
-             custom_color=(0, 230, 255)):
+             custom_color=(255, 255, 255)):
         if not self.connected: return None
         now = time.perf_counter()
         if now - self.last_sync_time < 0.02: return None
@@ -852,36 +910,15 @@ def get_wasapi_devices():
     finally: p.terminate()
     return devices
 
-def discover_phone_bt():
-    try:
-        from bleak import BleakScanner
-    except Exception: return []
-    async def scan():
-        devices = []
-        def detection_callback(device, advertisement_data):
-            uuids = [s.lower() for s in advertisement_data.service_uuids]
-            target = BLE_SERVICE_UUID.lower()
-            is_match = target in uuids
-            for i, (addr, name, _) in enumerate(devices):
-                if addr == device.address:
-                    if name == "Unknown" and device.name:
-                        devices[i] = (device.address, device.name, is_match)
-                    return
-            devices.append((device.address, device.name or "Unknown", is_match))
-        scanner = BleakScanner(detection_callback)
-        await scanner.start()
-        for _ in range(12): await asyncio.sleep(1.0)
-        await scanner.stop()
-        return devices
-    try: return asyncio.run(scan())
-    except: return []
-
+# ==============================================================================
+# MAIN APPLICATION WINDOW (MONOCHROME / NOTHING OS STYLE)
+# ==============================================================================
 class CompanionApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("GLYPHIX")
-        self.geometry("600x720")
-        self.resizable(True, True)
+        self.title("GLYPHIX // DESKTOP COMPANION")
+        self.geometry("640x760")
+        self.minsize(560, 660)
         self.configure(fg_color=COLOR_BG)
         
         self.grid_columnconfigure(0, weight=1)
@@ -895,32 +932,36 @@ class CompanionApp(ctk.CTk):
         
         self.direction = ctk.StringVar(value="PHONE_TO_PC")
         self.local_pc_ip = get_local_ip()
-        self.conn_type = ctk.StringVar(value="UDP")
         self.use_openrgb = ctk.BooleanVar(value=False)
         self.typing_suppression = ctk.BooleanVar(value=True)
         self.rgb_sensitivity = ctk.DoubleVar(value=1.0)
         self.rgb_decay = ctk.DoubleVar(value=0.82)
-        self.selected_rgb = (215, 25, 32)
+        self.selected_rgb = (255, 255, 255)
+        
         self.viz_dots = []
         self.viz_queue = queue.Queue(maxsize=1)
         self._viz_cache = []
+        self._anim_phase = 0.0
+        self._last_packet_time = 0.0
         
         self.wasapi_devices = get_wasapi_devices()
         self.spectrum_points = [0.0] * 64
+        self.viz_peaks = [0.0] * 64
+        self.viz_peak_holds = [0.0] * 64
         self.log_queue = queue.Queue()
         self.level_queue = queue.Queue()
         
         # Case Fan Visualization & Per-Header Configuration
         self.current_header = ctk.StringVar(value="All Connected ARGB (Sync All)")
         self.detected_headers = ["All Connected ARGB (Sync All)"]
-        self.custom_hex = "#00E6FF"
-        self.custom_rgb = (0, 230, 255)
+        self.custom_hex = "#FFFFFF"
+        self.custom_rgb = (255, 255, 255)
         self.header_configs = {
             "All Connected ARGB (Sync All)": {
                 "mode": "Radial VU Meter (Full Ring)",
-                "theme": "Classic VU (Green-Yellow-Red)",
-                "custom_color": (0, 230, 255),
-                "custom_hex": "#00E6FF",
+                "theme": "Glyph White",
+                "custom_color": (255, 255, 255),
+                "custom_hex": "#FFFFFF",
                 "fan_ring_size": 16,
                 "fan_count": 1,
                 "clockwise": True,
@@ -932,7 +973,7 @@ class CompanionApp(ctk.CTk):
         }
         self.fan_viz_enabled = ctk.BooleanVar(value=True)
         self.fan_mode_str = ctk.StringVar(value="Radial VU Meter (Full Ring)")
-        self.fan_theme_str = ctk.StringVar(value="Classic VU (Green-Yellow-Red)")
+        self.fan_theme_str = ctk.StringVar(value="Glyph White")
         self.fan_led_count_str = ctk.StringVar(value="16 LEDs (Standard)")
         self.fan_count_str = ctk.StringVar(value="1 Fan")
         self.fan_clockwise = ctk.BooleanVar(value=True)
@@ -940,6 +981,11 @@ class CompanionApp(ctk.CTk):
         self.fan_preview_queue = queue.Queue(maxsize=1)
         self.fan_preview_dots = []
         self._fan_preview_cache = []
+        self.fan_preview_angle = 0.0
+        self.fan_pulse_glow = 0.0
+        self.fan_ripple_r = 0.0
+        self.fan_ripple_alpha = 0.0
+        self.discovery_anim_counter = 0
 
         self.rgb_manager = OpenRGBManager(logger=self.log)
         self.rgb_manager.on_connected_callback = lambda hdrs: self.after(0, self._on_openrgb_headers_detected, hdrs)
@@ -948,275 +994,558 @@ class CompanionApp(ctk.CTk):
 
         self._setup_ui()
         self._refresh_audio_sources()
-        self._on_direction_changed()
+        self._on_direction_changed("📥 Phone → PC (Sync PC RGB)")
         self._start_pc_discovery_responder()
         self._update_loop()
 
+    # ==========================================
+    # UI SETUP & MATERIAL 3 MONOCHROME BUILDER
+    # ==========================================
     def _setup_ui(self):
-        self.header = ctk.CTkFrame(self, fg_color=COLOR_BG, corner_radius=0, height=70)
-        self.header.grid(row=0, column=0, sticky="ew", padx=20, pady=(10, 0))
-        
-        self.logo_label = ctk.CTkLabel(self.header, text="GLYPHIX", 
-                                      font=ctk.CTkFont(family=FONT_LOGO, size=28, weight="bold"),
-                                      text_color=COLOR_ACCENT)
-        self.logo_label.pack(side="left", pady=15)
-        
-        self.status_frame = ctk.CTkFrame(self.header, fg_color="transparent")
-        self.status_frame.pack(side="right", pady=18)
-        
-        self.status_dot = ctk.CTkLabel(self.status_frame, text="●", font=ctk.CTkFont(size=14), text_color=COLOR_MUTED)
-        self.status_dot.pack(side="left", padx=(0, 5))
-        
-        self.status_pill = ctk.CTkLabel(self.status_frame, text="DISCONNECTED", 
-                                       text_color=COLOR_MUTED,
-                                       font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"))
-        self.status_pill.pack(side="left")
+        # 1. TOP APP BAR / BRAND HEADER
+        self.header = ctk.CTkFrame(self, fg_color=COLOR_BG, corner_radius=0, height=72)
+        self.header.grid(row=0, column=0, sticky="ew", padx=24, pady=(12, 4))
+        self.header.grid_columnconfigure(0, weight=1)
 
-        self.main_container = ctk.CTkScrollableFrame(self, fg_color=COLOR_BG, corner_radius=0)
-        self.main_container.grid(row=1, column=0, sticky="nsew", padx=5)
+        brand_frame = ctk.CTkFrame(self.header, fg_color="transparent")
+        brand_frame.pack(side="left", pady=8)
 
-        self._create_card(self.main_container, "SYNC DIRECTION")
-        dir_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        dir_frame.pack(fill="x", padx=20, pady=(5, 12))
+        logo_row = ctk.CTkFrame(brand_frame, fg_color="transparent")
+        logo_row.pack(anchor="w")
+
+        self.logo_label = ctk.CTkLabel(
+            logo_row, text="GLYPHIX",
+            font=ctk.CTkFont(family=FONT_LOGO, size=24, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.logo_label.pack(side="left")
+
+        self.ver_badge = ctk.CTkLabel(
+            logo_row, text=" DESKTOP",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        )
+        self.ver_badge.pack(side="left", padx=(4, 0), pady=(4, 0))
+
+        self.sub_label = ctk.CTkLabel(
+            brand_frame, text="AUDIO REACTIVE GLYPH & ARGB SYNC ENGINE",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_MUTED
+        )
+        self.sub_label.pack(anchor="w", pady=(1, 0))
+
+        # Status Capsule Pill
+        self.status_capsule = ctk.CTkFrame(
+            self.header, fg_color=COLOR_SURFACE,
+            corner_radius=20, border_color=COLOR_BORDER, border_width=1
+        )
+        self.status_capsule.pack(side="right", pady=14, padx=(0, 4))
+
+        self.status_dot = ctk.CTkLabel(
+            self.status_capsule, text="●",
+            font=ctk.CTkFont(size=12), text_color=COLOR_TEXT_MUTED
+        )
+        self.status_dot.pack(side="left", padx=(12, 6), pady=6)
+
+        self.status_pill = ctk.CTkLabel(
+            self.status_capsule, text="STANDBY",
+            text_color=COLOR_TEXT_SECONDARY,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold")
+        )
+        self.status_pill.pack(side="left", padx=(0, 14), pady=6)
+
+        # 2. MAIN SCROLLABLE CONTAINER
+        self.main_container = ctk.CTkScrollableFrame(
+            self, fg_color=COLOR_BG, corner_radius=0,
+            scrollbar_button_color=COLOR_BORDER,
+            scrollbar_button_hover_color=COLOR_BORDER_LIGHT
+        )
+        self.main_container.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 4))
+
+        # CARD 1: SYNC DIRECTION
+        self._create_card(self.main_container, "SYNC DIRECTION", "Choose audio flow between Nothing Phone & PC")
         
-        ctk.CTkRadioButton(dir_frame, text="Phone -> PC (Sync PC RGB to Phone Music)", 
-                           variable=self.direction, value="PHONE_TO_PC",
-                           command=self._on_direction_changed,
-                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, 
-                           font=ctk.CTkFont(family=FONT_MAIN, size=12, weight="bold")).pack(anchor="w", pady=(0, 6))
-        ctk.CTkRadioButton(dir_frame, text="PC -> Phone (Stream PC Audio to Phone Glyphs)", 
-                           variable=self.direction, value="PC_TO_PHONE",
-                           command=self._on_direction_changed,
-                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, 
-                           font=ctk.CTkFont(family=FONT_MAIN, size=12, weight="bold")).pack(anchor="w")
+        self.dir_segmented = ctk.CTkSegmentedButton(
+            self.last_card_body,
+            values=["📥 Phone → PC (Sync PC RGB)", "📤 PC → Phone (Glyphs)"],
+            command=self._on_direction_changed,
+            selected_color=COLOR_ACCENT,
+            selected_hover_color=COLOR_ACCENT_HOVER,
+            unselected_color=COLOR_SURFACE_INNER,
+            unselected_hover_color=COLOR_SURFACE_HOVER,
+            text_color="#000000",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
+            height=38, corner_radius=10
+        )
+        self.dir_segmented.set("📥 Phone → PC (Sync PC RGB)")
+        self.dir_segmented.pack(fill="x", pady=(0, 4))
 
-        self._create_card(self.main_container, "AUDIO SOURCE")
-        self.audio_combo = ctk.CTkOptionMenu(self.last_card, values=[], 
-                                            fg_color=COLOR_BORDER, button_color=COLOR_BORDER,
-                                            button_hover_color=COLOR_ACCENT, dropdown_fg_color=COLOR_CARD,
-                                            font=ctk.CTkFont(family=FONT_MAIN, size=12))
-        self.audio_combo.pack(fill="x", padx=20, pady=(5, 15))
+        # CARD 2: AUDIO SOURCE & SPECTRUM VISUALIZER
+        self._create_card(self.main_container, "AUDIO SPECTRUM & SOURCE", "Real-time FFT audio visualizer & loopback input")
+        
+        self.audio_combo = ctk.CTkOptionMenu(
+            self.last_card_body, values=[],
+            fg_color=COLOR_SURFACE_INNER,
+            button_color=COLOR_BORDER,
+            button_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=36,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12)
+        )
+        self.audio_combo.pack(fill="x", pady=(0, 10))
 
-        self.viz_canvas = ctk.CTkCanvas(self.last_card, height=100, bg=COLOR_CARD, highlightthickness=0)
-        self.viz_canvas.pack(fill="x", padx=20, pady=(0, 20))
+        viz_box = ctk.CTkFrame(
+            self.last_card_body, fg_color="#08090B",
+            corner_radius=10, border_color=COLOR_BORDER, border_width=1
+        )
+        viz_box.pack(fill="x", pady=(0, 4))
+
+        self.viz_canvas = ctk.CTkCanvas(
+            viz_box, height=92, bg="#08090B", highlightthickness=0
+        )
+        self.viz_canvas.pack(fill="x", padx=10, pady=(10, 4))
         self.viz_canvas.bind("<Configure>", self._resize_viz)
-        
-        self._create_card(self.main_container, "CONNECTIVITY")
 
-        # PC IP Frame for Phone -> PC
-        self.pc_ip_frame = ctk.CTkFrame(self.last_card, fg_color=COLOR_BG, corner_radius=8, border_color=COLOR_BORDER, border_width=1)
-        self.pc_ip_label = ctk.CTkLabel(self.pc_ip_frame, text=f"PC IP: {self.local_pc_ip}:12347",
-                                        font=ctk.CTkFont(family=FONT_MAIN, size=13, weight="bold"),
-                                        text_color=COLOR_TEXT)
-        self.pc_ip_label.pack(side="left", padx=15, pady=10)
-        self.copy_ip_btn = ctk.CTkButton(self.pc_ip_frame, text="COPY IP", width=80, height=28,
-                                         fg_color=COLOR_BORDER, hover_color=COLOR_ACCENT,
-                                         font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"),
-                                         command=self._copy_pc_ip)
-        self.copy_ip_btn.pack(side="right", padx=10, pady=10)
+        freq_row = ctk.CTkFrame(viz_box, fg_color="transparent")
+        freq_row.pack(fill="x", padx=14, pady=(0, 8))
         
-        self.conn_switch_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        self.conn_switch_frame.pack(fill="x", padx=20, pady=(5, 10))
-        
-        ctk.CTkRadioButton(self.conn_switch_frame, text="UDP (Wi-Fi)", variable=self.conn_type, value="UDP",
-                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12)).pack(side="left", padx=(0, 20))
-        ctk.CTkRadioButton(self.conn_switch_frame, text="Bluetooth", variable=self.conn_type, value="BT",
-                           hover_color=COLOR_ACCENT, fg_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12)).pack(side="left")
-        
-        self.addr_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        self.addr_frame.pack(fill="x", padx=20, pady=(0, 20))
-        
-        self.addr_entry = ctk.CTkEntry(self.addr_frame, placeholder_text="Phone IP or MAC Address",
-                                      fg_color=COLOR_BG, border_color=COLOR_BORDER, height=36,
-                                      font=ctk.CTkFont(family=FONT_MAIN, size=12))
-        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
-        
-        self.discover_btn = ctk.CTkButton(self.addr_frame, text="DISCOVER", width=90, height=36,
-                                         fg_color=COLOR_WHITE, text_color=COLOR_BG, hover_color=COLOR_ACCENT,
-                                         font=ctk.CTkFont(family=FONT_MAIN, size=12, weight="bold"), 
-                                         command=self._toggle_discovery)
+        for band in ("SUB-BASS", "BASS", "LOW-MID", "MID", "PRESENCE", "BRILLIANCE"):
+            ctk.CTkLabel(
+                freq_row, text=band,
+                font=ctk.CTkFont(family=FONT_FAMILY, size=8, weight="bold"),
+                text_color=COLOR_TEXT_MUTED
+            ).pack(side="left", expand=True)
+
+        # CARD 3: WI-FI CONNECTIVITY (UDP ONLY - NO BLUETOOTH)
+        self._create_card(self.main_container, "WI-FI CONNECTIVITY", "Ultra-fast low latency UDP audio streaming & discovery")
+
+        self.pc_ip_card = ctk.CTkFrame(
+            self.last_card_body, fg_color=COLOR_SURFACE_INNER,
+            corner_radius=10, border_color=COLOR_BORDER, border_width=1
+        )
+        self.pc_ip_card.pack(fill="x", pady=(0, 4))
+
+        ip_info_frame = ctk.CTkFrame(self.pc_ip_card, fg_color="transparent")
+        ip_info_frame.pack(side="left", padx=14, pady=10)
+
+        ctk.CTkLabel(
+            ip_info_frame, text="YOUR PC IP (PORT 12347)",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(anchor="w")
+
+        self.pc_ip_label = ctk.CTkLabel(
+            ip_info_frame, text=f"{self.local_pc_ip} : 12347",
+            font=ctk.CTkFont(family=FONT_MONO, size=15, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.pc_ip_label.pack(anchor="w")
+
+        self.copy_ip_btn = ctk.CTkButton(
+            self.pc_ip_card, text="COPY IP", width=84, height=32,
+            fg_color=COLOR_SURFACE_HOVER, hover_color=COLOR_BORDER_LIGHT,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            command=self._copy_pc_ip
+        )
+        self.copy_ip_btn.pack(side="right", padx=12, pady=10)
+
+        self.pc_to_phone_frame = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+
+        addr_row = ctk.CTkFrame(self.pc_to_phone_frame, fg_color="transparent")
+        addr_row.pack(fill="x", pady=(0, 4))
+
+        self.addr_entry = ctk.CTkEntry(
+            addr_row, placeholder_text="Enter Phone IP Address (e.g. 192.168.1.55)",
+            fg_color=COLOR_SURFACE_INNER, border_color=COLOR_BORDER,
+            text_color=COLOR_TEXT_PRIMARY,
+            placeholder_text_color=COLOR_TEXT_MUTED,
+            height=38, corner_radius=8,
+            font=ctk.CTkFont(family=FONT_MONO, size=12)
+        )
+        self.addr_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+
+        self.discover_btn = ctk.CTkButton(
+            addr_row, text="🔍 DISCOVER", width=105, height=38,
+            fg_color=COLOR_SURFACE_HOVER, text_color=COLOR_TEXT_PRIMARY,
+            hover_color=COLOR_BORDER_LIGHT, corner_radius=8,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
+            command=self._toggle_discovery
+        )
         self.discover_btn.pack(side="right")
 
-        self._create_card(self.main_container, "HARDWARE SYNC")
-        
-        hw_grid = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        hw_grid.pack(fill="x", padx=20, pady=10)
-        
-        self.openrgb_switch = ctk.CTkSwitch(hw_grid, text="OpenRGB Sync", variable=self.use_openrgb,
-                                           progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12),
-                                           command=self._toggle_openrgb)
-        self.openrgb_switch.pack(side="left", padx=(0, 30))
-        
-        self.typing_switch = ctk.CTkSwitch(hw_grid, text="Typing Suppression", variable=self.typing_suppression,
-                                          progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12))
-        self.typing_switch.pack(side="left")
-        
-        slider_frame = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        slider_frame.pack(fill="x", padx=20, pady=(5, 20))
-        
-        ctk.CTkLabel(slider_frame, text="SENSITIVITY", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
-        ctk.CTkSlider(slider_frame, from_=0.1, to=3.0, variable=self.rgb_sensitivity, 
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT).pack(fill="x", pady=(2, 12))
-        
-        ctk.CTkLabel(slider_frame, text="PULSE DECAY", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
-        ctk.CTkSlider(slider_frame, from_=0.5, to=0.99, variable=self.rgb_decay,
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT).pack(fill="x", pady=(2, 0))
+        # CARD 4: HARDWARE SYNC & AUDIO DSP
+        self._create_card(self.main_container, "HARDWARE SYNC & AUDIO DSP", "OpenRGB lighting sync and transient response")
 
-        self._create_card(self.main_container, "CASE FAN VISUALIZATION")
-        
-        fan_switches = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        fan_switches.pack(fill="x", padx=20, pady=(5, 10))
-        
+        switches_row = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+        switches_row.pack(fill="x", pady=(0, 12))
+
+        self.openrgb_switch = ctk.CTkSwitch(
+            switches_row, text="OpenRGB Sync", variable=self.use_openrgb,
+            progress_color=COLOR_WHITE, button_color=COLOR_WHITE,
+            button_hover_color=COLOR_ACCENT_HOVER,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
+            command=self._toggle_openrgb
+        )
+        self.openrgb_switch.pack(side="left", padx=(0, 24))
+
+        self.typing_switch = ctk.CTkSwitch(
+            switches_row, text="Typing Suppression", variable=self.typing_suppression,
+            progress_color=COLOR_WHITE, button_color=COLOR_WHITE,
+            button_hover_color=COLOR_ACCENT_HOVER,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold")
+        )
+        self.typing_switch.pack(side="left")
+
+        sens_hdr = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+        sens_hdr.pack(fill="x", pady=(2, 0))
+        ctk.CTkLabel(
+            sens_hdr, text="AUDIO SENSITIVITY",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(side="left")
+        self.sens_val_lbl = ctk.CTkLabel(
+            sens_hdr, text=f"{self.rgb_sensitivity.get():.2f}x",
+            font=ctk.CTkFont(family=FONT_MONO, size=11, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.sens_val_lbl.pack(side="right")
+
+        self.sens_slider = ctk.CTkSlider(
+            self.last_card_body, from_=0.1, to=3.0, variable=self.rgb_sensitivity,
+            button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT_HOVER,
+            progress_color=COLOR_WHITE, fg_color=COLOR_SURFACE_INNER,
+            command=self._on_sens_slider_changed
+        )
+        self.sens_slider.pack(fill="x", pady=(2, 10))
+
+        decay_hdr = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+        decay_hdr.pack(fill="x", pady=(2, 0))
+        ctk.CTkLabel(
+            decay_hdr, text="PULSE DECAY / BALLISTICS",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(side="left")
+        self.decay_val_lbl = ctk.CTkLabel(
+            decay_hdr, text=f"{int(self.rgb_decay.get() * 100)}%",
+            font=ctk.CTkFont(family=FONT_MONO, size=11, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.decay_val_lbl.pack(side="right")
+
+        self.decay_slider = ctk.CTkSlider(
+            self.last_card_body, from_=0.5, to=0.99, variable=self.rgb_decay,
+            button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT_HOVER,
+            progress_color=COLOR_WHITE, fg_color=COLOR_SURFACE_INNER,
+            command=self._on_decay_slider_changed
+        )
+        self.decay_slider.pack(fill="x", pady=(2, 4))
+
+        # CARD 5: CASE FAN ARGB VISUALIZATION
+        self._create_card(self.main_container, "CASE FAN ARGB VISUALIZATION", "Per-header radial lighting effects & live ring preview")
+
+        fan_sw_row = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+        fan_sw_row.pack(fill="x", pady=(0, 10))
+
         self.fan_enable_switch = ctk.CTkSwitch(
-            fan_switches, text="Enable Fan Ring FX", variable=self.fan_viz_enabled,
-            progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12),
+            fan_sw_row, text="Enable Fan Ring FX", variable=self.fan_viz_enabled,
+            progress_color=COLOR_WHITE, button_color=COLOR_WHITE,
+            button_hover_color=COLOR_ACCENT_HOVER,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
             command=self._on_fan_config_changed
         )
-        self.fan_enable_switch.pack(side="left", padx=(0, 25))
-        
+        self.fan_enable_switch.pack(side="left", padx=(0, 24))
+
         self.fan_clockwise_switch = ctk.CTkSwitch(
-            fan_switches, text="Clockwise", variable=self.fan_clockwise,
-            progress_color=COLOR_ACCENT, font=ctk.CTkFont(family=FONT_MAIN, size=12),
+            fan_sw_row, text="Clockwise", variable=self.fan_clockwise,
+            progress_color=COLOR_WHITE, button_color=COLOR_WHITE,
+            button_hover_color=COLOR_ACCENT_HOVER,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=12, weight="bold"),
             command=self._on_fan_config_changed
         )
         self.fan_clockwise_switch.pack(side="left")
 
-        fan_body = ctk.CTkFrame(self.last_card, fg_color="transparent")
-        fan_body.pack(fill="x", padx=20, pady=(0, 15))
-        
-        fan_ctrls = ctk.CTkFrame(fan_body, fg_color="transparent")
-        fan_ctrls.pack(side="left", fill="x", expand=True, padx=(0, 15))
+        fan_body = ctk.CTkFrame(self.last_card_body, fg_color="transparent")
+        fan_body.pack(fill="x", pady=(0, 6))
 
-        hdr_row = ctk.CTkFrame(fan_ctrls, fg_color="transparent")
-        hdr_row.pack(fill="x", pady=(0, 2))
-        ctk.CTkLabel(hdr_row, text="CONNECTED ARGB HARDWARE", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(side="left")
+        fan_left = ctk.CTkFrame(fan_body, fg_color="transparent")
+        fan_left.pack(side="left", fill="x", expand=True, padx=(0, 14))
+
+        hdr_top_row = ctk.CTkFrame(fan_left, fg_color="transparent")
+        hdr_top_row.pack(fill="x", pady=(0, 2))
+        ctk.CTkLabel(
+            hdr_top_row, text="CONNECTED ARGB HEADER",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(side="left")
+
         self.rescan_btn = ctk.CTkButton(
-            hdr_row, text="↻ SCAN RGB", width=78, height=20,
-            fg_color="#1A1A1A", hover_color="#282828",
-            text_color=COLOR_WHITE, font=ctk.CTkFont(family=FONT_MAIN, size=9, weight="bold"),
+            hdr_top_row, text="↻ SCAN RGB", width=80, height=22,
+            fg_color=COLOR_SURFACE_INNER, hover_color=COLOR_SURFACE_HOVER,
+            text_color=COLOR_TEXT_PRIMARY, corner_radius=6,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
             command=self._rescan_rgb
         )
         self.rescan_btn.pack(side="right")
 
         self.header_combo = ctk.CTkOptionMenu(
-            fan_ctrls, values=self.detected_headers,
-            variable=self.current_header, fg_color=COLOR_BORDER,
-            button_color=COLOR_BORDER, button_hover_color=COLOR_ACCENT,
-            dropdown_fg_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"),
+            fan_left, values=self.detected_headers,
+            variable=self.current_header,
+            fg_color=COLOR_SURFACE_INNER, button_color=COLOR_BORDER,
+            button_hover_color=COLOR_BORDER_LIGHT,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=32,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
             command=self._on_target_header_selected
         )
         self.header_combo.pack(fill="x", pady=(2, 8))
-        
-        ctk.CTkLabel(fan_ctrls, text="ANIMATION MODE", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
+
+        ctk.CTkLabel(
+            fan_left, text="ANIMATION EFFECT",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(anchor="w")
+
         self.fan_mode_menu = ctk.CTkOptionMenu(
-            fan_ctrls, values=list(FAN_MODE_DISPLAY.keys()),
-            variable=self.fan_mode_str, fg_color=COLOR_BORDER,
-            button_color=COLOR_BORDER, button_hover_color=COLOR_ACCENT,
-            dropdown_fg_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=11),
+            fan_left, values=list(FAN_MODE_DISPLAY.keys()),
+            variable=self.fan_mode_str,
+            fg_color=COLOR_SURFACE_INNER, button_color=COLOR_BORDER,
+            button_hover_color=COLOR_BORDER_LIGHT,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=32,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11),
             command=self._on_fan_config_changed
         )
         self.fan_mode_menu.pack(fill="x", pady=(2, 8))
-        
-        ctk.CTkLabel(fan_ctrls, text="COLOR THEME", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
+
+        ctk.CTkLabel(
+            fan_left, text="COLOR THEME",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(anchor="w")
+
         self.fan_theme_menu = ctk.CTkOptionMenu(
-            fan_ctrls, values=list(FAN_THEME_DISPLAY.keys()),
-            variable=self.fan_theme_str, fg_color=COLOR_BORDER,
-            button_color=COLOR_BORDER, button_hover_color=COLOR_ACCENT,
-            dropdown_fg_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=11),
+            fan_left, values=list(FAN_THEME_DISPLAY.keys()),
+            variable=self.fan_theme_str,
+            fg_color=COLOR_SURFACE_INNER, button_color=COLOR_BORDER,
+            button_hover_color=COLOR_BORDER_LIGHT,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=32,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11),
             command=self._on_fan_theme_changed
         )
-        self.fan_theme_menu.pack(fill="x", pady=(2, 6))
+        self.fan_theme_menu.pack(fill="x", pady=(2, 8))
 
-        # Spectrum Chooser & Live Color Swatch row
-        spectrum_row = ctk.CTkFrame(fan_ctrls, fg_color="transparent")
-        spectrum_row.pack(fill="x", pady=(0, 8))
+        swatch_row = ctk.CTkFrame(fan_left, fg_color="transparent")
+        swatch_row.pack(fill="x", pady=(0, 8))
 
         self.spectrum_btn = ctk.CTkButton(
-            spectrum_row, text="🎨 SPECTRUM CHOOSER",
-            height=28, fg_color="#1F1F1F", hover_color="#2D2D2D",
-            text_color=COLOR_WHITE,
-            font=ctk.CTkFont(family=FONT_MAIN, size=11, weight="bold"),
+            swatch_row, text="🎨 SPECTRUM CHOOSER",
+            height=30, fg_color=COLOR_SURFACE_INNER, hover_color=COLOR_SURFACE_HOVER,
+            text_color=COLOR_TEXT_PRIMARY, corner_radius=8,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=11, weight="bold"),
             command=self._open_spectrum_chooser
         )
         self.spectrum_btn.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
         self.color_swatch_btn = ctk.CTkButton(
-            spectrum_row, text=self.custom_hex, width=80, height=28,
+            swatch_row, text=self.custom_hex, width=82, height=30,
             fg_color=self.custom_hex, hover_color=self.custom_hex,
-            text_color="#000000",
-            font=ctk.CTkFont(family="Consolas", size=11, weight="bold"),
+            text_color="#000000", corner_radius=8,
+            font=ctk.CTkFont(family=FONT_MONO, size=11, weight="bold"),
             command=self._open_spectrum_chooser
         )
         self.color_swatch_btn.pack(side="right")
 
-        ctk.CTkLabel(fan_ctrls, text="FAN RING LED COUNT", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
+        counts_row = ctk.CTkFrame(fan_left, fg_color="transparent")
+        counts_row.pack(fill="x", pady=(0, 8))
+
+        led_col = ctk.CTkFrame(counts_row, fg_color="transparent")
+        led_col.pack(side="left", fill="x", expand=True, padx=(0, 4))
+        ctk.CTkLabel(
+            led_col, text="RING LEDS",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(anchor="w")
         self.fan_leds_menu = ctk.CTkOptionMenu(
-            fan_ctrls, values=list(FAN_LEDS_DISPLAY.keys()),
-            variable=self.fan_led_count_str, fg_color=COLOR_BORDER,
-            button_color=COLOR_BORDER, button_hover_color=COLOR_ACCENT,
-            dropdown_fg_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=11),
+            led_col, values=list(FAN_LEDS_DISPLAY.keys()),
+            variable=self.fan_led_count_str,
+            fg_color=COLOR_SURFACE_INNER, button_color=COLOR_BORDER,
+            button_hover_color=COLOR_BORDER_LIGHT,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=30,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10),
             command=self._on_fan_config_changed
         )
-        self.fan_leds_menu.pack(fill="x", pady=(2, 8))
+        self.fan_leds_menu.pack(fill="x", pady=(2, 0))
 
-        ctk.CTkLabel(fan_ctrls, text="NUMBER OF FANS", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
+        fan_cnt_col = ctk.CTkFrame(counts_row, fg_color="transparent")
+        fan_cnt_col.pack(side="right", fill="x", expand=True, padx=(4, 0))
+        ctk.CTkLabel(
+            fan_cnt_col, text="FAN COUNT",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(anchor="w")
         self.fan_count_menu = ctk.CTkOptionMenu(
-            fan_ctrls, values=list(FAN_COUNT_DISPLAY.keys()),
-            variable=self.fan_count_str, fg_color=COLOR_BORDER,
-            button_color=COLOR_BORDER, button_hover_color=COLOR_ACCENT,
-            dropdown_fg_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=11),
+            fan_cnt_col, values=list(FAN_COUNT_DISPLAY.keys()),
+            variable=self.fan_count_str,
+            fg_color=COLOR_SURFACE_INNER, button_color=COLOR_BORDER,
+            button_hover_color=COLOR_BORDER_LIGHT,
+            dropdown_fg_color=COLOR_SURFACE_INNER,
+            dropdown_hover_color=COLOR_SURFACE_HOVER,
+            dropdown_text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TEXT_PRIMARY,
+            corner_radius=8, height=30,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10),
             command=self._on_fan_config_changed
         )
-        self.fan_count_menu.pack(fill="x", pady=(2, 8))
+        self.fan_count_menu.pack(fill="x", pady=(2, 0))
 
-        ctk.CTkLabel(fan_ctrls, text="ROTATION / WAVE SPEED", font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED).pack(anchor="w")
-        ctk.CTkSlider(fan_ctrls, from_=0.2, to=3.0, variable=self.fan_speed,
-                      button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT, progress_color=COLOR_ACCENT,
-                      command=self._on_fan_config_changed).pack(fill="x", pady=(2, 0))
+        speed_hdr = ctk.CTkFrame(fan_left, fg_color="transparent")
+        speed_hdr.pack(fill="x", pady=(2, 0))
+        ctk.CTkLabel(
+            speed_hdr, text="ROTATION / WAVE SPEED",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        ).pack(side="left")
+        self.speed_val_lbl = ctk.CTkLabel(
+            speed_hdr, text=f"{self.fan_speed.get():.2f}x",
+            font=ctk.CTkFont(family=FONT_MONO, size=10, weight="bold"),
+            text_color=COLOR_TEXT_PRIMARY
+        )
+        self.speed_val_lbl.pack(side="right")
 
-        fan_prev_box = ctk.CTkFrame(fan_body, fg_color=COLOR_BG, corner_radius=10, border_color=COLOR_BORDER, border_width=1)
-        fan_prev_box.pack(side="right", padx=(5, 0), pady=0)
-        
-        ctk.CTkLabel(fan_prev_box, text="FAN PREVIEW", font=ctk.CTkFont(family=FONT_MAIN, size=9, weight="bold"), text_color=COLOR_MUTED).pack(pady=(6, 0))
-        self.fan_canvas = ctk.CTkCanvas(fan_prev_box, width=130, height=130, bg=COLOR_BG, highlightthickness=0)
-        self.fan_canvas.pack(padx=10, pady=(2, 8))
+        self.speed_slider = ctk.CTkSlider(
+            fan_left, from_=0.2, to=3.0, variable=self.fan_speed,
+            button_color=COLOR_WHITE, button_hover_color=COLOR_ACCENT_HOVER,
+            progress_color=COLOR_WHITE, fg_color=COLOR_SURFACE_INNER,
+            command=self._on_speed_slider_changed
+        )
+        self.speed_slider.pack(fill="x", pady=(2, 0))
+
+        fan_right_box = ctk.CTkFrame(
+            fan_body, fg_color="#08090B",
+            corner_radius=12, border_color=COLOR_BORDER, border_width=1
+        )
+        fan_right_box.pack(side="right", padx=(4, 0), pady=0)
+
+        ctk.CTkLabel(
+            fan_right_box, text="LIVE ARGB PREVIEW",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=9, weight="bold"),
+            text_color=COLOR_TEXT_MUTED
+        ).pack(pady=(8, 0))
+
+        self.fan_canvas = ctk.CTkCanvas(
+            fan_right_box, width=142, height=142, bg="#08090B", highlightthickness=0
+        )
+        self.fan_canvas.pack(padx=12, pady=(4, 12))
         self._init_fan_preview_canvas()
 
-        self.adv_btn = ctk.CTkButton(self.main_container, text="SHOW LOGS",
-                                    fg_color="transparent", text_color=COLOR_MUTED, 
-                                    hover_color=COLOR_CARD, font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"),
-                                    command=self._toggle_advanced)
-        self.adv_btn.pack(pady=10)
-        
-        self.console = ctk.CTkTextbox(self.main_container, height=120, fg_color=COLOR_BG, 
-                                     border_color=COLOR_BORDER, border_width=1,
-                                     font=ctk.CTkFont(family="Consolas", size=10), text_color=COLOR_MUTED)
+        # CARD 6: ADVANCED LOGS
+        self.adv_btn = ctk.CTkButton(
+            self.main_container, text="▼ SHOW SYSTEM LOGS",
+            fg_color="transparent", text_color=COLOR_TEXT_MUTED,
+            hover_color=COLOR_SURFACE, corner_radius=8, height=28,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
+            command=self._toggle_advanced
+        )
+        self.adv_btn.pack(pady=(4, 12))
+
+        self.console = ctk.CTkTextbox(
+            self.main_container, height=120, fg_color="#08090B",
+            border_color=COLOR_BORDER, border_width=1, corner_radius=8,
+            font=ctk.CTkFont(family=FONT_MONO, size=10),
+            text_color=COLOR_TEXT_SECONDARY
+        )
         self.console.configure(state="disabled")
 
-        self.footer = ctk.CTkFrame(self, fg_color=COLOR_BG, height=80, corner_radius=0)
-        self.footer.grid(row=2, column=0, sticky="ew")
-        
-        self.stream_btn = ctk.CTkButton(self.footer, text="START STREAMING", 
-                                       height=50, corner_radius=10, fg_color=COLOR_ACCENT, 
-                                       font=ctk.CTkFont(family=FONT_MAIN, size=14, weight="bold"),
-                                       hover_color="#B0151A", command=self._toggle_streaming)
-        self.stream_btn.pack(fill="x", padx=20, pady=15)
+        # ==============================================================================
+        # 3. FLOATING ACTION FOOTER (CRISP WHITE FAB)
+        # ==============================================================================
+        self.footer = ctk.CTkFrame(self, fg_color=COLOR_BG, height=84, corner_radius=0)
+        self.footer.grid(row=2, column=0, sticky="ew", padx=20, pady=(4, 16))
 
-    def _create_card(self, parent, title):
-        card = ctk.CTkFrame(parent, fg_color=COLOR_CARD, corner_radius=12, border_width=1, border_color=COLOR_BORDER)
-        card.pack(fill="x", padx=20, pady=10)
-        title_lbl = ctk.CTkLabel(card, text=title, font=ctk.CTkFont(family=FONT_MAIN, size=10, weight="bold"), text_color=COLOR_MUTED)
-        title_lbl.pack(anchor="w", padx=20, pady=(15, 5))
+        self.stream_btn = ctk.CTkButton(
+            self.footer, text="▶ START LISTENER (SYNC PC RGB)",
+            height=54, corner_radius=16,
+            fg_color=COLOR_WHITE, hover_color=COLOR_ACCENT_HOVER,
+            text_color="#000000",
+            font=ctk.CTkFont(family=FONT_FAMILY, size=13, weight="bold"),
+            command=self._toggle_streaming
+        )
+        self.stream_btn.pack(fill="x")
+
+    # ==========================================
+    # CARD FACTORY HELPER
+    # ==========================================
+    def _create_card(self, parent, title, subtitle=None):
+        card = ctk.CTkFrame(
+            parent, fg_color=COLOR_SURFACE,
+            corner_radius=14, border_width=1, border_color=COLOR_BORDER
+        )
+        card.pack(fill="x", padx=12, pady=7)
+
+        header_row = ctk.CTkFrame(card, fg_color="transparent")
+        header_row.pack(fill="x", padx=18, pady=(14, 4))
+
+        title_lbl = ctk.CTkLabel(
+            header_row, text=title,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=10, weight="bold"),
+            text_color=COLOR_TEXT_SECONDARY
+        )
+        title_lbl.pack(anchor="w")
+
+        if subtitle:
+            sub_lbl = ctk.CTkLabel(
+                header_row, text=subtitle,
+                font=ctk.CTkFont(family=FONT_FAMILY, size=9),
+                text_color=COLOR_TEXT_MUTED
+            )
+            sub_lbl.pack(anchor="w", pady=(1, 0))
+
+        body = ctk.CTkFrame(card, fg_color="transparent")
+        body.pack(fill="x", padx=18, pady=(4, 16))
+
         self.last_card = card
+        self.last_card_body = body
+
+    # ==========================================
+    # EVENT HANDLERS & SLIDER BADGES
+    # ==========================================
+    def _on_sens_slider_changed(self, val):
+        self.sens_val_lbl.configure(text=f"{float(val):.2f}x")
+
+    def _on_decay_slider_changed(self, val):
+        self.decay_val_lbl.configure(text=f"{int(float(val) * 100)}%")
+
+    def _on_speed_slider_changed(self, val):
+        self.speed_val_lbl.configure(text=f"{float(val):.2f}x")
+        self._on_fan_config_changed()
 
     def _toggle_advanced(self):
         if self.show_advanced.get():
             self.console.pack_forget()
-            self.adv_btn.configure(text="SHOW ADVANCED LOGS")
+            self.adv_btn.configure(text="▼ SHOW SYSTEM LOGS")
             self.show_advanced.set(False)
         else:
-            self.console.pack(fill="x", padx=20, pady=(0, 20))
-            self.adv_btn.configure(text="HIDE ADVANCED LOGS")
+            self.console.pack(fill="x", padx=12, pady=(0, 16))
+            self.adv_btn.configure(text="▲ HIDE SYSTEM LOGS")
             self.show_advanced.set(True)
 
     def log(self, msg):
@@ -1228,25 +1557,28 @@ class CompanionApp(ctk.CTk):
     def _copy_pc_ip(self):
         self.clipboard_clear()
         self.clipboard_append(self.local_pc_ip)
-        self.copy_ip_btn.configure(text="COPIED!", fg_color="#4CAF50")
-        self.after(1500, lambda: self.copy_ip_btn.configure(text="COPY IP", fg_color=COLOR_BORDER))
+        self.copy_ip_btn.configure(text="COPIED!", fg_color=COLOR_WHITE, text_color="#000000")
+        self.after(1600, lambda: self.copy_ip_btn.configure(text="COPY IP", fg_color=COLOR_SURFACE_HOVER, text_color=COLOR_TEXT_PRIMARY))
 
-    def _on_direction_changed(self):
+    def _on_direction_changed(self, selected_val=None):
+        if selected_val and "Phone → PC" in selected_val:
+            self.direction.set("PHONE_TO_PC")
+        elif selected_val and "PC → Phone" in selected_val:
+            self.direction.set("PC_TO_PHONE")
+
         is_phone_to_pc = (self.direction.get() == "PHONE_TO_PC")
         if is_phone_to_pc:
-            self.pc_ip_frame.pack(fill="x", padx=20, pady=(0, 15))
-            self.conn_switch_frame.pack_forget()
-            self.addr_frame.pack_forget()
+            self.pc_ip_card.pack(fill="x", pady=(0, 4))
+            self.pc_to_phone_frame.pack_forget()
             self.audio_combo.configure(state="disabled")
             if not self.is_streaming:
-                self.stream_btn.configure(text="START LISTENER (SYNC PC RGB)")
+                self.stream_btn.configure(text="▶ START LISTENER (SYNC PC RGB)", fg_color=COLOR_WHITE, text_color="#000000")
         else:
-            self.pc_ip_frame.pack_forget()
-            self.conn_switch_frame.pack(fill="x", padx=20, pady=(5, 10))
-            self.addr_frame.pack(fill="x", padx=20, pady=(0, 20))
+            self.pc_ip_card.pack_forget()
+            self.pc_to_phone_frame.pack(fill="x", pady=(0, 4))
             self.audio_combo.configure(state="normal")
             if not self.is_streaming:
-                self.stream_btn.configure(text="START STREAMING TO PHONE")
+                self.stream_btn.configure(text="▶ START STREAMING TO PHONE", fg_color=COLOR_WHITE, text_color="#000000")
 
     def _refresh_audio_sources(self):
         names = [d["name"] + (" (Default)" if d["is_default"] else "") for d in self.wasapi_devices]
@@ -1274,7 +1606,7 @@ class CompanionApp(ctk.CTk):
     def _open_spectrum_chooser(self):
         color_tuple = colorchooser.askcolor(
             color=self.custom_hex,
-            title="GLYPHIX - Fan ARGB Color Spectrum Chooser"
+            title="GLYPHIX - ARGB Spectrum Chooser"
         )
         if color_tuple and color_tuple[1]:
             hex_code = color_tuple[1].upper()
@@ -1323,10 +1655,11 @@ class CompanionApp(ctk.CTk):
             self.fan_viz_enabled.set(cfg.get("enabled", True))
             self.fan_clockwise.set(cfg.get("clockwise", True))
             self.fan_mode_str.set(cfg.get("mode_str", "Radial VU Meter (Full Ring)"))
-            self.fan_theme_str.set(cfg.get("theme_str", "Classic VU (Green-Yellow-Red)"))
+            self.fan_theme_str.set(cfg.get("theme_str", "Glyph White"))
             self.fan_led_count_str.set(cfg.get("led_count_str", "16 LEDs (Standard)"))
             self.fan_count_str.set(cfg.get("fan_count_str", "1 Fan"))
             self.fan_speed.set(cfg.get("speed", 1.0))
+            self.speed_val_lbl.configure(text=f"{self.fan_speed.get():.2f}x")
             if "custom_hex" in cfg:
                 self.custom_hex = cfg["custom_hex"]
             if "custom_color" in cfg:
@@ -1337,12 +1670,12 @@ class CompanionApp(ctk.CTk):
 
         hub_text = "FAN 1"
         if selected_header and "sync all" not in selected_header.lower() and not selected_header.startswith("No ") and not selected_header.startswith("OpenRGB"):
-            hub_text = selected_header.split()[0][:9]
+            hub_text = selected_header.split()[0][:8]
         if hasattr(self, "fan_hub_text"):
             self.fan_canvas.itemconfig(self.fan_hub_text, text=hub_text)
 
     def _rescan_rgb(self):
-        self.rescan_btn.configure(text="SCANNING...", text_color=COLOR_MUTED)
+        self.rescan_btn.configure(text="SCANNING...", text_color=COLOR_TEXT_MUTED)
         def _scan():
             if not self.use_openrgb.get():
                 self.use_openrgb.set(True)
@@ -1352,7 +1685,7 @@ class CompanionApp(ctk.CTk):
         threading.Thread(target=_scan, daemon=True).start()
 
     def _on_rescan_done(self, headers, connected):
-        self.rescan_btn.configure(text="↻ SCAN RGB", text_color=COLOR_WHITE)
+        self.rescan_btn.configure(text="↻ SCAN RGB", text_color=COLOR_TEXT_PRIMARY)
         if not connected:
             self.log("OpenRGB: Server not found on port 6742. Is OpenRGB running?")
             self.detected_headers = ["No OpenRGB Connected"]
@@ -1364,7 +1697,7 @@ class CompanionApp(ctk.CTk):
     def _save_current_header_config(self):
         hdr = self.current_header.get()
         mode_val = FAN_MODE_DISPLAY.get(self.fan_mode_str.get(), "vu_meter")
-        theme_val = FAN_THEME_DISPLAY.get(self.fan_theme_str.get(), "classic")
+        theme_val = FAN_THEME_DISPLAY.get(self.fan_theme_str.get(), "white")
         ring_size = FAN_LEDS_DISPLAY.get(self.fan_led_count_str.get(), 16)
         num_fans = FAN_COUNT_DISPLAY.get(self.fan_count_str.get(), 1)
         
@@ -1413,15 +1746,18 @@ class CompanionApp(ctk.CTk):
         count = len(headers) - (1 if "sync all" in headers[0].lower() else 0)
         self.log(f"OpenRGB Auto-Detect: Found {count} connected ARGB lighting device(s).")
 
+    # ==========================================
+    # UDP AUTO-DISCOVERY ENGINE
+    # ==========================================
     def _toggle_discovery(self):
         if self.is_discovering:
             self.stop_discovery_event.set()
         else:
             self.is_discovering = True
             self.stop_discovery_event.clear()
-            self.discover_btn.configure(text="CANCEL", fg_color=COLOR_BORDER, text_color=COLOR_TEXT)
-            self.status_pill.configure(text="SEARCHING", text_color=COLOR_ACCENT)
-            self.status_dot.configure(text_color=COLOR_ACCENT)
+            self.discover_btn.configure(text="CANCEL", fg_color=COLOR_BORDER, text_color=COLOR_TEXT_PRIMARY)
+            self.status_pill.configure(text="SEARCHING...", text_color=COLOR_TEXT_PRIMARY)
+            self.status_dot.configure(text_color=COLOR_WHITE)
             threading.Thread(target=self._discovery_worker, daemon=True).start()
 
     def _start_pc_discovery_responder(self):
@@ -1442,8 +1778,9 @@ class CompanionApp(ctk.CTk):
                     if not data: continue
                     msg = data.decode('utf-8', errors='ignore')
                     if "GLYPHIX" in msg or "DISCOVERY" in msg:
-                        sock.sendto(b"GLYPHIX_PC_DISCOVERY_RESPONSE", addr)
-                        self.log(f"Discovery: Sent PC announcement to Phone ({addr[0]})")
+                        resp_msg = f"GLYPHIX_PC_DISCOVERY_RESPONSE:{self.local_pc_ip}".encode('utf-8')
+                        sock.sendto(resp_msg, addr)
+                        self.log(f"Discovery: Sent PC announcement to {addr[0]} (PC IP: {self.local_pc_ip})")
                 except socket.timeout:
                     continue
                 except Exception:
@@ -1455,61 +1792,57 @@ class CompanionApp(ctk.CTk):
             except: pass
 
     def _discovery_worker(self):
-        mode = self.conn_type.get()
         found = None
-        if mode == "BT":
-            self.log("BLE Scan started...")
-            devices = discover_phone_bt()
-            matches = [d for d in devices if d[2]]
-            if matches: found = matches[0][0]
-        else:
-            self.log("Broadcasting UDP discovery...")
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            if hasattr(socket, "SO_REUSEPORT"):
-                try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-                except: pass
-            sock.settimeout(0.3)
-            msg = b"GLYPHIX_DISCOVERY_REQUEST"
-            addrs = get_broadcast_addresses()
-            start = time.time()
-            while time.time() - start < 8 and not self.stop_discovery_event.is_set():
-                try:
-                    for a in addrs:
-                        try: sock.sendto(msg, (a, DISCOVERY_PORT))
-                        except: pass
-                    for _ in range(5):
-                        try:
-                            data, addr = sock.recvfrom(1024)
-                            if b"GLYPHIX" in data:
-                                found = addr[0]
-                                break
-                        except socket.timeout:
+        self.log("Broadcasting UDP discovery...")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+            except: pass
+        sock.settimeout(0.3)
+        msg = b"GLYPHIX_DISCOVERY_REQUEST"
+        addrs = get_broadcast_addresses()
+        start = time.time()
+        while time.time() - start < 8 and not self.stop_discovery_event.is_set():
+            try:
+                for a in addrs:
+                    try: sock.sendto(msg, (a, DISCOVERY_PORT))
+                    except: pass
+                for _ in range(5):
+                    try:
+                        data, addr = sock.recvfrom(1024)
+                        if b"GLYPHIX" in data:
+                            found = addr[0]
                             break
-                        except: pass
-                    if found:
+                    except socket.timeout:
                         break
-                    time.sleep(0.2)
-                except: continue
-            sock.close()
+                    except: pass
+                if found:
+                    break
+                time.sleep(0.2)
+            except: continue
+        sock.close()
         
         self.after(0, self._on_discovery_done, found)
 
     def _on_discovery_done(self, found):
         self.is_discovering = False
-        self.discover_btn.configure(text="DISCOVER", fg_color=COLOR_WHITE, text_color=COLOR_BG)
+        self.discover_btn.configure(text="🔍 DISCOVER", fg_color=COLOR_SURFACE_HOVER, text_color=COLOR_TEXT_PRIMARY)
         if found:
             self.addr_entry.delete(0, "end")
             self.addr_entry.insert(0, found)
-            self.status_pill.configure(text="READY", text_color=COLOR_TEXT)
-            self.status_dot.configure(text_color="#00FF00")
-            self.log(f"Discovery: Found {found}")
+            self.status_pill.configure(text="PHONE FOUND", text_color=COLOR_WHITE)
+            self.status_dot.configure(text_color=COLOR_WHITE)
+            self.log(f"Discovery: Found Nothing Phone at {found}")
         else:
-            self.status_pill.configure(text="IDLE", text_color=COLOR_MUTED)
-            self.status_dot.configure(text_color=COLOR_MUTED)
-            self.log("Discovery: No device found.")
+            self.status_pill.configure(text="STANDBY", text_color=COLOR_TEXT_SECONDARY)
+            self.status_dot.configure(text_color=COLOR_TEXT_MUTED)
+            self.log("Discovery: No Nothing Phone detected on local subnet.")
 
+    # ==========================================
+    # STREAMING & LISTENER WORKERS (UDP)
+    # ==========================================
     def _toggle_streaming(self):
         if self.is_streaming:
             self.stop_stream_event.set()
@@ -1518,17 +1851,16 @@ class CompanionApp(ctk.CTk):
             if is_phone_to_pc:
                 self.is_streaming = True
                 self.stop_stream_event.clear()
-                self.stream_btn.configure(text="STOP LISTENER", fg_color=COLOR_BORDER, text_color=COLOR_TEXT)
-                self.status_pill.configure(text="LISTENING FOR PHONE", text_color=COLOR_ACCENT)
-                self.status_dot.configure(text_color=COLOR_ACCENT)
+                self.stream_btn.configure(text="⏹ STOP LISTENER", fg_color=COLOR_SURFACE_HOVER, text_color=COLOR_TEXT_PRIMARY)
+                self.status_pill.configure(text="LISTENING :12347", text_color=COLOR_WHITE)
+                self.status_dot.configure(text_color=COLOR_WHITE)
                 if self.typing_suppression.get(): self.hook_watcher.start()
                 threading.Thread(target=self._listener_worker, daemon=True).start()
             else:
                 addr = self.addr_entry.get().strip()
                 if not addr:
-                    messagebox.showerror("Error", "Enter Phone IP or MAC address first.")
+                    messagebox.showerror("Error", "Enter Phone IP Address first.")
                     return
-                # Sanitize address if port was included (e.g. 192.168.1.55:12347)
                 port = UDP_PORT
                 if ":" in addr and not addr.count(":") > 1:
                     parts = addr.split(":")
@@ -1546,9 +1878,9 @@ class CompanionApp(ctk.CTk):
 
                 self.is_streaming = True
                 self.stop_stream_event.clear()
-                self.stream_btn.configure(text="STOP STREAMING", fg_color=COLOR_BORDER, text_color=COLOR_TEXT)
-                self.status_pill.configure(text="STREAMING TO PHONE", text_color=COLOR_ACCENT)
-                self.status_dot.configure(text_color=COLOR_ACCENT)
+                self.stream_btn.configure(text="⏹ STOP STREAMING", fg_color=COLOR_SURFACE_HOVER, text_color=COLOR_TEXT_PRIMARY)
+                self.status_pill.configure(text="STREAMING TO PHONE", text_color=COLOR_WHITE)
+                self.status_dot.configure(text_color=COLOR_WHITE)
                 
                 if self.typing_suppression.get(): self.hook_watcher.start()
                 
@@ -1580,6 +1912,9 @@ class CompanionApp(ctk.CTk):
                     except queue.Full:
                         pass
                     packets += 1
+                    self._last_packet_time = time.time()
+                    if packets == 1:
+                        self.after(0, lambda a=addr[0]: self._on_phone_stream_connected(a))
                     now = time.time()
                     if now - last_report >= 2.0:
                         self.log(f"Received {packets} packets from Phone ({addr[0]})")
@@ -1618,23 +1953,9 @@ class CompanionApp(ctk.CTk):
 
         threading.Thread(target=self._viz_worker, args=(actual_rate,), daemon=True).start()
 
-        conn_type = self.conn_type.get()
-        sock = None
-        if conn_type == "BT":
-            for p_port in range(1, 10):
-                try:
-                    s = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
-                    s.settimeout(2.0); s.connect((addr, p_port)); sock = s
-                    break
-                except: continue
-        else:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
-            except: pass
-
-        if not sock:
-            self.after(0, self._on_stream_error, "Connection failed.")
-            stream.close(); p.terminate(); return
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try: sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 256 * 1024)
+        except: pass
 
         interp_indices = None
         if actual_rate != TARGET_RATE:
@@ -1654,8 +1975,8 @@ class CompanionApp(ctk.CTk):
                 else:
                     data = mono.tobytes()
                 
-                if conn_type == "BT": sock.sendall(data)
-                else: sock.sendto(data, (addr, port))
+                self._last_packet_time = time.time()
+                sock.sendto(data, (addr, port))
                 
         except Exception as e: self.log(f"Stream error: {e}")
         finally:
@@ -1681,22 +2002,19 @@ class CompanionApp(ctk.CTk):
                     bin_idx = np.clip(freqs / (actual_rate / n), 0, len(fft) - 1)
                     points = np.interp(bin_idx, np.arange(len(fft)), fft)
                     
-                    # True RMS and peak transient volume calculation
                     rms = float(np.sqrt(np.mean(sf ** 2)))
                     peak_val = float(np.max(np.abs(sf)))
                     sensitivity = self.rgb_sensitivity.get()
                     decay_rate = self.rgb_decay.get()
 
-                    # Scale raw audio level by sensitivity: 75% RMS (body) + 25% transient peak
                     raw_audio_level = float(np.clip((rms * 2.8 * 0.75 + peak_val * 1.5 * 0.25) * sensitivity, 0.0, 1.0))
                     pulse = bass_engine.process(mono, decay=decay_rate) * sensitivity
                     energy = float(np.clip(raw_audio_level * 1.2, 0.0, 1.0))
 
-                    # Send points scaled by sensitivity to top GUI dot-matrix visualizer
                     self.level_queue.put(list(np.clip(points * 15 * sensitivity, 0, 1)))
 
                     fan_mode_val = FAN_MODE_DISPLAY.get(self.fan_mode_str.get(), "vu_meter")
-                    fan_theme_val = FAN_THEME_DISPLAY.get(self.fan_theme_str.get(), "classic")
+                    fan_theme_val = FAN_THEME_DISPLAY.get(self.fan_theme_str.get(), "white")
                     fan_leds_val = FAN_LEDS_DISPLAY.get(self.fan_led_count_str.get(), 16)
                     fan_count_val = FAN_COUNT_DISPLAY.get(self.fan_count_str.get(), 1)
 
@@ -1754,12 +2072,17 @@ class CompanionApp(ctk.CTk):
         messagebox.showerror("Stream Error", err)
         self._on_stream_stopped()
 
+    def _on_phone_stream_connected(self, phone_ip):
+        self.status_pill.configure(text=f"CONNECTED ({phone_ip})", text_color=COLOR_WHITE)
+        self.status_dot.configure(text_color=COLOR_WHITE)
+        self.log(f"Phone stream active from {phone_ip}")
+
     def _on_stream_stopped(self):
         self.is_streaming = False
-        btn_txt = "START LISTENER (SYNC PC RGB)" if self.direction.get() == "PHONE_TO_PC" else "START STREAMING TO PHONE"
-        self.stream_btn.configure(text=btn_txt, fg_color=COLOR_ACCENT, text_color=COLOR_WHITE)
-        self.status_pill.configure(text="DISCONNECTED", text_color=COLOR_MUTED)
-        self.status_dot.configure(text_color=COLOR_MUTED)
+        btn_txt = "▶ START LISTENER (SYNC PC RGB)" if self.direction.get() == "PHONE_TO_PC" else "▶ START STREAMING TO PHONE"
+        self.stream_btn.configure(text=btn_txt, fg_color=COLOR_WHITE, text_color="#000000")
+        self.status_pill.configure(text="STANDBY", text_color=COLOR_TEXT_SECONDARY)
+        self.status_dot.configure(text_color=COLOR_TEXT_MUTED)
         self.level_queue.put([0.0]*64)
         try:
             self.fan_preview_queue.put_nowait({"__all__": [(0, 0, 0)] * 16})
@@ -1767,7 +2090,13 @@ class CompanionApp(ctk.CTk):
             pass
         self.hook_watcher.stop()
 
+    # ==============================================================================
+    # DYNAMIC ANIMATED GUI RENDER & UPDATE LOOP (60 FPS FLUID ENGINE)
+    # ==============================================================================
     def _update_loop(self):
+        self._anim_phase += 0.08
+        now = time.perf_counter()
+
         while not self.log_queue.empty():
             msg = self.log_queue.get_nowait()
             self.console.configure(state="normal")
@@ -1775,22 +2104,71 @@ class CompanionApp(ctk.CTk):
             self.console.see("end")
             self.console.configure(state="disabled")
 
+        # 1. Header Status Capsule Animation
+        if self.is_streaming:
+            pulse_brightness = (math.sin(self._anim_phase * 3.2) * 0.5 + 0.5)
+            glow_val = int(140 + pulse_brightness * 115)
+            glow_col = f"#{glow_val:02x}{glow_val:02x}{glow_val:02x}"
+            self.status_dot.configure(text_color=glow_col)
+            
+            # Dynamic FAB text & wave glyph animation
+            wave_glyphs = [" ▂▃▅▆▇▆▅▃▂ ", "  ▂▃▅▇█▇▅▃ ", "   ▂▃▅███▅▃ ", " ▃▅▇███▇▅▃ "]
+            cur_glyph = wave_glyphs[int(self._anim_phase * 2.5) % len(wave_glyphs)]
+            if self.direction.get() == "PHONE_TO_PC":
+                self.stream_btn.configure(text=f"⏹ STOP LISTENER   [{cur_glyph}]")
+            else:
+                self.stream_btn.configure(text=f"⏹ STOP STREAMING   [{cur_glyph}]")
+        elif self.is_discovering:
+            pulse_brightness = (math.sin(self._anim_phase * 5.0) * 0.5 + 0.5)
+            glow_val = int(160 + pulse_brightness * 95)
+            self.status_dot.configure(text_color=f"#{glow_val:02x}{glow_val:02x}{glow_val:02x}")
+            radar_dots = [".  ", ".. ", "...", " ..", "  ."]
+            radar_str = radar_dots[int(self._anim_phase * 2.0) % len(radar_dots)]
+            self.status_pill.configure(text=f"SEARCHING {radar_str}", text_color=COLOR_WHITE)
+        else:
+            self.status_dot.configure(text_color="#4A5060")
+
+        # 2. Audio Spectrum & Ballistic Peak Physics
         last_points = None
-        while not self.level_queue.empty(): last_points = self.level_queue.get_nowait()
+        while not self.level_queue.empty():
+            last_points = self.level_queue.get_nowait()
         
         num_dots = len(self.spectrum_points)
-        if last_points:
+        is_audio_active = (time.time() - self._last_packet_time < 0.5) and (last_points is not None and max(last_points) > 0.01)
+
+        if is_audio_active and last_points:
             interpolated = np.interp(
                 np.linspace(0, 63, num_dots),
                 np.arange(64),
                 last_points
             )
             for i in range(num_dots):
-                self.spectrum_points[i] = max(self.spectrum_points[i] * 0.8, interpolated[i])
+                target_val = float(interpolated[i])
+                if target_val > self.spectrum_points[i]:
+                    self.spectrum_points[i] = self.spectrum_points[i] * 0.35 + target_val * 0.65
+                else:
+                    self.spectrum_points[i] = max(0.0, self.spectrum_points[i] * 0.82)
+
+                val = self.spectrum_points[i]
+                if i < len(self.viz_peaks):
+                    if val >= self.viz_peaks[i]:
+                        self.viz_peaks[i] = val
+                        self.viz_peak_holds[i] = now + 0.30
+                    elif now > self.viz_peak_holds[i]:
+                        self.viz_peaks[i] = max(0.0, self.viz_peaks[i] - 1.6 * 0.016)
         else:
-            for i in range(num_dots): self.spectrum_points[i] *= 0.8
+            for i in range(num_dots):
+                wave = (math.sin(self._anim_phase * 1.2 + i * 0.22) * 0.5 + 0.5) * 0.16 + 0.03
+                self.spectrum_points[i] = self.spectrum_points[i] * 0.88 + wave * 0.12
+                if i < len(self.viz_peaks):
+                    self.viz_peaks[i] = max(0.0, self.viz_peaks[i] * 0.90)
 
         self._draw_viz()
+
+        # 3. Case Fan Preview Animation
+        speed_mult = self.fan_speed.get()
+        dir_mult = 1.0 if self.fan_clockwise.get() else -1.0
+        self.fan_preview_angle = (self.fan_preview_angle + dir_mult * speed_mult * 0.06) % (2.0 * math.pi)
 
         last_fan_preview = None
         while not self.fan_preview_queue.empty():
@@ -1815,20 +2193,44 @@ class CompanionApp(ctk.CTk):
                     self._draw_fan_preview(chosen)
             elif isinstance(last_fan_preview, list):
                 self._draw_fan_preview(last_fan_preview)
+        elif not self.is_streaming:
+            idle_ring = []
+            num_leds = 16
+            for i in range(num_leds):
+                phi = (2.0 * math.pi * i) / num_leds
+                diff = (self.fan_preview_angle - phi) % (2.0 * math.pi) if self.fan_clockwise.get() else (phi - self.fan_preview_angle) % (2.0 * math.pi)
+                tail_len = math.pi * 1.4
+                brightness = (1.0 - diff / tail_len) ** 1.8 if diff <= tail_len else 0.0
+                cr, cg, cb = self.custom_rgb
+                idle_ring.append((int(cr * brightness * 0.8), int(cg * brightness * 0.8), int(cb * brightness * 0.8)))
+            self._draw_fan_preview(idle_ring)
 
-        self.after(30, self._update_loop)
+        self.after(16, self._update_loop)
 
+    # ==========================================
+    # RADIAL FAN ARGB CANVAS PREVIEW
+    # ==========================================
     def _init_fan_preview_canvas(self):
         self.fan_preview_dots = []
         self._fan_preview_cache = []
-        w, h = 130, 130
+        w, h = 142, 142
         cx, cy = w / 2.0, h / 2.0
         
-        self.fan_canvas.create_oval(cx - 24, cy - 24, cx + 24, cy + 24, fill="#161616", outline=COLOR_BORDER, width=1)
-        self.fan_hub_text = self.fan_canvas.create_text(cx, cy, text="FAN 1", fill=COLOR_MUTED, font=ctk.CTkFont(family=FONT_MAIN, size=8, weight="bold"))
+        self.fan_canvas.create_oval(cx - 58, cy - 58, cx + 58, cy + 58, fill="#0C0D10", outline="#22252E", width=2)
         
-        r_ring = 46.0
-        dot_radius = 4.5
+        # Center Pulse Shockwave Ring
+        self.fan_ripple_ring = self.fan_canvas.create_oval(cx - 24, cy - 24, cx + 24, cy + 24, fill="", outline="#343946", width=1.5)
+        
+        # Center Hub Disc
+        self.fan_hub_disc = self.fan_canvas.create_oval(cx - 24, cy - 24, cx + 24, cy + 24, fill="#16181F", outline="#2B2F3B", width=1.5)
+        
+        self.fan_hub_text = self.fan_canvas.create_text(
+            cx, cy, text="FAN 1", fill=COLOR_TEXT_SECONDARY,
+            font=ctk.CTkFont(family=FONT_FAMILY, size=8, weight="bold")
+        )
+        
+        r_ring = 42.0
+        dot_radius = 4.8
         num_dots = 16
         for i in range(num_dots):
             angle = (2.0 * math.pi * i) / num_dots - (math.pi / 2.0)
@@ -1837,10 +2239,10 @@ class CompanionApp(ctk.CTk):
             dot = self.fan_canvas.create_oval(
                 x - dot_radius, y - dot_radius,
                 x + dot_radius, y + dot_radius,
-                fill=COLOR_BORDER, outline=""
+                fill="#1E2028", outline="#14151C", width=1
             )
             self.fan_preview_dots.append(dot)
-            self._fan_preview_cache.append(COLOR_BORDER)
+            self._fan_preview_cache.append("#1E2028")
 
     def _draw_fan_preview(self, colors):
         if not self.fan_preview_dots:
@@ -1848,9 +2250,9 @@ class CompanionApp(ctk.CTk):
         num_dots = len(self.fan_preview_dots)
         if not colors or not self.fan_viz_enabled.get():
             for i, dot in enumerate(self.fan_preview_dots):
-                if self._fan_preview_cache[i] != COLOR_BORDER:
-                    self.fan_canvas.itemconfig(dot, fill=COLOR_BORDER)
-                    self._fan_preview_cache[i] = COLOR_BORDER
+                if self._fan_preview_cache[i] != "#1E2028":
+                    self.fan_canvas.itemconfig(dot, fill="#1E2028")
+                    self._fan_preview_cache[i] = "#1E2028"
             return
             
         if len(colors) == num_dots:
@@ -1865,6 +2267,9 @@ class CompanionApp(ctk.CTk):
                 self.fan_canvas.itemconfig(dot, fill=hex_c)
                 self._fan_preview_cache[i] = hex_c
 
+    # ==========================================
+    # SPECTRUM VISUALIZER CANVAS (MONOCHROME/SILVER/BALLISTICS)
+    # ==========================================
     def _init_viz_dots(self, count=64):
         if self.viz_dots:
             for col in self.viz_dots:
@@ -1873,10 +2278,14 @@ class CompanionApp(ctk.CTk):
         
         self.viz_dots = []
         self.spectrum_points = [0.0] * count
+        self.viz_peaks = [0.0] * count
+        self.viz_peak_holds = [0.0] * count
+        self._viz_cache = [(-1, -1)] * count
+
         for i in range(count):
             col_dots = []
             for d in range(8):
-                dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill=COLOR_BORDER, outline="")
+                dot = self.viz_canvas.create_oval(0, 0, 0, 0, fill="#15171E", outline="")
                 col_dots.append(dot)
             self.viz_dots.append(col_dots)
 
@@ -1885,42 +2294,70 @@ class CompanionApp(ctk.CTk):
         h = self.viz_canvas.winfo_height()
         if w <= 1: return
         
-        target_spacing = 12
+        target_spacing = 13
         new_count = max(8, w // target_spacing)
         
         if new_count != len(self.viz_dots):
             self._init_viz_dots(new_count)
-            self._viz_cache = [-1] * new_count
             
         dot_spacing = w / new_count
-        dot_size = max(4, dot_spacing - 4)
+        dot_size = max(4.0, dot_spacing - 4.5)
         
         for i in range(new_count):
-            x = i * dot_spacing + dot_spacing/2
+            x = i * dot_spacing + dot_spacing / 2.0
             for d in range(8):
-                dy = h - (d * 10 + 15)
+                dy = h - (d * 9.5 + 12)
                 dot = self.viz_dots[i][d]
-                self.viz_canvas.coords(dot, x-dot_size/2, dy-dot_size/2, x+dot_size/2, dy+dot_size/2)
+                self.viz_canvas.coords(dot, x - dot_size/2.0, dy - dot_size/2.0, x + dot_size/2.0, dy + dot_size/2.0)
 
     def _draw_viz(self):
         if not self.viz_dots: return
         
         num_cols = len(self.viz_dots)
         if len(self._viz_cache) != num_cols:
-            self._viz_cache = [-1] * num_cols
+            self._viz_cache = [(-1, -1)] * num_cols
             
+        gradient_colors = [
+            "#22262E",  # Row 0: Slate floor
+            "#323844",  # Row 1
+            "#444C5C",  # Row 2
+            "#5A657A",  # Row 3
+            "#7B89A0",  # Row 4: Silver slate
+            "#A2B0C7",  # Row 5: Light silver
+            "#CBD5E1",  # Row 6: Bright silver
+            "#FFFFFF"   # Row 7: Pure glyph white
+        ]
+
         for i in range(num_cols):
             val = self.spectrum_points[i]
             dots_to_draw = int(val * 8)
+            peak_idx = min(7, int(self.viz_peaks[i] * 7.99)) if i < len(self.viz_peaks) else 0
             
-            if dots_to_draw != self._viz_cache[i]:
+            cache_state = (dots_to_draw, peak_idx)
+            if cache_state != self._viz_cache[i]:
                 for d in range(8):
-                    color = COLOR_ACCENT if d < dots_to_draw else COLOR_BORDER
+                    if d < dots_to_draw:
+                        color = gradient_colors[d]
+                    elif d == peak_idx and peak_idx > 0 and peak_idx >= dots_to_draw:
+                        color = "#FFFFFF"  # Ballistic peak indicator
+                    else:
+                        color = "#15171E"
                     dot = self.viz_dots[i][d]
                     self.viz_canvas.itemconfig(dot, fill=color)
-                self._viz_cache[i] = dots_to_draw
+                self._viz_cache[i] = cache_state
 
 if __name__ == "__main__":
-    ctk.set_appearance_mode("Dark")
-    app = CompanionApp()
-    app.mainloop()
+    parser = argparse.ArgumentParser(description="GLYPHIX Desktop Companion")
+    parser.add_argument("--material", "--kivymd", action="store_true", help="Launch the KivyMD Material UI Desktop Companion")
+    args, _ = parser.parse_known_args()
+
+    if args.material:
+        try:
+            from desktop_companion_kivymd import GlyphixMaterialApp
+            GlyphixMaterialApp().run()
+        except ImportError:
+            subprocess.run(["py", "-3.12", "desktop_companion_kivymd.py"])
+    else:
+        ctk.set_appearance_mode("Dark")
+        app = CompanionApp()
+        app.mainloop()

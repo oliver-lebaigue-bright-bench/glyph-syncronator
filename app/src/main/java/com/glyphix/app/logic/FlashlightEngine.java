@@ -67,6 +67,7 @@ public final class FlashlightEngine {
             return 1;
         }
 
+        int maxStrength = 1;
         try {
             for (String id : manager.getCameraIdList()) {
                 CameraCharacteristics chars = manager.getCameraCharacteristics(id);
@@ -75,13 +76,15 @@ public final class FlashlightEngine {
                 }
 
                 int max = readTorchStrengthLevel(chars);
-                return Math.max(1, max);
+                if (max > maxStrength) {
+                    maxStrength = max;
+                }
             }
         } catch (CameraAccessException e) {
             Log.w(TAG, "Failed to detect torch intensity levels", e);
         }
 
-        return 1;
+        return Math.max(1, maxStrength);
     }
 
     public synchronized int getTorchIntensityLevels() {
@@ -153,9 +156,11 @@ public final class FlashlightEngine {
             return false;
         }
         Boolean hasFlash = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+        if (!Boolean.TRUE.equals(hasFlash)) {
+            return false;
+        }
         Integer facing = chars.get(CameraCharacteristics.LENS_FACING);
-        return Boolean.TRUE.equals(hasFlash) && facing != null &&
-                (facing == CameraCharacteristics.LENS_FACING_BACK || facing == CameraCharacteristics.LENS_FACING_EXTERNAL);
+        return facing == null || facing == CameraCharacteristics.LENS_FACING_BACK || facing == CameraCharacteristics.LENS_FACING_EXTERNAL;
     }
 
     @SuppressWarnings("unchecked")
@@ -164,8 +169,6 @@ public final class FlashlightEngine {
             return 1;
         }
 
-        // Use reflection to support FLASH_INFO_STRENGTH_MAX_LEVEL (API 33+)
-        // even when compiling against older SDKs.
         try {
             Object field = CameraCharacteristics.class.getField("FLASH_INFO_STRENGTH_MAX_LEVEL").get(null);
             if (field instanceof CameraCharacteristics.Key) {
@@ -174,6 +177,15 @@ public final class FlashlightEngine {
                 if (max != null && max > 0) {
                     return max;
                 }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            CameraCharacteristics.Key<Integer> key = new CameraCharacteristics.Key<>("android.flash.info.strengthMaximumLevel", Integer.class);
+            Integer max = chars.get(key);
+            if (max != null && max > 0) {
+                return max;
             }
         } catch (Throwable ignored) {
         }

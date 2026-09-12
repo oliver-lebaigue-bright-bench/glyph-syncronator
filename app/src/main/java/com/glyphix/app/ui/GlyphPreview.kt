@@ -230,12 +230,7 @@ fun GlyphPreviewContent(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer {
-            val viz = vizStateProvider()
-            val maxA = viz.maxOrNull() ?: 0f
-            scaleX = 1f + (maxA * 0.015f)
-            scaleY = 1f + (maxA * 0.015f)
-        }) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val scale = min(size.width / viewBoxW, size.height / viewBoxH)
             val dx = (size.width - viewBoxW * scale) / 2
             val dy = (size.height - viewBoxH * scale) / 2

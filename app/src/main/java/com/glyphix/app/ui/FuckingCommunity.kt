@@ -21,34 +21,6 @@ internal fun CommunityOverlays(
     val showAnnouncementModal by viewModel.showAnnouncementModal.collectAsStateWithLifecycle()
     val showAnnouncementEditor by viewModel.showAnnouncementEditor.collectAsStateWithLifecycle()
 
-    if (isShowingCommunity) {
-        val userId by viewModel.userId.collectAsStateWithLifecycle()
-        val presets by viewModel.communityRepository.getPresets().collectAsStateWithLifecycle(initialValue = null)
-        val scope = androidx.compose.runtime.rememberCoroutineScope()
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            GlyphixBackground()
-            CommunityPresetsScreen(
-                presets = presets,
-                currentUserId = userId,
-                error = null,
-                onDownload = { preset ->
-                    scope.launch {
-                        try {
-                            viewModel.communityRepository.incrementDownloadCount(preset.id)
-                        } catch (e: Exception) {
-                            // Log or show error
-                        }
-                    }
-                    // Add logic to actually apply/download the preset
-                },
-                onDelete = { preset -> viewModel.deleteCustomPreset(preset.id) },
-                onShowLeaderboard = { viewModel.showLeaderboard() },
-                onDismiss = { viewModel.hideCommunity() }
-            )
-        }
-    }
-
     val appUpdateStatus by viewModel.appUpdateStatus.collectAsStateWithLifecycle()
     val hasClearedNews by viewModel.hasClearedNews.collectAsStateWithLifecycle()
 

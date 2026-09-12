@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Solid
@@ -417,7 +418,7 @@ internal fun GlyphsScreen(
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
+                                            .padding(horizontal = 8.dp, vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Crossfade(
@@ -436,16 +437,44 @@ internal fun GlyphsScreen(
 
                                         if (selectedInfo?.description?.startsWith("Custom:") == true) {
                                             IconButton(
+                                                onClick = { viewModel.showEditor(selectedInfo.key) },
+                                                modifier = Modifier.padding(start = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    FontAwesomeIcons.Solid.Edit,
+                                                    contentDescription = "Edit Custom Preset",
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            IconButton(
                                                 onClick = { showDeleteConfirm = selectedInfo.key },
-                                                modifier = Modifier.padding(start = 8.dp)
+                                                modifier = Modifier.padding(start = 4.dp)
                                             ) {
                                                 Icon(
                                                     FontAwesomeIcons.Solid.Trash,
                                                     contentDescription = "Delete Local Preset",
-                                                    modifier = Modifier.size(18.dp),
+                                                    modifier = Modifier.size(16.dp),
                                                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                                 )
                                             }
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        FilledTonalButton(
+                                            onClick = { viewModel.showEditor() },
+                                            shape = RoundedCornerShape(12.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(FontAwesomeIcons.Solid.Plus, contentDescription = null, modifier = Modifier.size(12.dp))
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Custom Preset Maker", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                         }
                                     }
                                 } else {
@@ -478,18 +507,6 @@ internal fun GlyphsScreen(
                                         }
                                     }
                                 }
-
-                                ExpressiveSplitButton(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 16.dp),
-                                    primaryText = "Explore Community",
-                                    primaryIcon = FontAwesomeIcons.Solid.Globe,
-                                    onPrimaryClick = { viewModel.showCommunity() },
-                                    secondaryText = "Create",
-                                    secondaryIcon = FontAwesomeIcons.Solid.Plus,
-                                    onSecondaryClick = { viewModel.showEditor() }
-                                )
                             }
                         }
                     }

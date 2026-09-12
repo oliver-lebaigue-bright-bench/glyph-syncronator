@@ -111,7 +111,7 @@ class MainActivity : ComponentActivity() {
 
             // Restore PC Stream settings
             service?.let { s ->
-                viewModel.setPcStreamingActive(s.pcStreamEnabled)
+                viewModel.setPcStreamingActive(s.pcStreamEnabled && s.isVisualizerRunning)
                 val savedIp = s.pcStreamTargetIp
                 if (!savedIp.isNullOrEmpty()) {
                     viewModel.setPcCompanionIp(savedIp)
@@ -278,13 +278,8 @@ class MainActivity : ComponentActivity() {
                             }
 
                             // Collect network diagnostic if applicable
-                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK || s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.NETWORK) {
                                 viewModel.setNetworkPacketsReceived(s.networkPacketsReceivedFlow().value)
-                            }
-
-                            if (s.getCaptureSource() == AudioCaptureService.CaptureSource.BLUETOOTH) {
-                                viewModel.setBluetoothDeviceName(s.bluetoothDeviceNameFlow().value)
-                                viewModel.setBluetoothDeviceAddress(s.bluetoothDeviceAddressFlow().value)
                             }
 
                             viewModel.setPcPacketsSent(AudioCaptureService.sPcPacketsSent.value)
@@ -391,7 +386,6 @@ class MainActivity : ComponentActivity() {
                 AudioCaptureService.CaptureSource.VIZUALIZER -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.SPOTIFY -> s.startVisualizer()
                 AudioCaptureService.CaptureSource.NETWORK -> s.startVisualizer()
-                AudioCaptureService.CaptureSource.BLUETOOTH -> s.startVisualizer()
             }
         }
     }
@@ -754,8 +748,6 @@ internal fun GlyphixApp(
                         val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
                         val spotifyPlaybackState by viewModel.spotifyRepository.playbackState.collectAsStateWithLifecycle()
                         val networkPacketsReceived by viewModel.networkPacketsReceived.collectAsStateWithLifecycle()
-                        val bluetoothDeviceName by viewModel.bluetoothDeviceName.collectAsStateWithLifecycle()
-                        val bluetoothDeviceAddress by viewModel.bluetoothDeviceAddress.collectAsStateWithLifecycle()
                         val pcPacketsSent by viewModel.pcPacketsSent.collectAsStateWithLifecycle()
                         val desktopSyncDirection by viewModel.desktopSyncDirection.collectAsStateWithLifecycle()
                         val pcCompanionIp by viewModel.pcCompanionIp.collectAsStateWithLifecycle()
@@ -781,8 +773,6 @@ internal fun GlyphixApp(
                             captureSource = captureSource,
                             onCaptureSourceChanged = { onSwitchCaptureSource(it) },
                             networkPacketsReceived = networkPacketsReceived,
-                            bluetoothDeviceName = bluetoothDeviceName,
-                            bluetoothDeviceAddress = bluetoothDeviceAddress,
                             pcPacketsSent = pcPacketsSent,
                             desktopSyncDirection = desktopSyncDirection,
                             pcCompanionIp = pcCompanionIp,
@@ -799,10 +789,15 @@ internal fun GlyphixApp(
                                 MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
                             },
                             onDiscoverPc = {
+                                Toast.makeText(context, "Searching for PC Companion...", Toast.LENGTH_SHORT).show()
                                 MainActivity.serviceStatic?.discoverPcCompanion { ip ->
-                                    viewModel.setPcCompanionIp(ip)
-                                    MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
-                                    Toast.makeText(context, "Found PC Companion at $ip", Toast.LENGTH_SHORT).show()
+                                    if (!ip.isNullOrBlank()) {
+                                        viewModel.setPcCompanionIp(ip)
+                                        MainActivity.serviceStatic?.setPcStreamTargetIp(ip)
+                                        Toast.makeText(context, "Found PC Companion at $ip", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "No PC Companion found. Ensure it's running on the same Wi-Fi.", Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             },
                             onSyncDirectionChanged = { direction ->
@@ -810,7 +805,7 @@ internal fun GlyphixApp(
                                 if (direction == "PC_TO_PHONE") {
                                     onSwitchCaptureSource(AudioCaptureService.CaptureSource.NETWORK)
                                 } else {
-                                    if (captureSource == AudioCaptureService.CaptureSource.NETWORK || captureSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
+                                    if (captureSource == AudioCaptureService.CaptureSource.NETWORK) {
                                         onSwitchCaptureSource(AudioCaptureService.CaptureSource.INTERNAL)
                                     }
                                 }

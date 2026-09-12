@@ -252,7 +252,7 @@ public class EdgeVisualizerView extends View {
         }
         // BR Arc
         if (dist < horizLen + 2 * arcLen + vertLen) {
-            float t = (dist - (2 * horizLen + arcLen + vertLen)) / arcLen;
+            float t = (dist - (horizLen + arcLen + vertLen)) / arcLen;
             return mSmoothedRight[mBarCountVert - 1] * (1 - t) + mSmoothedBottom[0] * t;
         }
         // Bottom Edge

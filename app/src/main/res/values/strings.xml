@@ -76,7 +76,7 @@
     <string name="flashlight_beat_sensitivity_label">Beat Sensitivity: %.1f</string>
     <string name="flashlight_beat_sensitivity_desc">Higher values ignore weaker transients.</string>
     <string name="flashlight_speed_label">Speed: %.0f ms</string>
-    <string name="flashlight_speed_desc">Lower values flash faster. 40 ms is the fastest supported limit.</string>
+    <string name="flashlight_speed_desc">Lower values flash faster. 20 ms is the fastest supported limit.</string>
     <string name="flashlight_monitor_label">Flashlight Monitor</string>
 
     <string name="experimental_features">Experimental Features</string>

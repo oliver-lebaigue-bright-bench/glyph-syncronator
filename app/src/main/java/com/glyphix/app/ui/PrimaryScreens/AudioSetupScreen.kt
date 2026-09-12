@@ -25,6 +25,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,14 +102,12 @@ import compose.icons.FontAwesomeIcons
 import compose.icons.fontawesomeicons.Brands
 import compose.icons.fontawesomeicons.Solid
 import compose.icons.fontawesomeicons.brands.Android
-import compose.icons.fontawesomeicons.brands.Bluetooth
 import compose.icons.fontawesomeicons.solid.*
 import compose.icons.fontawesomeicons.solid.NetworkWired
 import androidx.core.content.ContextCompat
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.outlined.Bluetooth
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -150,8 +149,6 @@ fun AudioScreen(
     captureSource: AudioCaptureService.CaptureSource = AudioCaptureService.CaptureSource.INTERNAL,
     onCaptureSourceChanged: (AudioCaptureService.CaptureSource) -> Unit = {},
     networkPacketsReceived: Int = 0,
-    bluetoothDeviceName: String = "",
-    bluetoothDeviceAddress: String = "",
     pcPacketsSent: Int = 0,
     desktopSyncDirection: String = "PHONE_TO_PC",
     pcCompanionIp: String = "",
@@ -243,6 +240,19 @@ fun AudioScreen(
         }
     }
 
+    var companionCardDismissed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(captureSource) {
+        if (captureSource == AudioCaptureService.CaptureSource.NETWORK) {
+            companionCardDismissed = false
+        }
+    }
+
+    val showCompanionCard = !companionCardDismissed && (
+        captureSource == AudioCaptureService.CaptureSource.NETWORK ||
+        (isPcStreamingActive && isRunning)
+    )
+
     StaggeredEntranceColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -250,7 +260,7 @@ fun AudioScreen(
             .padding(horizontal = LocalAppSpacing.current.edge),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // Inbuilt Spotify Control Panel (Displayed above everything when Spotify is active input)
+        // Inbuilt Spotify Control Panel (Displayed when Spotify Player input is selected)
         if (captureSource == AudioCaptureService.CaptureSource.SPOTIFY) {
             AnimatedItem {
                 GlyphixSpotifyControlPanel(
@@ -266,29 +276,13 @@ fun AudioScreen(
             }
         }
 
-        // Desktop Companion Status Panel (Displayed when Desktop Companion is active or PC streaming is enabled)
-        var companionCardDismissed by remember { mutableStateOf(false) }
-
-        LaunchedEffect(captureSource) {
-            if (captureSource == AudioCaptureService.CaptureSource.NETWORK || captureSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
-                companionCardDismissed = false
-            }
-        }
-
-        val showCompanionCard = !companionCardDismissed && (
-            captureSource == AudioCaptureService.CaptureSource.NETWORK ||
-            captureSource == AudioCaptureService.CaptureSource.BLUETOOTH ||
-            isPcStreamingActive
-        )
-
+        // Desktop Companion Status Panel (Displayed when Desktop Companion input is selected or streaming to PC)
         if (showCompanionCard) {
             AnimatedItem {
                 DesktopCompanionStatusCard(
                     captureSource = captureSource,
                     isRunning = isRunning,
                     networkPacketsReceived = networkPacketsReceived,
-                    bluetoothDeviceName = bluetoothDeviceName,
-                    bluetoothDeviceAddress = bluetoothDeviceAddress,
                     desktopSyncDirection = desktopSyncDirection,
                     pcPacketsSent = pcPacketsSent,
                     pcCompanionIp = pcCompanionIp,
@@ -334,7 +328,7 @@ fun AudioScreen(
                                 color = mockupTextColor()
                             )
                             Text(
-                                text = "Tap the Play button below to select capture source and start sync.",
+                                text = "Tap the Waveform button below to select capture source and start sync.",
                                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                                 color = mockupSubtextColor()
                             )
@@ -564,7 +558,7 @@ fun AudioScreen(
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Crossfade(
@@ -583,16 +577,44 @@ fun AudioScreen(
 
                                     if (selectedInfo?.description?.startsWith("Custom:") == true) {
                                         IconButton(
+                                            onClick = { viewModel.showEditor(selectedInfo.key) },
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        ) {
+                                            Icon(
+                                                FontAwesomeIcons.Solid.Edit,
+                                                contentDescription = "Edit Custom Preset",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        IconButton(
                                             onClick = { viewModel.deleteCustomPreset(selectedInfo.key) },
-                                            modifier = Modifier.padding(start = 8.dp)
+                                            modifier = Modifier.padding(start = 4.dp)
                                         ) {
                                             Icon(
                                                 FontAwesomeIcons.Solid.Trash,
                                                 contentDescription = "Delete Local Preset",
-                                                modifier = Modifier.size(18.dp),
+                                                modifier = Modifier.size(16.dp),
                                                 tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
                                             )
                                         }
+                                    }
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    FilledTonalButton(
+                                        onClick = { viewModel.showEditor() },
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(FontAwesomeIcons.Solid.Plus, contentDescription = null, modifier = Modifier.size(12.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("Custom Preset Maker", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             } else {
@@ -609,18 +631,6 @@ fun AudioScreen(
                                     )
                                 }
                             }
-
-                            ExpressiveSplitButton(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                primaryText = "Explore Community",
-                                primaryIcon = FontAwesomeIcons.Solid.Globe,
-                                onPrimaryClick = { viewModel.showCommunity() },
-                                secondaryText = "Create",
-                                secondaryIcon = FontAwesomeIcons.Solid.Plus,
-                                onSecondaryClick = { viewModel.showEditor() }
-                            )
                         }
                     }
                 }
@@ -658,8 +668,6 @@ fun AudioScreen(
 fun CaptureSourceCard(
     selectedSource: AudioCaptureService.CaptureSource,
     networkPacketsReceived: Int = 0,
-    bluetoothDeviceName: String = "",
-    bluetoothDeviceAddress: String = "",
     isRunning: Boolean = false,
     onToggleVisualizer: () -> Unit = {},
     onSourceSelected: (AudioCaptureService.CaptureSource) -> Unit
@@ -692,11 +700,6 @@ fun CaptureSourceCard(
                 AudioCaptureService.CaptureSource.NETWORK,
                 "Desktop Companion (UDP)",
                 FontAwesomeIcons.Solid.NetworkWired
-            ),
-            Triple(
-                AudioCaptureService.CaptureSource.BLUETOOTH,
-                "Desktop Companion (BT)",
-                FontAwesomeIcons.Brands.Bluetooth
             )
         )
 
@@ -805,85 +808,7 @@ fun CaptureSourceCard(
             }
         }
 
-        if (selectedSource == AudioCaptureService.CaptureSource.BLUETOOTH) {
-            Spacer(modifier = Modifier.height(14.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(mockupAccentColor().copy(alpha = 0.12f))
-                    .border(BorderStroke(1.dp, mockupAccentColor().copy(alpha = 0.35f)), RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(if (isRunning) Color(0xFF2196F3) else Color(0xFFFFA000))
-                    )
-                    Text(
-                        text = if (isRunning) "BLUETOOTH LISTENER ACTIVE" else "BLUETOOTH READY",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        ),
-                        color = if (isRunning) Color(0xFF2196F3) else Color(0xFFFFA000)
-                    )
-                }
 
-                if (bluetoothDeviceName.isNotEmpty()) {
-                    Text(
-                        text = "Device: $bluetoothDeviceName",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = mockupTextColor()
-                    )
-                    if (bluetoothDeviceAddress.isNotEmpty()) {
-                        Text(
-                            text = "MAC: $bluetoothDeviceAddress",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = mockupSubtextColor()
-                        )
-                    }
-                }
-
-                Text(
-                    text = "Pair your PC and run companion with --bt (UUID: ...7e45)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = mockupSubtextColor(),
-                    textAlign = TextAlign.Center
-                )
-
-                if (networkPacketsReceived > 0) {
-                    Text(
-                        text = "Data link established • Packets: $networkPacketsReceived",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = mockupAccentColor()
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Button(
-                    onClick = onToggleVisualizer,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isRunning) MaterialTheme.colorScheme.error else mockupAccentColor()
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(44.dp)
-                ) {
-                    Text(
-                        text = if (isRunning) "Stop Bluetooth" else "Start Bluetooth",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
 
         if (selectedSource == AudioCaptureService.CaptureSource.VIZUALIZER) {
             Spacer(modifier = Modifier.height(12.dp))
@@ -1683,8 +1608,6 @@ fun DesktopCompanionStatusCard(
     captureSource: AudioCaptureService.CaptureSource,
     isRunning: Boolean,
     networkPacketsReceived: Int,
-    bluetoothDeviceName: String,
-    bluetoothDeviceAddress: String,
     desktopSyncDirection: String = "PHONE_TO_PC",
     pcPacketsSent: Int = 0,
     pcCompanionIp: String = "",
@@ -1727,10 +1650,8 @@ fun DesktopCompanionStatusCard(
                         Icon(
                             imageVector = if (desktopSyncDirection == "PHONE_TO_PC")
                                 Icons.Outlined.Devices
-                            else if (captureSource == AudioCaptureService.CaptureSource.NETWORK)
-                                Icons.Outlined.Wifi
                             else
-                                Icons.Outlined.Bluetooth,
+                                Icons.Outlined.Wifi,
                             contentDescription = null,
                             tint = mockupAccentColor(),
                             modifier = Modifier.size(18.dp)
@@ -1740,10 +1661,8 @@ fun DesktopCompanionStatusCard(
                         Text(
                             text = if (desktopSyncDirection == "PHONE_TO_PC")
                                 "Desktop Sync (OpenRGB)"
-                            else if (captureSource == AudioCaptureService.CaptureSource.NETWORK)
-                                "Desktop Companion (UDP)"
                             else
-                                "Desktop Companion (BT)",
+                                "Desktop Companion (UDP)",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
@@ -2009,120 +1928,83 @@ fun DesktopCompanionStatusCard(
                 }
             } else {
                 // PC TO PHONE MODE UI
-                if (captureSource == AudioCaptureService.CaptureSource.NETWORK) {
-                    // Connection Info Card
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        modifier = Modifier.fillMaxWidth()
+                // Connection Info Card
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(
-                                    text = "PHONE IP & PORT",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 10.sp,
-                                        letterSpacing = 0.8.sp
-                                    ),
-                                    color = mockupSubtextColor()
-                                )
-                                Text(
-                                    text = "$ip:12347",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    ),
-                                    color = mockupTextColor()
-                                )
-                            }
-
-                            IconButton(
-                                onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    clipboardManager.setText(AnnotatedString(ip))
-                                    copied = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                                    contentDescription = "Copy IP",
-                                    tint = if (copied) Color(0xFF4CAF50) else mockupAccentColor(),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    if (networkPacketsReceived > 0) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.GraphicEq,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(16.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "PHONE IP & PORT",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 10.sp,
+                                    letterSpacing = 0.8.sp
+                                ),
+                                color = mockupSubtextColor()
                             )
                             Text(
-                                text = "Receiving audio stream ($networkPacketsReceived packets)",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                text = "$ip:12347",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
                                 ),
-                                color = Color(0xFF4CAF50)
+                                color = mockupTextColor()
                             )
                         }
-                    } else {
+
+                        IconButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                clipboardManager.setText(AnnotatedString(ip))
+                                copied = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                                contentDescription = "Copy IP",
+                                tint = if (copied) Color(0xFF4CAF50) else mockupAccentColor(),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (networkPacketsReceived > 0) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.GraphicEq,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(16.dp)
+                        )
                         Text(
-                            text = "Enter $ip in the Desktop Companion on your PC (in 'PC → Phone' mode), or click DISCOVER to connect automatically.",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                            color = mockupSubtextColor()
+                            text = "Receiving audio stream ($networkPacketsReceived packets)",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = Color(0xFF4CAF50)
                         )
                     }
                 } else {
-                    // Bluetooth Info
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        if (bluetoothDeviceName.isNotEmpty()) {
-                            Text(
-                                text = "Connected Device: $bluetoothDeviceName",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = mockupTextColor()
-                            )
-                            if (bluetoothDeviceAddress.isNotEmpty()) {
-                                Text(
-                                    text = "MAC: $bluetoothDeviceAddress",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = mockupSubtextColor()
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = "Pair your Nothing Phone with your PC in Windows Bluetooth settings, then run the companion with Bluetooth mode.",
-                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                                color = mockupSubtextColor()
-                            )
-                        }
-
-                        if (networkPacketsReceived > 0) {
-                            Text(
-                                text = "Receiving audio stream ($networkPacketsReceived packets)",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                color = Color(0xFF4CAF50)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "Enter $ip in the Desktop Companion on your PC (in 'PC → Phone' mode), or click DISCOVER to connect automatically.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = mockupSubtextColor()
+                    )
                 }
             }
         }

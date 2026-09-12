@@ -541,23 +541,44 @@ fun FloatingBottomBar(
             label = "fabRotation"
         )
 
-        val fabBg = when {
+        val targetFabBg = when {
             isRunning -> MaterialTheme.colorScheme.error // Stop is Red
             isFabMenuExpanded -> accentColor
             isGlass -> Color.White.copy(alpha = 0.25f)
             else -> Color(0xFF4CAF50) // Start is Green
         }
-        val fabIconTint = when {
-            isRunning -> Color.White
-            isFabMenuExpanded -> MaterialTheme.colorScheme.onPrimary
-            isGlass -> Color.White
-            else -> Color.White
-        }
+        val fabBg by animateColorAsState(
+            targetValue = targetFabBg,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessMediumLow),
+            label = "fabBg"
+        )
+
+        val fabScale by animateFloatAsState(
+            targetValue = if (isFabMenuExpanded) 1.05f else 1.0f,
+            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMediumLow),
+            label = "fabScale"
+        )
+
+        // Subtle idle breathing pulse when visualizer is idle and menu is closed
+        val infiniteTransition = rememberInfiniteTransition(label = "fabIdleBreath")
+        val idlePulse by infiniteTransition.animateFloat(
+            initialValue = 0.96f,
+            targetValue = 1.04f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1600, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "idlePulse"
+        )
 
         // Action FAB Button
         Surface(
             modifier = Modifier
                 .size(72.dp)
+                .graphicsLayer {
+                    scaleX = fabScale
+                    scaleY = fabScale
+                }
                 .shadow(
                     elevation = if (isGlass) 0.dp else 8.dp,
                     shape = RoundedCornerShape(fabCornerRadius)
@@ -579,16 +600,62 @@ fun FloatingBottomBar(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = when {
-                        isFabMenuExpanded -> Icons.Default.Close
-                        isRunning -> Icons.Default.Stop
-                        else -> Icons.Default.PlayArrow
+                AnimatedContent(
+                    targetState = when {
+                        isFabMenuExpanded -> "CLOSE"
+                        isRunning -> "STOP"
+                        else -> "WAVEFORM"
                     },
-                    contentDescription = null,
-                    tint = fabIconTint,
-                    modifier = Modifier.size(32.dp).graphicsLayer { rotationZ = fabRotation }
-                )
+                    transitionSpec = {
+                        (scaleIn(
+                            initialScale = 0.4f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ) + fadeIn(animationSpec = tween(180))) togetherWith (scaleOut(
+                            targetScale = 0.4f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) + fadeOut(animationSpec = tween(120)))
+                    },
+                    label = "fabIconContent"
+                ) { state ->
+                    when (state) {
+                        "CLOSE" -> {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close Menu",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .graphicsLayer { rotationZ = fabRotation }
+                            )
+                        }
+                        "STOP" -> {
+                            Icon(
+                                imageVector = Icons.Default.Stop,
+                                contentDescription = "Stop Visualizer",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        else -> {
+                            androidx.compose.foundation.Image(
+                                painter = painterResource(id = R.drawable.ic_waveform_selector),
+                                contentDescription = "Input Selector / Start Visualizer",
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .graphicsLayer {
+                                        scaleX = idlePulse
+                                        scaleY = idlePulse
+                                    }
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -660,8 +727,7 @@ fun SpeedDialFabMenu(
             Triple("Android Visualizer", Icons.Outlined.MusicNote, AudioCaptureService.CaptureSource.VIZUALIZER),
             Triple("Microphone", Icons.Outlined.Mic, AudioCaptureService.CaptureSource.MIC),
             Triple("Spotify Player", Icons.Default.MusicNote, AudioCaptureService.CaptureSource.SPOTIFY),
-            Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK),
-            Triple("Desktop Companion (BT)", Icons.Outlined.Bluetooth, AudioCaptureService.CaptureSource.BLUETOOTH)
+            Triple("Desktop Companion (UDP)", Icons.Outlined.Wifi, AudioCaptureService.CaptureSource.NETWORK)
         ))
         list
     }

@@ -1,6 +1,7 @@
 PyAudioWPatch
 numpy
 openrgb-python
+kivy>=2.3.0
+kivymd>=2.0.0
 customtkinter
 Pillow
-bleak

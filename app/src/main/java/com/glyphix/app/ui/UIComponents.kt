@@ -693,10 +693,6 @@ fun FlowRowScope.OptionTile(
         modifier = modifier
             .weight(animatedWeight)
             .height(64.dp)
-            .graphicsLayer {
-                scaleX = uiAmp
-                scaleY = uiAmp
-            }
             .clip(RoundedCornerShape(animatedRadius))
             .combinedClickable(
                 onClick = if (enabled) onClick else ({}),
@@ -1296,8 +1292,8 @@ fun StartStopButton(
     Box(
         modifier = modifier
             .graphicsLayer {
-                scaleX = scale * uiAmp
-                scaleY = scale * uiAmp
+                scaleX = scale
+                scaleY = scale
             }
             .padding(8.dp),
         contentAlignment = Alignment.Center

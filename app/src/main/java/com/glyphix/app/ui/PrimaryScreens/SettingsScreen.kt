@@ -73,7 +73,6 @@ internal fun SettingsScreen(
     val selectedTheme by viewModel.selectedTheme.collectAsStateWithLifecycle()
     val selectedFont by viewModel.selectedFont.collectAsStateWithLifecycle()
     val m3eEnabled by viewModel.m3eEnabled.collectAsStateWithLifecycle()
-    val uiAmplitudeSyncEnabled by viewModel.uiAmplitudeSyncEnabled.collectAsStateWithLifecycle()
     val bananaMode by viewModel.bananaModeEnabled.collectAsStateWithLifecycle()
     val penisMode by viewModel.penisModeEnabled.collectAsStateWithLifecycle()
     val spectrumGain by viewModel.spectrumGain.collectAsStateWithLifecycle()
@@ -256,36 +255,7 @@ internal fun SettingsScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Row 3: Dynamic Audio Reactive UI Toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Dynamic color & motion",
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            ),
-                            color = mockupTextColor()
-                        )
-                        Text(
-                            text = "UI pulses to audio amplitude",
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                            color = mockupSubtextColor()
-                        )
-                    }
-                    MockupPillToggle(
-                        checked = uiAmplitudeSyncEnabled,
-                        onCheckedChange = { viewModel.setUiAmplitudeSyncEnabled(it) }
-                    )
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // Row 4: Material 3 Expressive Motion
+                // Row 3: Material 3 Expressive Motion
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

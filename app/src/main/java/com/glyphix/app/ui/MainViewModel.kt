@@ -106,7 +106,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         ctx.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)
     }
 
-    val _flashlightIntensityLevels = MutableStateFlow(1)
+    val _flashlightIntensityLevels = MutableStateFlow(FlashlightEngine.detectTorchIntensityLevels(application))
     val flashlightIntensityLevels = _flashlightIntensityLevels.asStateFlow()
 
     val _flashlightLevel = MutableStateFlow(0)
@@ -121,22 +121,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _networkPacketsReceived = MutableStateFlow(0)
     val networkPacketsReceived = _networkPacketsReceived.asStateFlow()
 
-    val _bluetoothDeviceName = MutableStateFlow("")
-    val bluetoothDeviceName = _bluetoothDeviceName.asStateFlow()
-
-    val _bluetoothDeviceAddress = MutableStateFlow("")
-    val bluetoothDeviceAddress = _bluetoothDeviceAddress.asStateFlow()
-
     fun setNetworkPacketsReceived(count: Int) {
         _networkPacketsReceived.value = count
-    }
-
-    fun setBluetoothDeviceName(name: String) {
-        _bluetoothDeviceName.value = name
-    }
-
-    fun setBluetoothDeviceAddress(address: String) {
-        _bluetoothDeviceAddress.value = address
     }
 
     val _pcPacketsSent = MutableStateFlow(0)
@@ -290,8 +276,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isShowingEditor = MutableStateFlow(false)
     val isShowingEditor = _isShowingEditor.asStateFlow()
-    fun showEditor() { _isShowingEditor.value = true }
-    fun hideEditor() { _isShowingEditor.value = false }
+    private val _editingPresetKey = MutableStateFlow<String?>(null)
+    val editingPresetKey = _editingPresetKey.asStateFlow()
+
+    fun showEditor(presetKey: String? = null) {
+        _editingPresetKey.value = presetKey
+        _isShowingEditor.value = true
+    }
+    fun hideEditor() {
+        _editingPresetKey.value = null
+        _isShowingEditor.value = false
+    }
 
     private val _isShowingProfileSetup = MutableStateFlow(false)
     val isShowingProfileSetup = _isShowingProfileSetup.asStateFlow()
@@ -953,37 +948,144 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun deleteCustomPreset(key: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                communityRepository.deletePreset(key)
-                analytics.logEvent("preset_deleted", android.os.Bundle().apply { putString("preset_id", key) })
+                val currentText = AudioCaptureService.loadZonesConfigText(ctx)
+                if (!currentText.isNullOrBlank()) {
+                    val root = JSONObject(currentText)
+                    if (root.has(key)) {
+                        root.remove(key)
+                        val file = File(ctx.filesDir, "zones.config")
+                        file.writeText(root.toString(2))
+                        
+                        refreshPresetsInternal()
+                        if (_selectedPreset.value == key) {
+                            val nextPreset = _presetInfos.value.firstOrNull()?.key ?: "default"
+                            _selectedPreset.value = nextPreset
+                        }
+                        MainActivity.serviceStatic?.reloadConfig()
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(ctx, "Custom preset deleted", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Failed to delete preset", e)
             }
         }
     }
 
-    fun saveCustomPreset(name: String, zones: List<AudioProcessor.ZoneSpec>, presetKey: String? = null) {
-        val uid = _userId.value ?: return
-        viewModelScope.launch {
+    fun loadPresetZones(key: String): Pair<String, List<AudioProcessor.ZoneSpec>>? {
+        return try {
+            val text = AudioCaptureService.loadZonesConfigText(ctx) ?: return null
+            val root = JSONObject(text)
+            val p = root.optJSONObject(key) ?: return null
+            val desc = p.optString("description", key).removePrefix("Custom: ")
+            val zonesArray = p.optJSONArray("zones") ?: return null
+            val list = mutableListOf<AudioProcessor.ZoneSpec>()
+            for (i in 0 until zonesArray.length()) {
+                val z = zonesArray.getJSONArray(i)
+                val low = z.getDouble(0).toFloat()
+                val high = z.getDouble(1).toFloat()
+                val lowP = if (z.length() > 3) z.optDouble(3, Double.NaN).toFloat() else Float.NaN
+                val highP = if (z.length() > 4) z.optDouble(4, Double.NaN).toFloat() else Float.NaN
+                list.add(AudioProcessor.ZoneSpec(low, high, lowP, highP))
+            }
+            Pair(desc, list)
+        } catch (e: Exception) {
+            Log.e("MainViewModel", "Failed to load preset zones for $key", e)
+            null
+        }
+    }
+
+    fun saveCustomPreset(
+        name: String,
+        zones: List<AudioProcessor.ZoneSpec>,
+        presetKey: String? = null,
+        decayAlpha: Double = 0.8
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                val preset = CommunityPreset(
-                    name = name,
-                    author = _userNickname.value,
-                    authorId = uid,
-                    phoneModel = phoneModelForDevice(selectedDevice.value),
-                    zones = zones.map { ZoneData.fromZoneSpec(it) },
-                    timestamp = System.currentTimeMillis()
-                )
-                communityRepository.uploadPreset(preset)
-                analytics.logPresetShared(name)
+                val currentText = AudioCaptureService.loadZonesConfigText(ctx)
+                val root = if (!currentText.isNullOrBlank()) JSONObject(currentText) else JSONObject()
+                
+                val key = presetKey ?: ("custom_" + System.currentTimeMillis().toString().takeLast(6))
+                val presetObj = JSONObject().apply {
+                    put("description", if (name.startsWith("Custom:")) name else "Custom: $name")
+                    put("phone_model", phoneModelForDevice(selectedDevice.value))
+                    put("decay-alpha", decayAlpha)
+                    
+                    val zonesArr = JSONArray()
+                    zones.forEach { z ->
+                        val zArr = JSONArray()
+                        zArr.put(z.lowHz.toDouble())
+                        zArr.put(z.highHz.toDouble())
+                        zArr.put(0)
+                        if (!z.lowPercent.isNaN() && !z.highPercent.isNaN()) {
+                            zArr.put(z.lowPercent.toDouble())
+                            zArr.put(z.highPercent.toDouble())
+                        }
+                        zonesArr.put(zArr)
+                    }
+                    put("zones", zonesArr)
+                }
+                root.put(key, presetObj)
+                
+                val file = File(ctx.filesDir, "zones.config")
+                file.writeText(root.toString(2))
+                
+                refreshPresetsInternal()
+                _selectedPreset.value = key
+                MainActivity.serviceStatic?.reloadConfig()
+                
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(ctx, "Preset uploaded to community!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Custom preset saved & applied!", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Failed to upload preset", e)
+                Log.e("MainViewModel", "Failed to save custom preset", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(ctx, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, "Failed to save preset: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    // ── AI Preset Generation (OpenRouter) ──────────────────────────────────
+    val openRouterService = OpenRouterService(ctx)
+    private val _isGeneratingAiPreset = MutableStateFlow(false)
+    val isGeneratingAiPreset = _isGeneratingAiPreset.asStateFlow()
+
+    private val _aiGenerationError = MutableStateFlow<String?>(null)
+    val aiGenerationError = _aiGenerationError.asStateFlow()
+
+    fun generatePresetWithAi(
+        prompt: String,
+        device: Int = selectedDevice.value,
+        onResult: (AiPresetResult) -> Unit
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isGeneratingAiPreset.value = true
+            _aiGenerationError.value = null
+            try {
+                val res = openRouterService.generatePreset(prompt, device)
+                res.onSuccess { preset ->
+                    withContext(Dispatchers.Main) {
+                        _isGeneratingAiPreset.value = false
+                        onResult(preset)
+                    }
+                }.onFailure { err ->
+                    withContext(Dispatchers.Main) {
+                        _isGeneratingAiPreset.value = false
+                        _aiGenerationError.value = err.message ?: "Failed to generate preset."
+                        Toast.makeText(ctx, "AI Error: ${err.message}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "AI preset generation failed", e)
+                withContext(Dispatchers.Main) {
+                    _isGeneratingAiPreset.value = false
+                    _aiGenerationError.value = e.message ?: "Unexpected error"
+                    Toast.makeText(ctx, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -1586,12 +1688,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val prefs = ctx.getSharedPreferences("viz_prefs", Context.MODE_PRIVATE)
         _favoritePresets.value = prefs.getStringSet("favorite_presets", emptySet()) ?: emptySet()
         
-        val savedSource = prefs.getString("capture_source", AudioCaptureService.CaptureSource.INTERNAL.name)
-        _captureSource.value = try {
-            AudioCaptureService.CaptureSource.valueOf(savedSource ?: AudioCaptureService.CaptureSource.INTERNAL.name)
-        } catch (e: Exception) {
-            AudioCaptureService.CaptureSource.INTERNAL
-        }
+        _captureSource.value = AudioCaptureService.CaptureSource.INTERNAL
 
         _uiAmplitudeSyncEnabled.value = prefs.getBoolean("ui_amplitude_sync_enabled", true)
         _aodEnabled.value = prefs.getBoolean("aod_enabled", false)
@@ -2390,28 +2487,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val fCur = Math.pow(fTarget.toDouble(), 2.2).toFloat()
                     val fDelta = (fCur - _flashlightAmplitude.value).coerceAtLeast(0f)
                     _flashlightAmplitude.value = (fCur + fDelta * 1.5f).coerceIn(0f, 1.2f)
-
-                    // UI Amplitude using the pre-calculated uiPeak
-                    uiPeakValue = uiPeakValue * 0.98f + uiPeak * 0.02f
-                    if (uiPeak > uiPeakValue) uiPeakValue = uiPeak
-                    
-                    val targetGain = if (uiPeakValue > 0.01f) 0.15f / uiPeakValue else 12f
-                    uiDynamicGain = uiDynamicGain * 0.9f + targetGain.coerceIn(5f, 25f) * 0.1f
-                    
-                    (1.0f + (uiPeak * uiDynamicGain - 0.2f)).coerceIn(0.8f, 1.2f)
                 }
 
-                if (target > smoothedUiAmplitude) {
-                    smoothedUiAmplitude = smoothedUiAmplitude * 0.1f + target * 0.9f
-                } else {
-                    smoothedUiAmplitude = smoothedUiAmplitude * 0.85f + target * 0.15f
-                }
-                
-                _uiAmplitude.value = if (_uiAmplitudeSyncEnabled.value) {
-                    smoothedUiAmplitude
-                } else {
-                    1.0f
-                }
+                _uiAmplitude.value = 1.0f
 
                 if (magnitude.isEmpty()) return@collect
                 

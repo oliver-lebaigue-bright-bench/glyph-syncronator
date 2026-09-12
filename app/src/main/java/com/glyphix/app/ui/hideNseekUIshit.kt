@@ -64,24 +64,6 @@ internal fun MainOverlays(
     }
 
     AnimatedVisibility(
-        visible = isShowingEditor,
-        enter = scaleIn(animationSpec = expansionSpec, initialScale = 0.8f) + fadeIn(),
-        exit = scaleOut(animationSpec = expansionSpec, targetScale = 0.8f) + fadeOut()
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            GlyphixBackground()
-            val fftState by viewModel.fftState.collectAsStateWithLifecycle()
-            CustomPresetEditorScreen(
-                selectedDevice = selectedDevice,
-                fftState = fftState,
-                onDismiss = { viewModel.hideEditor() },
-                onSave = { name, zones, key -> viewModel.saveCustomPreset(name, zones, key) },
-                onShare = { name, author, zones -> /* Handle share */ }
-            )
-        }
-    }
-
-    AnimatedVisibility(
         visible = isShowingLicense,
         enter = slideInVertically { it } + fadeIn(),
         exit = slideOutVertically { it } + fadeOut()
@@ -277,6 +259,23 @@ internal fun MainOverlays(
                 onOverlayEnabledChanged = { viewModel.setOverlayEnabled(it) },
                 onOverlayPermissionRequest = onOverlayPermissionRequest,
                 onDismiss = { viewModel.hideVisuals() }
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = isShowingEditor,
+        enter = slideInVertically { it } + fadeIn(),
+        exit = slideOutVertically { it } + fadeOut()
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            GlyphixBackground()
+            val vizStateState by viewModel.visualizerState.collectAsStateWithLifecycle()
+            CustomPresetEditorScreen(
+                viewModel = viewModel,
+                selectedDevice = selectedDevice,
+                fftState = vizStateState,
+                onDismiss = { viewModel.hideEditor() }
             )
         }
     }

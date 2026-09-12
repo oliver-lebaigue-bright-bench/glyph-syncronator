@@ -50,31 +50,11 @@ import android.os.SystemClock;
 import android.service.quicksettings.TileService;
 import android.util.Log;
 import androidx.core.app.ActivityCompat;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
-import android.bluetooth.le.AdvertiseCallback;
-import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
-import android.bluetooth.le.BluetoothLeAdvertiser;
-import android.os.ParcelUuid;
-import java.util.UUID;
+import androidx.core.app.NotificationCompat;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.graphics.PixelFormat;
 
-import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
-
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
-import android.bluetooth.le.AdvertiseCallback;
-import android.bluetooth.le.AdvertiseData;
-import android.bluetooth.le.AdvertiseSettings;
-import android.bluetooth.le.BluetoothLeAdvertiser;
-import android.os.ParcelUuid;
-import java.util.UUID;
 import java.util.ArrayList;
 import java.net.DatagramSocket;
 import java.net.DatagramPacket;
@@ -126,7 +106,7 @@ public class AudioCaptureService extends Service {
     private static final String TAG = "GlyphViz:Service";
     private static final String CHANNEL_ID = "glyph_viz_channel";
     private static final int NOTIF_ID = 1;
-    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SPOTIFY, NETWORK, BLUETOOTH }
+    public enum CaptureSource { INTERNAL, MIC, VIZUALIZER, SPOTIFY, NETWORK }
     private volatile CaptureSource mCaptureSource = CaptureSource.INTERNAL;
 
     public static final String ACTION_STOP = "com.glyphix.app.action.STOP";
@@ -160,8 +140,6 @@ public class AudioCaptureService extends Service {
     private static volatile boolean sIsRunning = false;
     private static final MutableStateFlow<Boolean> sIsRunningFlow = StateFlowKt.MutableStateFlow(false);
     private static final MutableStateFlow<Integer> sNetworkPacketsReceived = StateFlowKt.MutableStateFlow(0);
-    private static final MutableStateFlow<String> sBluetoothDeviceName = StateFlowKt.MutableStateFlow("");
-    private static final MutableStateFlow<String> sBluetoothDeviceAddress = StateFlowKt.MutableStateFlow("");
     
     public StateFlow<Boolean> isRunningFlow() {
         return sIsRunningFlow;
@@ -169,14 +147,6 @@ public class AudioCaptureService extends Service {
 
     public StateFlow<Integer> networkPacketsReceivedFlow() {
         return sNetworkPacketsReceived;
-    }
-
-    public StateFlow<String> bluetoothDeviceNameFlow() {
-        return sBluetoothDeviceName;
-    }
-
-    public StateFlow<String> bluetoothDeviceAddressFlow() {
-        return sBluetoothDeviceAddress;
     }
 
     private void setRunning(boolean running) {
@@ -499,7 +469,7 @@ public class AudioCaptureService extends Service {
                     dispatchDueFrames(mVisualizerPendingFrames); 
                 }
                 
-                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.BLUETOOTH || mCaptureSource == CaptureSource.SPOTIFY) {
+                if (mCaptureSource == CaptureSource.VIZUALIZER || mCaptureSource == CaptureSource.NETWORK || mCaptureSource == CaptureSource.SPOTIFY) {
                     // Only send a silent frame if we haven't sent anything for a while (e.g. 150ms)
                     // This avoids flicker when Visualizer callbacks are slower than 60fps (e.g. 20Hz / 50ms)
                     if (now - mLastSendMs >= 150 && mVisualizerConfig != null) processFrame(new float[0], 0f, mVisualizerConfig, mPresetConfigVersion.get());
@@ -593,7 +563,7 @@ public class AudioCaptureService extends Service {
         mGlyphRenderer.setSpectrumGain(appPrefs.getFloat("spectrum_gain", 4.0f));
         mHapticEnabled = hasHapticMotor(this) && appPrefs.getBoolean("haptic_motor_enabled", false);
         mFlashlightEnabled = hasFlashlight(this) && appPrefs.getBoolean("flashlight_enabled", false);
-        mPcStreamEnabled = appPrefs.getBoolean("pc_stream_enabled", false);
+        mPcStreamEnabled = false;
         setPcStreamTargetIp(appPrefs.getString("pc_stream_target_ip", ""));
         refreshLatencyForCurrentAudioRoute();
 
@@ -701,7 +671,6 @@ public class AudioCaptureService extends Service {
         else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
         else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
         else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
-        else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
     }
     public void stopVisualizer() { stopCapture(); }
 
@@ -716,7 +685,6 @@ public class AudioCaptureService extends Service {
             else if (mCaptureSource == CaptureSource.VIZUALIZER) startVizualizerCapture();
             else if (mCaptureSource == CaptureSource.SPOTIFY) startSpotifyCapture();
             else if (mCaptureSource == CaptureSource.NETWORK) startNetworkCapture();
-            else if (mCaptureSource == CaptureSource.BLUETOOTH) startBluetoothCapture();
         });
     }
 
@@ -1032,8 +1000,6 @@ public class AudioCaptureService extends Service {
 
     public void startNetworkCapture() { startCaptureInternal(CaptureSource.NETWORK, 0, null); }
 
-    public void startBluetoothCapture() { startCaptureInternal(CaptureSource.BLUETOOTH, 0, null); }
-
     private void startCaptureInternal(CaptureSource source, int resultCode, Intent data) {
         mCaptureSource = source;
         MediaProjectionManager projectionManager = null;
@@ -1061,14 +1027,6 @@ public class AudioCaptureService extends Service {
                     } else {
                         startForeground(NOTIF_ID, buildNotification());
                     }
-                } else if (source == CaptureSource.BLUETOOTH) {
-                    if (Build.VERSION.SDK_INT >= 34) {
-                        startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
-                    } else if (Build.VERSION.SDK_INT >= 29) {
-                        startForeground(NOTIF_ID, buildNotification(), 0);
-                    } else {
-                        startForeground(NOTIF_ID, buildNotification());
-                    }
                 } else {
                     if (Build.VERSION.SDK_INT >= 34) {
                         startForeground(NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
@@ -1083,10 +1041,6 @@ public class AudioCaptureService extends Service {
                 try {
                     startForeground(NOTIF_ID, buildNotification());
                 } catch (Throwable ignored) {}
-            }
-
-            if (source == CaptureSource.BLUETOOTH) {
-                startBleAdvertisement();
             }
 
             mCapturing = true; setRunning(true); updateOverlayVisibility(); mCaptureStartTimeMs = SystemClock.elapsedRealtime();
@@ -1138,9 +1092,6 @@ public class AudioCaptureService extends Service {
                     } else if (source == CaptureSource.NETWORK) {
                         setupNetworkCapture();
                         return;
-                    } else if (source == CaptureSource.BLUETOOTH) {
-                        setupBluetoothCapture();
-                        return;
                     } else if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
                         try {
                             localRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize);
@@ -1186,14 +1137,12 @@ public class AudioCaptureService extends Service {
         mSessionGlyphMs = 0; mSessionHapticMs = 0; mSessionFlashlightMs = 0;
 
         shutdownCaptureExecutor(); releaseAudioRecord(); releaseVisualizer(); releaseProjection();
-        stopBleAdvertisement();
         turnOffGlyphs(); resetVisualizerState(); stopForeground(STOP_FOREGROUND_REMOVE);
     }
     private void releaseAudioRecord() {
         if (mAudioRecord != null) { try { mAudioRecord.stop(); } catch (Exception ignored) {} mAudioRecord.release(); mAudioRecord = null; }
         if (mNetworkSocket != null) { try { mNetworkSocket.close(); } catch (Exception ignored) {} mNetworkSocket = null; }
         if (mPcStreamSocket != null) { try { mPcStreamSocket.close(); } catch (Exception ignored) {} mPcStreamSocket = null; }
-        releaseBluetoothSockets();
         stopDiscoveryResponder();
     }
     private void releaseProjection() { if (mProjection != null) { try { mProjection.stop(); } catch (Exception ignored) {} mProjection = null; } }
@@ -1404,27 +1353,8 @@ public class AudioCaptureService extends Service {
     }
 
     private java.net.DatagramSocket mNetworkSocket;
-    private BluetoothServerSocket mBtServerSocket;
-    private BluetoothSocket mBtSocket;
     private static final int UDP_PORT = 12347;
     private static final int DISCOVERY_PORT = 12348;
-    private static final UUID BT_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e45");
-    private static final UUID BLE_SERVICE_UUID = UUID.fromString("7d9c63c0-37b1-4122-861f-36655c687e46");
-    
-    private BluetoothLeAdvertiser mAdvertiser;
-    private final AdvertiseCallback mAdvertiseCallback = new AdvertiseCallback() {
-        @Override
-        public void onStartSuccess(AdvertiseSettings settingsInEffect) {
-            super.onStartSuccess(settingsInEffect);
-            Log.i(TAG, "BLE Advertisement started successfully");
-        }
-
-        @Override
-        public void onStartFailure(int errorCode) {
-            super.onStartFailure(errorCode);
-            Log.e(TAG, "BLE Advertisement failed with error: " + errorCode);
-        }
-    };
 
     public static String getLocalIpAddress() {
         try {
@@ -1545,152 +1475,7 @@ public class AudioCaptureService extends Service {
          mMainHandler.post(() -> android.widget.Toast.makeText(this, "Received packet: " + packetSize + " bytes", android.widget.Toast.LENGTH_SHORT).show());
     }
 
-    private void setupBluetoothCapture() {
-        sNetworkPacketsReceived.setValue(0);
-        
-        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter btAdapter = btManager != null ? btManager.getAdapter() : null;
-        
-        if (btAdapter == null) {
-            showToast("Bluetooth not supported on this device");
-            return;
-        }
 
-        if (!btAdapter.isEnabled()) {
-            showToast("Please turn on Bluetooth");
-            return;
-        }
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            showToast("Bluetooth permission missing");
-            return;
-        }
-
-        // Start listening in a background thread to prevent ANR
-        new Thread(() -> {
-            Log.i(TAG, "Starting Bluetooth Capture Background Thread. UUID: " + BT_UUID);
-            try {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return;
-                
-                mBtServerSocket = btAdapter.listenUsingRfcommWithServiceRecord("Glyphix Companion", BT_UUID);
-                mCurrentSampleRate = 48000;
-                ensureVisualizerConfigLoaded();
-                mAudioProcessor.updateFFTSize(mCurrentSampleRate);
-                mHapticRange = new AudioProcessor.FrequencyRange(mHapticMinHz, mHapticMaxHz);
-                mFlashlightRange = new AudioProcessor.FrequencyRange(mFlashlightMinHz, mFlashlightMaxHz);
-                ensureGlyphManagerInitialized();
-                ensureGlyphSession();
-
-                showToast("Waiting for Bluetooth Companion...");
-                mBtSocket = mBtServerSocket.accept(); // Blocking call, now in background thread
-                
-                if (mBtSocket != null) {
-                    showToast("Bluetooth link established!");
-                    Log.i(TAG, "Bluetooth Audio: Connection received from " + mBtSocket.getRemoteDevice().getName());
-
-                    java.io.InputStream inputStream = mBtSocket.getInputStream();
-                    byte[] buffer = new byte[8192];
-                    short[] pcm = new short[4096];
-                    int packetsReceived = 0;
-
-                    while (mCapturing && mBtSocket != null && mBtSocket.isConnected()) {
-                        int read = inputStream.read(buffer);
-                        if (read <= 0) break;
-
-                        packetsReceived++;
-                        sNetworkPacketsReceived.setValue(packetsReceived);
-
-                        int samples = read / 2;
-                        for (int i = 0; i < samples; i++) {
-                            pcm[i] = (short) ((buffer[i * 2] & 0xFF) | (buffer[i * 2 + 1] << 8));
-                        }
-
-                        AudioProcessor.AudioFrameResult result = mAudioProcessor.processAudioFrame(pcm, samples, mVisualizerConfig, mHapticEnabled ? mHapticRange : null, mFlashlightEnabled ? mFlashlightRange : null, false);
-                        if (result != null) {
-                            PendingFrame frame = new PendingFrame(result.uniqueMagnitudes, result.rawFFT, result.decayedFFT, result.hapticPeak, result.uiPeak, result.flashlightPeak, mVisualizerConfig, mPresetConfigVersion.get(), SystemClock.elapsedRealtime() + mLatencyCompensationMs);
-                            synchronized (mVisualizerPendingFrames) {
-                                mVisualizerPendingFrames.addLast(frame);
-                                dispatchDueFrames(mVisualizerPendingFrames);
-                            }
-                        }
-                    }
-                }
-                Log.i(TAG, "Bluetooth capture loop exiting.");
-            } catch (Exception e) {
-                Log.e(TAG, "Bluetooth capture error", e);
-                if (mCapturing) showToast("Bluetooth error: " + e.getMessage());
-            } finally {
-                releaseBluetoothSockets();
-            }
-        }, "BT-Capture-Thread").start();
-    }
-
-    private void releaseBluetoothSockets() {
-        if (mBtSocket != null) { try { mBtSocket.close(); } catch (Exception ignored) {} mBtSocket = null; }
-        if (mBtServerSocket != null) { try { mBtServerSocket.close(); } catch (Exception ignored) {} mBtServerSocket = null; }
-    }
-
-    private void startBleAdvertisement() {
-        stopBleAdvertisement();
-
-        android.bluetooth.BluetoothManager btManager = (android.bluetooth.BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter adapter = btManager != null ? btManager.getAdapter() : null;
-        
-        if (adapter == null) {
-            showToast("Bluetooth adapter missing");
-            return;
-        }
-
-        if (!adapter.isMultipleAdvertisementSupported()) {
-            showToast("BLE Peripheral mode not supported - Use manual IP/MAC");
-            Log.e(TAG, "BLE Advertising not supported");
-            return;
-        }
-
-        mAdvertiser = adapter.getBluetoothLeAdvertiser();
-        if (mAdvertiser == null) {
-            Log.e(TAG, "Failed to get BLE Advertiser");
-            return;
-        }
-
-        AdvertiseSettings settings = new AdvertiseSettings.Builder()
-                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                .setConnectable(true)
-                .setTimeout(0)
-                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                .build();
-
-        AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .setIncludeTxPowerLevel(true)
-                .addServiceUuid(new ParcelUuid(BLE_SERVICE_UUID))
-                .build();
-
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "Missing BLUETOOTH_ADVERTISE permission");
-            return;
-        }
-        
-        mAdvertiser.startAdvertising(settings, data, mAdvertiseCallback);
-        String deviceName = adapter.getName();
-        sBluetoothDeviceName.setValue(deviceName);
-        sBluetoothDeviceAddress.setValue("See in System Settings");
-        showToast("Bluetooth Discovery ON\nDevice: " + deviceName);
-        Log.i(TAG, "BLE Advertisement requested with UUID: " + BLE_SERVICE_UUID);
-    }
-
-    private void stopBleAdvertisement() {
-        if (mAdvertiser != null) {
-            try {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED) {
-                    mAdvertiser.stopAdvertising(mAdvertiseCallback);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error stopping BLE advertisement", e);
-            }
-            mAdvertiser = null;
-        }
-    }
 
     private void startForegroundSafe(int id, Notification notification, int type) {
         if (Build.VERSION.SDK_INT >= 34) {
@@ -1832,18 +1617,35 @@ public class AudioCaptureService extends Service {
         return mPcStreamEnabled;
     }
 
-    public void setPcStreamTargetIp(String ip) {
-        mPcStreamTargetIp = (ip != null) ? ip.trim() : "";
-        getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putString("pc_stream_target_ip", mPcStreamTargetIp).apply();
-        if (mWorkerHandler != null) {
-            mWorkerHandler.post(() -> {
-                try {
-                    mPcStreamTargetAddr = (!mPcStreamTargetIp.isEmpty()) ? InetAddress.getByName(mPcStreamTargetIp) : null;
-                } catch (Exception e) {
-                    mPcStreamTargetAddr = null;
-                }
-            });
+    public static String sanitizeIpAddress(String input) {
+        if (input == null) return "";
+        String clean = input.trim();
+        if (clean.startsWith("http://") || clean.startsWith("https://")) {
+            clean = clean.replaceFirst("^https?://", "");
         }
+        if (clean.contains("/")) {
+            clean = clean.substring(0, clean.indexOf('/'));
+        }
+        if (clean.contains(":") && !clean.contains("::")) {
+            String[] parts = clean.split(":");
+            clean = parts[0].trim();
+        }
+        return clean.trim();
+    }
+
+    public void setPcStreamTargetIp(String ip) {
+        final String cleanIp = sanitizeIpAddress(ip);
+        mPcStreamTargetIp = cleanIp;
+        getSharedPreferences(APP_PREFS_NAME, MODE_PRIVATE).edit().putString("pc_stream_target_ip", cleanIp).apply();
+        new Thread(() -> {
+            try {
+                mPcStreamTargetAddr = (!cleanIp.isEmpty()) ? InetAddress.getByName(cleanIp) : null;
+                Log.d(TAG, "Resolved PC Stream Target IP: " + cleanIp + " -> " + mPcStreamTargetAddr);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to resolve PC Stream Target IP: " + cleanIp, e);
+                mPcStreamTargetAddr = null;
+            }
+        }, "PcIpResolveThread").start();
     }
 
     public String getPcStreamTargetIp() {
@@ -1851,7 +1653,21 @@ public class AudioCaptureService extends Service {
     }
 
     private void sendPcmToPc(short[] pcm, int samples) {
-        if (!mPcStreamEnabled || mPcStreamTargetAddr == null || pcm == null || samples <= 0) return;
+        if (!mPcStreamEnabled || pcm == null || samples <= 0) return;
+        InetAddress target = mPcStreamTargetAddr;
+        if (target == null) {
+            String ip = mPcStreamTargetIp;
+            if (ip != null && !ip.isEmpty()) {
+                try {
+                    target = InetAddress.getByName(ip);
+                    mPcStreamTargetAddr = target;
+                } catch (Exception ignored) {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
         try {
             if (mPcStreamSocket == null || mPcStreamSocket.isClosed()) {
                 mPcStreamSocket = new DatagramSocket();
@@ -1863,7 +1679,7 @@ public class AudioCaptureService extends Service {
                 buf[i * 2] = (byte) (pcm[i] & 0xFF);
                 buf[i * 2 + 1] = (byte) ((pcm[i] >> 8) & 0xFF);
             }
-            DatagramPacket packet = new DatagramPacket(buf, byteCount, mPcStreamTargetAddr, PC_STREAM_PORT);
+            DatagramPacket packet = new DatagramPacket(buf, byteCount, target, PC_STREAM_PORT);
             mPcStreamSocket.send(packet);
             sPcPacketsSent.setValue(sPcPacketsSent.getValue() + 1);
         } catch (Exception ignored) {}
@@ -1871,37 +1687,106 @@ public class AudioCaptureService extends Service {
 
     public void discoverPcCompanion(Consumer<String> onFound) {
         new Thread(() -> {
-            try (DatagramSocket socket = new DatagramSocket()) {
+            DatagramSocket socket = null;
+            try {
+                socket = new DatagramSocket();
                 socket.setBroadcast(true);
-                socket.setSoTimeout(1500);
-                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes();
-                
-                ArrayList<String> broadcasts = new ArrayList<>();
-                broadcasts.add("255.255.255.255");
-                String localIp = getLocalIpAddress();
-                if (!"Unknown".equals(localIp) && localIp.contains(".")) {
-                    String subnet = localIp.substring(0, localIp.lastIndexOf('.')) + ".255";
-                    broadcasts.add(subnet);
-                }
-                
-                for (String b : broadcasts) {
-                    try {
-                        DatagramPacket p = new DatagramPacket(req, req.length, InetAddress.getByName(b), DISCOVERY_PORT);
-                        socket.send(p);
-                    } catch (Exception ignored) {}
-                }
-                
+                socket.setSoTimeout(350);
+
+                Set<String> localIps = new HashSet<>();
+                localIps.add("127.0.0.1");
+                localIps.add("0.0.0.0");
+                try {
+                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                    while (interfaces.hasMoreElements()) {
+                        NetworkInterface iface = interfaces.nextElement();
+                        Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                        while (addresses.hasMoreElements()) {
+                            InetAddress addr = addresses.nextElement();
+                            localIps.add(addr.getHostAddress());
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                ArrayList<InetAddress> broadcastAddrs = new ArrayList<>();
+                try {
+                    broadcastAddrs.add(InetAddress.getByName("255.255.255.255"));
+                } catch (Exception ignored) {}
+
+                try {
+                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                    while (interfaces.hasMoreElements()) {
+                        NetworkInterface iface = interfaces.nextElement();
+                        if (iface.isLoopback() || !iface.isUp()) continue;
+                        for (java.net.InterfaceAddress ifaceAddr : iface.getInterfaceAddresses()) {
+                            InetAddress bcast = ifaceAddr.getBroadcast();
+                            if (bcast != null && !broadcastAddrs.contains(bcast)) {
+                                broadcastAddrs.add(bcast);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                byte[] req = "GLYPHIX_PHONE_DISCOVERY_REQUEST".getBytes(StandardCharsets.UTF_8);
                 byte[] buf = new byte[1024];
                 DatagramPacket resp = new DatagramPacket(buf, buf.length);
-                socket.receive(resp);
-                String msg = new String(resp.getData(), 0, resp.getLength());
-                if (msg.contains("GLYPHIX_PC_DISCOVERY_RESPONSE") || msg.contains("GLYPHIX")) {
-                    String pcIp = resp.getAddress().getHostAddress();
-                    if (onFound != null && mMainHandler != null) {
-                        mMainHandler.post(() -> onFound.accept(pcIp));
+                String foundPcIp = null;
+
+                long startTime = SystemClock.elapsedRealtime();
+                while (SystemClock.elapsedRealtime() - startTime < 4000 && foundPcIp == null) {
+                    for (InetAddress bcast : broadcastAddrs) {
+                        try {
+                            DatagramPacket p = new DatagramPacket(req, req.length, bcast, DISCOVERY_PORT);
+                            socket.send(p);
+                        } catch (Exception ignored) {}
                     }
+
+                    long listenUntil = SystemClock.elapsedRealtime() + 600;
+                    while (SystemClock.elapsedRealtime() < listenUntil && foundPcIp == null) {
+                        try {
+                            resp.setLength(buf.length);
+                            socket.receive(resp);
+                            String senderIp = resp.getAddress().getHostAddress();
+                            if (senderIp == null || localIps.contains(senderIp) || resp.getAddress().isLoopbackAddress()) {
+                                continue;
+                            }
+                            String msg = new String(resp.getData(), 0, resp.getLength(), StandardCharsets.UTF_8).trim();
+                            if (msg.contains("GLYPHIX_PC_DISCOVERY_RESPONSE") || msg.startsWith("GLYPHIX_PC")) {
+                                if (msg.contains(":")) {
+                                    String candidate = sanitizeIpAddress(msg.substring(msg.indexOf(":") + 1));
+                                    if (!candidate.isEmpty() && !candidate.equalsIgnoreCase("Unknown") && !localIps.contains(candidate)) {
+                                        foundPcIp = candidate;
+                                    }
+                                }
+                                if (foundPcIp == null) {
+                                    foundPcIp = senderIp;
+                                }
+                                break;
+                            }
+                        } catch (java.net.SocketTimeoutException e) {
+                            break;
+                        } catch (Exception e) {
+                            break;
+                        }
+                    }
+                    if (foundPcIp != null) break;
+                    try { Thread.sleep(150); } catch (Exception ignored) {}
                 }
-            } catch (Exception ignored) {}
+
+                final String finalPcIp = foundPcIp;
+                if (mMainHandler != null && onFound != null) {
+                    mMainHandler.post(() -> onFound.accept(finalPcIp));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "PC Discovery error", e);
+                if (mMainHandler != null && onFound != null) {
+                    mMainHandler.post(() -> onFound.accept(null));
+                }
+            } finally {
+                if (socket != null && !socket.isClosed()) {
+                    try { socket.close(); } catch (Exception ignored) {}
+                }
+            }
         }, "PcDiscoveryThread").start();
     }
 
@@ -1975,38 +1860,46 @@ public class AudioCaptureService extends Service {
     private void updateOverlayVisibility() {
         mMainHandler.post(() -> {
             if (mWindowManager == null) mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            float density = getResources().getDisplayMetrics().density;
             if (mEdgeVisualizerEnabled && mCapturing) {
                 if (mEdgeVisualizerView == null) {
                     mEdgeVisualizerView = new EdgeVisualizerView(this);
                     WindowManager.LayoutParams params = new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
                     params.gravity = Gravity.TOP | Gravity.START;
-                    if (Build.VERSION.SDK_INT >= 28) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                    if (Build.VERSION.SDK_INT >= 30) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+                    else if (Build.VERSION.SDK_INT >= 28) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                     try { mWindowManager.addView(mEdgeVisualizerView, params); } catch (Exception ignored) {}
                 }
-                mEdgeVisualizerView.setThickness(mEdgeThickness); mEdgeVisualizerView.setSensitivity(mEdgeSensitivity); mEdgeVisualizerView.setBarCounts(mEdgeBarCountHoriz, mEdgeBarCountVert); mEdgeVisualizerView.setTopEnabled(mEdgeTopEnabled); mEdgeVisualizerView.setBottomEnabled(mEdgeBottomEnabled); mEdgeVisualizerView.setScreenRadius(mEdgeCornerRadius * 4);
+                int thicknessPx = Math.round(mEdgeThickness * density);
+                float cornerRadiusPx = mEdgeCornerRadius * density;
+                mEdgeVisualizerView.setThickness(thicknessPx); mEdgeVisualizerView.setSensitivity(mEdgeSensitivity); mEdgeVisualizerView.setBarCounts(mEdgeBarCountHoriz, mEdgeBarCountVert); mEdgeVisualizerView.setTopEnabled(mEdgeTopEnabled); mEdgeVisualizerView.setBottomEnabled(mEdgeBottomEnabled); mEdgeVisualizerView.setScreenRadius(cornerRadiusPx);
             } else if (mEdgeVisualizerView != null) { try { mWindowManager.removeView(mEdgeVisualizerView); } catch (Exception ignored) {} mEdgeVisualizerView = null; }
             if (mOverlayEnabled && mCapturing) {
+                int overlayWidthPx = Math.round(mOverlayWidth * density);
+                int overlayHeightPx = Math.round((mOverlayHeight + mOverlayHeightBottom) * density);
+                int overlayYOffsetPx = Math.round(mOverlayYOffset * density);
                 if (mOverlayView == null) {
                     mOverlayView = new VisualizerOverlayView(this);
-                    WindowManager.LayoutParams params = new WindowManager.LayoutParams(mOverlayWidth * 4, (mOverlayHeight + mOverlayHeightBottom) * 4, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
-                    params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL; params.y = mOverlayYOffset * 4;
+                    WindowManager.LayoutParams params = new WindowManager.LayoutParams(overlayWidthPx, overlayHeightPx, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
+                    params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL; params.y = overlayYOffsetPx;
                     try { mWindowManager.addView(mOverlayView, params); } catch (Exception ignored) {}
                 } else {
                     WindowManager.LayoutParams params = (WindowManager.LayoutParams) mOverlayView.getLayoutParams();
-                    params.width = mOverlayWidth * 4; params.height = (mOverlayHeight + mOverlayHeightBottom) * 4; params.y = mOverlayYOffset * 4;
+                    params.width = overlayWidthPx; params.height = overlayHeightPx; params.y = overlayYOffsetPx;
                     try { mWindowManager.updateViewLayout(mOverlayView, params); } catch (Exception ignored) {}
                 }
-                mOverlayView.setTopEnabled(mOverlayTopEnabled); mOverlayView.setBottomEnabled(mOverlayBottomEnabled); mOverlayView.setHeights(mOverlayHeight, mOverlayHeightBottom); mOverlayView.setTopSensitivity(mOverlaySensitivity); mOverlayView.setBottomSensitivity(mOverlaySensitivityBottom);
+                mOverlayView.setTopEnabled(mOverlayTopEnabled); mOverlayView.setBottomEnabled(mOverlayBottomEnabled); mOverlayView.setHeights(Math.round(mOverlayHeight * density), Math.round(mOverlayHeightBottom * density)); mOverlayView.setTopSensitivity(mOverlaySensitivity); mOverlayView.setBottomSensitivity(mOverlaySensitivityBottom);
             } else if (mOverlayView != null) { try { mWindowManager.removeView(mOverlayView); } catch (Exception ignored) {} mOverlayView = null; }
             if (mLensVisualizerEnabled && mCapturing) {
                 if (mLensVisualizerView == null) {
                     mLensVisualizerView = new LensVisualizerView(this);
                     WindowManager.LayoutParams params = new WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, PixelFormat.TRANSLUCENT);
                     params.gravity = Gravity.TOP | Gravity.START;
-                    if (Build.VERSION.SDK_INT >= 28) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                    if (Build.VERSION.SDK_INT >= 30) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+                    else if (Build.VERSION.SDK_INT >= 28) params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
                     try { mWindowManager.addView(mLensVisualizerView, params); } catch (Exception ignored) {}
                 }
-                mLensVisualizerView.setRadius(mLensVisualizerRadius * 4); mLensVisualizerView.setBarWidth(mLensVisualizerBarWidth * 4); mLensVisualizerView.setMaxHeight(mLensVisualizerMaxHeight * 4); mLensVisualizerView.setBarCount(mLensVisualizerBarCount); mLensVisualizerView.setSensitivity(mLensVisualizerSensitivity); mLensVisualizerView.setXPosition(mLensVisualizerX); mLensVisualizerView.setYPosition(mLensVisualizerY);
+                mLensVisualizerView.setRadius(mLensVisualizerRadius * density); mLensVisualizerView.setBarWidth(mLensVisualizerBarWidth * density); mLensVisualizerView.setMaxHeight(mLensVisualizerMaxHeight * density); mLensVisualizerView.setBarCount(mLensVisualizerBarCount); mLensVisualizerView.setSensitivity(mLensVisualizerSensitivity); mLensVisualizerView.setXPosition(mLensVisualizerX); mLensVisualizerView.setYPosition(mLensVisualizerY);
             } else if (mLensVisualizerView != null) { try { mWindowManager.removeView(mLensVisualizerView); } catch (Exception ignored) {} mLensVisualizerView = null; }
             updateVisualizerService();
         });
@@ -2071,9 +1964,19 @@ public class AudioCaptureService extends Service {
         try (InputStream is = context.getAssets().open("zones.config")) { return readFully(is); }
     }
     private static String readFully(InputStream is) throws IOException { ByteArrayOutputStream os = new ByteArrayOutputStream(); byte[] buf = new byte[4096]; int r; while ((r = is.read(buf)) != -1) os.write(buf, 0, r); return os.toString("UTF-8"); }
+
     private static List<String> getAllPresetKeys(JSONObject root) { ArrayList<String> res = new ArrayList<>(); JSONArray names = root.names(); if (names != null) for (int i = 0; i < names.length(); i++) res.add(names.optString(i, "")); Collections.sort(res); return res; }
     private static List<PresetInfo> buildPresetInfos(JSONObject root, List<String> keys) { ArrayList<PresetInfo> res = new ArrayList<>(); for (String key : keys) { JSONObject p = root.optJSONObject(key); if (p != null) res.add(new PresetInfo(key, p.optString("description", key))); } return res; }
-    private static List<String> getPresetKeysForPhoneModel(JSONObject root, String phoneModel) { ArrayList<String> res = new ArrayList<>(); if ("UNKNOWN".equals(phoneModel)) return res; JSONArray names = root.names(); if (names != null) for (int i = 0; i < names.length(); i++) { String key = names.optString(i, ""); JSONObject p = root.optJSONObject(key); if (p != null && phoneModel.equalsIgnoreCase(p.optString("phone_model", ""))) res.add(key); } Collections.sort(res); return res; }
+    private static boolean isPhoneModelMatching(String targetModel, String presetModel) {
+        if (targetModel == null || presetModel == null) return false;
+        if (targetModel.equalsIgnoreCase(presetModel)) return true;
+        String t = targetModel.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        String p = presetModel.toUpperCase().replaceAll("[^A-Z0-9]", "");
+        if (t.equals(p)) return true;
+        if (t.replace("NOTHING", "").equals(p.replace("NOTHING", ""))) return true;
+        return false;
+    }
+    private static List<String> getPresetKeysForPhoneModel(JSONObject root, String phoneModel) { ArrayList<String> res = new ArrayList<>(); if ("UNKNOWN".equals(phoneModel)) return res; JSONArray names = root.names(); if (names != null) for (int i = 0; i < names.length(); i++) { String key = names.optString(i, ""); JSONObject p = root.optJSONObject(key); if (p != null && isPhoneModelMatching(phoneModel, p.optString("phone_model", ""))) res.add(key); } Collections.sort(res); return res; }
     private static float parseOptionalPercent(JSONArray arr, int idx) { if (idx >= arr.length()) return Float.NaN; Object r = arr.opt(idx); if (r == null || r == JSONObject.NULL) return Float.NaN; try { float v; if (r instanceof Number n) v = n.floatValue(); else { String t = String.valueOf(r).trim(); if (t.endsWith("%")) t = t.substring(0, t.length() - 1).trim(); v = Float.parseFloat(t); } if (v >= 0f && v <= 1f) v *= 100f; return v; } catch (Exception ignored) { return Float.NaN; } }
     private void refreshLatencyForCurrentAudioRoute() {}
     public static boolean hasHapticMotor(Context context) {
