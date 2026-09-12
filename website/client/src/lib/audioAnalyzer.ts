@@ -108,11 +108,11 @@ export class AudioAnalyzer {
       bands.bass * bands.bass +
       bands.kick * bands.kick +
       bands.mid * bands.mid +
-      bands.treble * treble
+      bands.treble * bands.treble
     ) / 2;
 
     return {
-      bins: new Uint8Array(this.smoothedData.map(v => v * 255)),
+      bins: new Uint8Array(this.smoothedData.map(v => Math.min(255, v * 255))),
       timestamp: performance.now(),
       bands,
     };
