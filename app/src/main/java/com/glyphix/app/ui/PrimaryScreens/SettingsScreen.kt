@@ -239,7 +239,7 @@ internal fun SettingsScreen(
                             .padding(top = 12.dp, bottom = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        maxItemsInEachRow = 3
+                        maxItemsInEachRow = 2
                     ) {
                         fonts.forEach { (font, icon) ->
                             OptionTile(

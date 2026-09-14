@@ -1183,12 +1183,12 @@ fun MockupPillButton(
             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             onClick()
         },
-        modifier = modifier
+        modifier = modifier.widthIn(min = 110.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
             Text(
                 text = text,
@@ -1199,6 +1199,7 @@ fun MockupPillButton(
                 color = pillTextColor
             )
             if (showChevron) {
+                Spacer(Modifier.width(6.dp))
                 val rotation by animateFloatAsState(
                     targetValue = if (isExpanded) 180f else 0f,
                     label = "chevron_rot"
