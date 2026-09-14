@@ -658,7 +658,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private val _selectedFont = MutableStateFlow("Default")
+    private val _selectedFont = MutableStateFlow("Rondana")
     val selectedFont = _selectedFont.asStateFlow()
     fun setSelectedFont(font: String) {
         _selectedFont.value = font
@@ -2566,7 +2566,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
         _selectedTheme.value = prefs.getString("selected_theme", "Default") ?: "Default"
-        _selectedFont.value = prefs.getString("selected_font", "Default") ?: "Default"
+        _selectedFont.value = prefs.getString("selected_font", "Rondana") ?: "Rondana"
         _flashlightMultiIntensityForced.value = prefs.getBoolean("flashlight_multi_intensity_forced", false)
         _notificationButtonSet.value = prefs.getString("notification_button_set", "presets") ?: "presets"
 

@@ -1175,7 +1175,7 @@ fun SectionHeader(
         Text(
             text = text,
             style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.primary
         )
         if (bananaMode) {
             Icon(
@@ -1318,8 +1318,8 @@ fun StartStopButton(
             },
             interactionSource = interactionSource,
             shape = RoundedCornerShape(cornerRadius),
-            color = if (isGlass) Color.Transparent else if (running) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
-            contentColor = if (isGlass) Color.White else Color.White,
+            color = if (isGlass) Color.Transparent else if (running) MaterialTheme.colorScheme.error else GlyphGreen,
+            contentColor = if (isGlass) Color.White else if (running) Color.White else Color.Black,
             modifier = Modifier
                 .height(buttonHeight)
                 .widthIn(min = buttonWidthMin)

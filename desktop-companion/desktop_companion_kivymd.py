@@ -51,6 +51,7 @@ Config.set('graphics', 'minimum_width', '560')
 Config.set('graphics', 'minimum_height', '700')
 
 from kivy.core.window import Window
+from kivy.core.text import LabelBase
 from kivy.clock import Clock
 from kivy.graphics import Color, Ellipse, Rectangle, Line, RoundedRectangle
 from kivy.uix.widget import Widget
@@ -70,6 +71,22 @@ from kivymd.uix.button import MDButton, MDButtonText, MDIconButton
 from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kivymd.uix.menu import MDDropdownMenu
 
+# Register Rondana Font Family
+FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+rondana_reg = os.path.join(FONTS_DIR, "rondana_regular.ttf")
+rondana_bold = os.path.join(FONTS_DIR, "rondana_black.ttf")
+rondana_light = os.path.join(FONTS_DIR, "rondana_light.ttf")
+rondana_ultralight = os.path.join(FONTS_DIR, "rondana_ultra_light.ttf")
+
+if os.path.isfile(rondana_reg):
+    LabelBase.register(
+        name="Rondana",
+        fn_regular=rondana_reg,
+        fn_bold=rondana_bold if os.path.isfile(rondana_bold) else rondana_reg,
+        fn_italic=rondana_light if os.path.isfile(rondana_light) else rondana_reg,
+        fn_bolditalic=rondana_ultralight if os.path.isfile(rondana_ultralight) else rondana_reg,
+    )
+
 UDP_PORT = 12347
 DISCOVERY_PORT = 12348
 OPENRGB_PORT = 6742
@@ -78,18 +95,19 @@ FORMAT = pyaudio.paInt16
 TARGET_RATE = 48000
 
 # ==============================================================================
-# PURE MONOCHROME / NOTHING OS DESIGN TOKENS (ZERO RED, ZERO GREEN)
+# GLYPHIX DESIGN TOKENS (BLACK & #D5FC2D ELECTRIC GREEN THEME)
 # ==============================================================================
-COLOR_BG = (11/255, 12/255, 14/255, 1.0)           # Deep Obsidian #0B0C0E
-COLOR_SURFACE = (20/255, 22/255, 26/255, 1.0)      # Elevated Surface Card #14161A
-COLOR_SURFACE_INNER = (27/255, 29/255, 35/255, 1.0)# Inner Card Surface #1B1D23
-COLOR_SURFACE_HOVER = (36/255, 39/255, 48/255, 1.0)# Hover State #242730
-COLOR_BORDER = (39/255, 42/255, 51/255, 1.0)       # Border #272A33
-COLOR_BORDER_LIGHT = (62/255, 67/255, 82/255, 1.0) # Light Border #3E4352
-COLOR_ACCENT = (1.0, 1.0, 1.0, 1.0)                # Crisp Glyph White #FFFFFF
-COLOR_TEXT_PRIMARY = (1.0, 1.0, 1.0, 1.0)          # Primary Text #FFFFFF
-COLOR_TEXT_SECONDARY = (148/255, 163/255, 184/255, 1.0) # Silver Slate #94A3B8
-COLOR_TEXT_MUTED = (100/255, 116/255, 139/255, 1.0)     # Muted Slate #64748B
+COLOR_BG = (0.0, 0.0, 0.0, 1.0)                     # Pure Black #000000
+COLOR_SURFACE = (13/255, 15/255, 10/255, 1.0)       # Elevated Surface #0D0F0A
+COLOR_SURFACE_INNER = (20/255, 24/255, 16/255, 1.0) # Inner Card Surface #141810
+COLOR_SURFACE_HOVER = (28/255, 34/255, 20/255, 1.0) # Hover State #1C2214
+COLOR_BORDER = (44/255, 51/255, 20/255, 1.0)        # Subtle Green-tinted Border #2C3314
+COLOR_BORDER_LIGHT = (70/255, 80/255, 30/255, 1.0)  # Light Border
+COLOR_ACCENT = (213/255, 252/255, 45/255, 1.0)     # Main Theme Green #D5FC2D
+COLOR_TITLE = (213/255, 252/255, 45/255, 1.0)      # Main Title & Heading Green #D5FC2D
+COLOR_TEXT_PRIMARY = (1.0, 1.0, 1.0, 1.0)           # Primary Text #FFFFFF
+COLOR_TEXT_SECONDARY = (213/255, 252/255, 45/255, 0.85) # Green Secondary Text
+COLOR_TEXT_MUTED = (160/255, 170/255, 140/255, 1.0)     # Muted Secondary
 
 Window.clearcolor = COLOR_BG
 
@@ -1095,9 +1113,9 @@ class GlyphixCard(BoxLayout):
         super().__init__(*args, **kwargs)
         self.bind(width=lambda c, w: c.do_layout())
         with self.canvas.before:
-            Color(20/255, 22/255, 26/255, 1.0)
+            Color(*COLOR_SURFACE)
             self._rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[dp(12)])
-            Color(39/255, 42/255, 51/255, 1.0)
+            Color(*COLOR_BORDER)
             self._border = Line(rounded_rectangle=(self.x, self.y, self.width, self.height, dp(12)), width=1.0)
         self.bind(pos=self._update_canvas, size=self._update_canvas)
 
@@ -1224,18 +1242,20 @@ class GlyphixMaterialApp(MDApp):
         logo_row = ResponsiveRow(orientation="horizontal", spacing=dp(6))
         logo_lbl = MDLabel(
             text="GLYPHIX",
+            font_name="Rondana",
             font_style="Headline",
             role="small",
             theme_text_color="Custom",
-            text_color=COLOR_TEXT_PRIMARY,
+            text_color=COLOR_TITLE,
             bold=True
         )
         ver_lbl = MDLabel(
             text="DESKTOP",
+            font_name="Rondana",
             font_style="Label",
             role="small",
             theme_text_color="Custom",
-            text_color=COLOR_TEXT_SECONDARY,
+            text_color=COLOR_TITLE,
             bold=True
         )
         logo_row.add_widget(logo_lbl)
@@ -1254,10 +1274,11 @@ class GlyphixMaterialApp(MDApp):
         # Status Capsule
         self.status_capsule_lbl = MDLabel(
             text="● STANDBY",
+            font_name="Rondana",
             font_style="Label",
             role="medium",
             theme_text_color="Custom",
-            text_color=COLOR_TEXT_SECONDARY,
+            text_color=COLOR_TITLE,
             halign="right",
             bold=True
         )
@@ -1277,15 +1298,15 @@ class GlyphixMaterialApp(MDApp):
         # CARD 1: SYNC DIRECTION
         # -------------------------------------------------------------
         dir_card = GlyphixCard(size_hint_y=None, height=dp(94), padding=dp(12), spacing=dp(8))
-        dir_card.add_widget(MDLabel(text="SYNC DIRECTION", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TEXT_SECONDARY))
+        dir_card.add_widget(MDLabel(text="SYNC DIRECTION", font_name="Rondana", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TITLE))
         
         btn_row = ResponsiveRow(orientation="horizontal", spacing=dp(10), size_hint=(1.0, None), height=dp(44))
         self.btn_phone_to_pc = GlyphixButton(style="filled", size_hint=(0.5, 1.0), md_bg_color=COLOR_ACCENT, align="center", on_release=lambda x: self._set_direction("PHONE_TO_PC"))
-        self.btn_phone_to_pc_text = MDButtonText(text="📥 Phone → PC (Sync RGB)", font_style="Label", role="medium", theme_text_color="Custom", text_color=(0, 0, 0, 1), bold=True)
+        self.btn_phone_to_pc_text = MDButtonText(text="📥 Phone → PC (Sync RGB)", font_name="Rondana", font_style="Label", role="medium", theme_text_color="Custom", text_color=(0, 0, 0, 1), bold=True)
         self.btn_phone_to_pc.add_widget(self.btn_phone_to_pc_text)
         
         self.btn_pc_to_phone = GlyphixButton(style="outlined", size_hint=(0.5, 1.0), md_bg_color=(0, 0, 0, 0), align="center", on_release=lambda x: self._set_direction("PC_TO_PHONE"))
-        self.btn_pc_to_phone_text = MDButtonText(text="📤 PC → Phone (Glyphs)", font_style="Label", role="medium", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
+        self.btn_pc_to_phone_text = MDButtonText(text="📤 PC → Phone (Glyphs)", font_name="Rondana", font_style="Label", role="medium", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
         self.btn_pc_to_phone.add_widget(self.btn_pc_to_phone_text)
         
         btn_row.add_widget(self.btn_phone_to_pc)
@@ -1299,7 +1320,7 @@ class GlyphixMaterialApp(MDApp):
         viz_card = GlyphixCard(size_hint_y=None, height=dp(215), padding=dp(12), spacing=dp(6))
         
         viz_hdr_row = ResponsiveRow(orientation="horizontal", size_hint=(1.0, None), height=dp(38))
-        viz_hdr_row.add_widget(MDLabel(text="AUDIO SPECTRUM & LOOPBACK INPUT", font_style="Label", role="small", bold=True, theme_text_color="Custom", text_color=COLOR_TEXT_SECONDARY))
+        viz_hdr_row.add_widget(MDLabel(text="AUDIO SPECTRUM & LOOPBACK INPUT", font_name="Rondana", font_style="Label", role="small", bold=True, theme_text_color="Custom", text_color=COLOR_TITLE))
         
         self.audio_menu_btn = GlyphixButton(style="tonal", size_hint=(None, 1.0), width=dp(240), align="left", on_release=self._open_audio_menu)
         self.audio_menu_btn_text = MDButtonText(text=f"🎙 {self.selected_device_name[:20]} ▼", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
@@ -1320,13 +1341,13 @@ class GlyphixMaterialApp(MDApp):
         # CARD 3: WI-FI CONNECTIVITY (UDP ONLY, ZERO BLUETOOTH)
         # -------------------------------------------------------------
         wifi_card = GlyphixCard(size_hint_y=None, height=dp(145), padding=dp(12), spacing=dp(8))
-        wifi_card.add_widget(MDLabel(text="WI-FI CONNECTIVITY (UDP LOW LATENCY STREAMING)", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TEXT_SECONDARY))
+        wifi_card.add_widget(MDLabel(text="WI-FI CONNECTIVITY (UDP LOW LATENCY STREAMING)", font_name="Rondana", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TITLE))
         
         ip_row = ResponsiveRow(orientation="horizontal", spacing=dp(8), size_hint=(1.0, None), height=dp(38))
-        ip_row.add_widget(MDLabel(text=f"PC IP: {self.local_pc_ip} : 12347", font_style="Title", role="medium", bold=True, theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY))
+        ip_row.add_widget(MDLabel(text=f"PC IP: {self.local_pc_ip} : 12347", font_name="Rondana", font_style="Title", role="medium", bold=True, theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY))
         
         self.copy_btn = GlyphixButton(style="tonal", size_hint=(None, 1.0), width=dp(110), align="center", on_release=lambda x: self._copy_ip())
-        self.copy_btn_text = MDButtonText(text="COPY IP", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
+        self.copy_btn_text = MDButtonText(text="COPY IP", font_name="Rondana", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
         self.copy_btn.add_widget(self.copy_btn_text)
         ip_row.add_widget(self.copy_btn)
         wifi_card.add_widget(ip_row)
@@ -1337,7 +1358,7 @@ class GlyphixMaterialApp(MDApp):
         phone_row.add_widget(self.phone_ip_field)
         
         self.discover_btn = GlyphixButton(style="filled", size_hint=(0.30, 1.0), md_bg_color=COLOR_SURFACE_HOVER, align="center", on_release=lambda x: self._toggle_discovery())
-        self.discover_btn_text = MDButtonText(text="🔍 DISCOVER", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
+        self.discover_btn_text = MDButtonText(text="🔍 DISCOVER", font_name="Rondana", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
         self.discover_btn.add_widget(self.discover_btn_text)
         phone_row.add_widget(self.discover_btn)
         wifi_card.add_widget(phone_row)
@@ -1347,7 +1368,7 @@ class GlyphixMaterialApp(MDApp):
         # CARD 4: HARDWARE LIGHTING SYNC & AUDIO DSP
         # -------------------------------------------------------------
         dsp_card = GlyphixCard(size_hint_y=None, height=dp(190), padding=dp(12), spacing=dp(8))
-        dsp_card.add_widget(MDLabel(text="HARDWARE LIGHTING SYNC & AUDIO DSP", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TEXT_SECONDARY))
+        dsp_card.add_widget(MDLabel(text="HARDWARE LIGHTING SYNC & AUDIO DSP", font_name="Rondana", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TITLE))
         
         sw_row = ResponsiveRow(orientation="horizontal", spacing=dp(16), size_hint=(1.0, None), height=dp(38))
         
@@ -1393,7 +1414,7 @@ class GlyphixMaterialApp(MDApp):
         # CARD 5: CASE FAN ARGB PREVIEW & FULL PER-HEADER CONTROLS
         # -------------------------------------------------------------
         fan_card = GlyphixCard(size_hint_y=None, height=dp(350), padding=dp(12), spacing=dp(8))
-        fan_card.add_widget(MDLabel(text="CASE FAN ARGB VISUALIZATION & PER-HEADER CONFIG", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TEXT_SECONDARY))
+        fan_card.add_widget(MDLabel(text="CASE FAN ARGB VISUALIZATION & PER-HEADER CONFIG", font_name="Rondana", font_style="Label", role="small", bold=True, size_hint_y=None, height=dp(16), theme_text_color="Custom", text_color=COLOR_TITLE))
         
         fan_body = ResponsiveRow(orientation="horizontal", spacing=dp(12), size_hint=(1.0, 1.0))
         fan_left = BoxLayout(orientation="vertical", spacing=dp(8), size_hint=(0.64, 1.0))
@@ -1406,7 +1427,7 @@ class GlyphixMaterialApp(MDApp):
         self.header_btn.add_widget(self.header_btn_text)
         
         self.scan_btn = GlyphixButton(style="filled", size_hint=(0.28, 1.0), md_bg_color=COLOR_SURFACE_HOVER, align="center", on_release=lambda x: self._rescan_rgb())
-        self.scan_btn_text = MDButtonText(text="↻ SCAN", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
+        self.scan_btn_text = MDButtonText(text="↻ SCAN", font_name="Rondana", font_style="Label", role="small", theme_text_color="Custom", text_color=COLOR_TEXT_PRIMARY, bold=True)
         self.scan_btn.add_widget(self.scan_btn_text)
         hdr_row.add_widget(self.header_btn)
         hdr_row.add_widget(self.scan_btn)
@@ -1427,7 +1448,7 @@ class GlyphixMaterialApp(MDApp):
         self.theme_btn.add_widget(self.theme_btn_text)
         
         self.swatch_btn = GlyphixButton(style="filled", size_hint=(0.32, 1.0), md_bg_color=COLOR_ACCENT, align="center", on_release=lambda x: self._open_color_picker())
-        self.swatch_btn_text = MDButtonText(text=self.custom_hex, font_style="Label", role="small", theme_text_color="Custom", text_color=(0, 0, 0, 1), bold=True)
+        self.swatch_btn_text = MDButtonText(text=self.custom_hex, font_name="Rondana", font_style="Label", role="small", theme_text_color="Custom", text_color=(0, 0, 0, 1), bold=True)
         self.swatch_btn.add_widget(self.swatch_btn_text)
         theme_row.add_widget(self.theme_btn)
         theme_row.add_widget(self.swatch_btn)
@@ -1486,6 +1507,7 @@ class GlyphixMaterialApp(MDApp):
         self.stream_btn = GlyphixButton(style="filled", size_hint=(1.0, 1.0), md_bg_color=COLOR_ACCENT, align="center", on_release=lambda x: self._toggle_streaming())
         self.stream_btn_text = MDButtonText(
             text="▶ START LISTENER (SYNC PC RGB)",
+            font_name="Rondana",
             font_style="Title",
             role="medium",
             theme_text_color="Custom",

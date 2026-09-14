@@ -227,6 +227,7 @@ internal fun SettingsScreen(
                     ) + fadeOut()
                 ) {
                     val fonts = listOf(
+                        "Rondana" to Icons.Outlined.FontDownload,
                         "NDot" to Icons.Outlined.TextFields,
                         "NType" to Icons.Outlined.Title,
                         "Default" to Icons.Outlined.FontDownload
