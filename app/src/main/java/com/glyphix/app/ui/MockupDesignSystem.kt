@@ -30,6 +30,7 @@ import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.launch
@@ -181,7 +182,7 @@ fun FloatingTopBar(
                     fontSize = 20.sp,
                     letterSpacing = if (titleFontFamily == NDot55FontFamily) 1.2.sp else 0.4.sp
                 ),
-                color = contentColor,
+                color = GlyphGreen,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .weight(1f)
@@ -545,7 +546,7 @@ fun FloatingBottomBar(
             isRunning -> MaterialTheme.colorScheme.error // Stop is Red
             isFabMenuExpanded -> accentColor
             isGlass -> Color.White.copy(alpha = 0.25f)
-            else -> Color(0xFF4CAF50) // Start is Green
+            else -> GlyphGreen // Play is #d5fc2d
         }
         val fabBg by animateColorAsState(
             targetValue = targetFabBg,
@@ -646,6 +647,7 @@ fun FloatingBottomBar(
                             androidx.compose.foundation.Image(
                                 painter = painterResource(id = R.drawable.ic_waveform_selector),
                                 contentDescription = "Input Selector / Start Visualizer",
+                                colorFilter = ColorFilter.tint(Color.Black),
                                 modifier = Modifier
                                     .size(38.dp)
                                     .graphicsLayer {
@@ -1181,12 +1183,12 @@ fun MockupPillButton(
             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             onClick()
         },
-        modifier = modifier
+        modifier = modifier.widthIn(min = 110.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.Center
         ) {
             Text(
                 text = text,
@@ -1197,6 +1199,7 @@ fun MockupPillButton(
                 color = pillTextColor
             )
             if (showChevron) {
+                Spacer(Modifier.width(6.dp))
                 val rotation by animateFloatAsState(
                     targetValue = if (isExpanded) 180f else 0f,
                     label = "chevron_rot"

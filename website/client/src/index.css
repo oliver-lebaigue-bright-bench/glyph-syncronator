@@ -3,7 +3,7 @@
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
 @theme inline { --font-sans: "Manrope", Arial, sans-serif; --color-background: var(--background); --color-foreground: var(--foreground); --color-border: var(--border); --color-ring: var(--ring); }
-:root { --background: #090a09; --foreground: #f4f4ef; --ink: #090a09; --chalk: #f4f4ef; --muted: #a1a29b; --signal: #d7ff45; --line: rgba(244,244,239,.15); --soft-line: rgba(244,244,239,.075); --panel: rgba(12,13,12,.66); --border: rgba(244,244,239,.14); --ring: #d7ff45; --ease: cubic-bezier(.22,1,.36,1); }
+:root { --background: #090a09; --foreground: #f4f4ef; --ink: #090a09; --chalk: #f4f4ef; --muted: #a1a29b; --signal: #d5fc2d; --line: rgba(244,244,239,.15); --soft-line: rgba(244,244,239,.075); --panel: rgba(12,13,12,.66); --border: rgba(244,244,239,.14); --ring: #d5fc2d; --ease: cubic-bezier(.22,1,.36,1); }
 * { box-sizing: border-box; }
 html { background: var(--ink); scroll-behavior: initial; }
 body { margin: 0; overflow-x: hidden; background: var(--ink); color: var(--chalk); font-family: "Manrope", Arial, sans-serif; }

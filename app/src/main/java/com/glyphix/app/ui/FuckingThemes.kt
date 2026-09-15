@@ -60,7 +60,7 @@ import com.glyphix.app.service.GlyphNotificationListener
 @Composable
 fun GlyphixTheme(
     themeName: String = "Default",
-    fontName: String = "NDot",
+    fontName: String = "Rondana",
     m3eEnabled: Boolean = true,
     bananaMode: Boolean = false,
     penisMode: Boolean = false,
@@ -219,29 +219,29 @@ fun GlyphixTheme(
                     if (isDark) {
                         androidx.compose.material3.darkColorScheme(
                             background = Color.Black,
-                            surface = Color(0xFF0D0D0D),
-                            primary = Color(0xFFD71921),
-                            secondary = Color(0xFFD71921),
-                            error = Color(0xFFD71921),
+                            surface = Color(0xFF0D0D0E),
+                            primary = Color(0xFFD5FC2D),
+                            secondary = Color(0xFFD5FC2D),
+                            error = Color(0xFFFF5252),
                             onBackground = Color.White,
                             onSurface = Color.White,
-                            onPrimary = Color.White,
-                            onSecondary = Color.White,
+                            onPrimary = Color.Black,
+                            onSecondary = Color.Black,
                             onError = Color.White,
-                            surfaceVariant = Color(0xFF1A1A1A),
-                            onSurfaceVariant = Color(0xFFB3B3B3),
-                            outline = Color(0xFF333333)
+                            surfaceVariant = Color(0xFF16181D),
+                            onSurfaceVariant = Color(0xFF94A3B8),
+                            outline = Color(0xFF282C34)
                         )
                     } else {
                         androidx.compose.material3.lightColorScheme(
                             background = Color.White,
                             surface = Color(0xFFF5F5F5),
-                            primary = Color(0xFF000000),
+                            primary = Color(0xFFD5FC2D),
                             secondary = Color(0xFF626262),
-                            error = Color(0xFFD71921),
+                            error = Color(0xFFFF5252),
                             onBackground = Color.Black,
                             onSurface = Color.Black,
-                            onPrimary = Color.White,
+                            onPrimary = Color.Black,
                             onSecondary = Color.White,
                             onError = Color.White,
                             surfaceVariant = Color(0xFFE0E0E0),
@@ -324,12 +324,12 @@ fun GlyphixTheme(
                         androidx.compose.material3.lightColorScheme(
                             background = Color.White,
                             surface = Color(0xFFF5F5F5),
-                            primary = Color(0xFF000000),
+                            primary = Color(0xFFD5FC2D),
                             secondary = Color(0xFF626262),
-                            error = Color(0xFFD71921),
+                            error = Color(0xFFFF5252),
                             onBackground = Color.Black,
                             onSurface = Color.Black,
-                            onPrimary = Color.White,
+                            onPrimary = Color.Black,
                             onSecondary = Color.White,
                             onError = Color.White,
                             surfaceVariant = Color(0xFFE0E0E0),
@@ -339,18 +339,18 @@ fun GlyphixTheme(
                     } else {
                         androidx.compose.material3.darkColorScheme(
                             background = Color.Black,
-                            surface = Color(0xFF282828),
-                            primary = Color(0xFFDCDCDC),
-                            secondary = Color(0xFFA0FFA3),
-                            error = Color(0xFFC83B3B),
+                            surface = Color(0xFF0D0D0E),
+                            primary = Color(0xFFD5FC2D),
+                            secondary = Color(0xFFD5FC2D),
+                            error = Color(0xFFFF5252),
                             onBackground = Color.White,
                             onSurface = Color.White,
                             onPrimary = Color.Black,
-                            onSecondary = Color(0xFF1C5A21),
+                            onSecondary = Color.Black,
                             onError = Color.White,
-                            surfaceVariant = Color(0xFF3C3C3C),
-                            onSurfaceVariant = Color(0xFFA0A0A0),
-                            outline = Color(0xFF2C2C2C)
+                            surfaceVariant = Color(0xFF16181D),
+                            onSurfaceVariant = Color(0xFF94A3B8),
+                            outline = Color(0xFF282C34)
                         )
                     }
                 }
@@ -374,23 +374,58 @@ fun GlyphixTheme(
         outline = animateColorAsState(targetColorScheme.outline, tween(500), label = "outline").value,
     )
 
-    val typography = remember(useNType) {
+    val activeFontFamily = when (fontName) {
+        "NType" -> NTypeFontFamily
+        "NDot" -> NDot55FontFamily
+        else -> RondanaFontFamily
+    }
+
+    val typography = remember(activeFontFamily) {
         Typography(
             displayLarge = TextStyle(
-                fontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily,
+                fontFamily = activeFontFamily,
                 fontSize = 45.sp,
                 lineHeight = 55.sp,
-                fontWeight = FontWeight.Normal
+                fontWeight = FontWeight.Bold
+            ),
+            headlineLarge = TextStyle(
+                fontFamily = activeFontFamily,
+                fontSize = 32.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.Bold
             ),
             headlineMedium = TextStyle(
-                fontFamily = if (useNType) NTypeFontFamily else NDotFontFamily,
-                fontSize = 30.sp,
-                lineHeight = 40.sp,
-                fontWeight = FontWeight.Normal
+                fontFamily = activeFontFamily,
+                fontSize = 28.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.Bold
             ),
-            titleLarge = TextStyle(fontSize = 21.sp, lineHeight = 28.sp, fontWeight = FontWeight.Normal),
-            titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
+            headlineSmall = TextStyle(
+                fontFamily = activeFontFamily,
+                fontSize = 24.sp,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            titleLarge = TextStyle(
+                fontFamily = activeFontFamily,
+                fontSize = 22.sp,
+                lineHeight = 28.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            titleMedium = TextStyle(
+                fontFamily = activeFontFamily,
+                fontSize = 18.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
+            titleSmall = TextStyle(
+                fontFamily = activeFontFamily,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.Medium
+            ),
             bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Normal),
+            bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Normal),
             labelLarge = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
             labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
         )
@@ -435,8 +470,6 @@ fun GlyphixTheme(
         val uiAmplitudeState = MainViewModel.instance?.uiAmplitude?.collectAsStateWithLifecycle()
         val uiAmplitude = uiAmplitudeState?.value ?: 1.0f
         val isMonsterTheme = themeName.startsWith("Monster")
-
-        val activeFontFamily = if (useNType) NTypeFontFamily else NDot55FontFamily
 
         CompositionLocalProvider(
             LocalAppSpacing provides appSpacing,
@@ -561,6 +594,13 @@ internal class MusicThemeHandler(
     }
 }
 
+val RondanaFontFamily = FontFamily(
+    Font(resId = R.font.rondana_regular, weight = FontWeight.Normal),
+    Font(resId = R.font.rondana_black, weight = FontWeight.Bold),
+    Font(resId = R.font.rondana_light, weight = FontWeight.Light),
+    Font(resId = R.font.rondana_ultra_light, weight = FontWeight.ExtraLight)
+)
+
 val NTypeFontFamily = FontFamily(
     Font(R.font.ntype82)
 )
@@ -572,6 +612,8 @@ val NDotFontFamily = FontFamily(
 val NDot55FontFamily = FontFamily(
     Font(resId = R.font.ndot55, weight = FontWeight.Normal)
 )
+
+val GlyphGreen = Color(0xFFD5FC2D)
 
 @Immutable
 class AppSpacing(
@@ -589,4 +631,4 @@ val LocalBananaMode = compositionLocalOf { false }
 val LocalPenisMode = compositionLocalOf { false }
 val LocalUIAmplitude = compositionLocalOf { 1.0f }
 val LocalIsGlassTheme = compositionLocalOf { false }
-val LocalAppFontFamily = compositionLocalOf { NDot55FontFamily }
+val LocalAppFontFamily = compositionLocalOf { RondanaFontFamily }

@@ -4,53 +4,33 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- Bowl / Lower Semicircle Glyph -->
+    <path
+        android:fillColor="#D5FC2D"
+        android:pathData="M33.5,57.0 H74.5 C74.5,68.3 65.3,77.5 54.0,77.5 C42.7,77.5 33.5,68.3 33.5,57.0 Z" />
+
+    <!-- Center Radiant Pill (Vertical) -->
+    <path
+        android:fillColor="#D5FC2D"
+        android:pathData="M50.5,36.0 C50.5,34.1 52.1,32.5 54.0,32.5 C55.9,32.5 57.5,34.1 57.5,36.0 V46.0 C57.5,47.9 55.9,49.5 54.0,49.5 C52.1,49.5 50.5,47.9 50.5,46.0 Z" />
+
+    <!-- Left Radiant Pill (Rotated -45 degrees) -->
     <group
-        android:translateX="3"
-        android:translateY="0">
-
-        <!-- Symmetrical bars forming a V-shape visualizer for Glyphix -->
-
-        <!-- Bar 1 (Outer Left) -->
+        android:pivotX="36.5"
+        android:pivotY="42.5"
+        android:rotation="-45">
         <path
-            android:fillColor="#66FFFFFF"
-            android:pathData="M10,48 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v12 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
+            android:fillColor="#D5FC2D"
+            android:pathData="M33.0,37.5 C33.0,35.6 34.6,34.0 36.5,34.0 C38.4,34.0 40.0,35.6 40.0,37.5 V47.5 C40.0,49.4 38.4,51.0 36.5,51.0 C34.6,51.0 33.0,49.4 33.0,47.5 Z" />
+    </group>
 
-        <!-- Bar 2 -->
+    <!-- Right Radiant Pill (Rotated 45 degrees) -->
+    <group
+        android:pivotX="71.5"
+        android:pivotY="42.5"
+        android:rotation="45">
         <path
-            android:fillColor="#99FFFFFF"
-            android:pathData="M22,38 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v32 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Bar 3 -->
-        <path
-            android:fillColor="#CCFFFFFF"
-            android:pathData="M34,28 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v52 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Center Bar (Vibe Peak - Red) -->
-        <path
-            android:fillColor="#CD1B20"
-            android:pathData="M46,18 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v72 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Bar 5 -->
-        <path
-            android:fillColor="#CCFFFFFF"
-            android:pathData="M58,28 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v52 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Bar 6 -->
-        <path
-            android:fillColor="#99FFFFFF"
-            android:pathData="M70,38 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v32 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Bar 7 (Outer Right) -->
-        <path
-            android:fillColor="#66FFFFFF"
-            android:pathData="M82,48 c0,-2.2 1.8,-4 4,-4 h2 c2.2,0 4,1.8 4,4 v12 c0,2.2 -1.8,4 -4,4 h-2 c-2.2,0 -4,-1.8 -4,-4 z"/>
-
-        <!-- Sync Pulse Line (Centered to match peak bar) -->
-        <path
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:pathData="M11,54 Q31,34 51,54 T91,54" />
-
+            android:fillColor="#D5FC2D"
+            android:pathData="M68.0,37.5 C68.0,35.6 69.6,34.0 71.5,34.0 C73.4,34.0 75.0,35.6 75.0,37.5 V47.5 C75.0,49.4 73.4,51.0 71.5,51.0 C69.6,51.0 68.0,49.4 68.0,47.5 Z" />
     </group>
 </vector>
